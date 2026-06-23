@@ -1,27 +1,32 @@
 # Frontend
-client/node_modules
-client/dist
-client/build
-client/.next
+client/node_modules/
+client/dist/
+client/build/
+client/.next/
 client/.env
 client/.env.local
 
 # Backend
-server/node_modules
-server/uploads
-server/logs
+server/node_modules/
+server/uploads/
+server/logs/
 server/.env
 server/.env.*
 
+# Local Exports & Scripts
+AniCart_Server_Code.txt
+AniCart_Website_Code.txt
+export.py
+
 # General
-node_modules
-.vscode
-.idea
-.qoder
+node_modules/
+.vscode/
+.idea/
+.qoder/
 *.log
 *.tmp
-coverage
+coverage/
 .DS_Store
 Thumbs.db
-__pycache__
-.venv
+__pycache__/
+.venv/
