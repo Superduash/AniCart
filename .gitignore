@@ -1,28 +1,27 @@
 # Frontend
-client/node_modules/
-client/dist/
-client/build/
-client/.next/
+client/node_modules
+client/dist
+client/build
+client/.next
 client/.env
 client/.env.local
 
 # Backend
-server/node_modules/
-server/uploads/
-server/logs/
+server/node_modules
+server/uploads
+server/logs
 server/.env
 server/.env.*
 
 # General
-node_modules/
-.vscode/
-.idea/
-.qoder/
+node_modules
+.vscode
+.idea
+.qoder
 *.log
 *.tmp
-coverage/
+coverage
 .DS_Store
 Thumbs.db
-__pycache__/
-.venv/
-node_modules
+__pycache__
+.venv
