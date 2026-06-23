@@ -82,10 +82,10 @@ The project demonstrates a production-style MERN stack implementation: a React f
 ## 🏗 Architecture
 
 ```
-Browser (React SPA)
-        │
-        │  REST API (JSON over HTTP)
-        ▼
+        Browser (React SPA)
+                │
+                │  REST API (JSON over HTTP)
+                ▼
 ┌───────────────────────────────┐
 │   Express.js API Server       │
 │                               │
@@ -106,22 +106,6 @@ Browser (React SPA)
 │   carts       { userId, items[], updatedAt }
 └───────────────────────────────┘
 ```
-
-**Frontend state architecture:**
-
-```
-App
-├── AuthContext     — user token, login/logout, persisted to localStorage
-├── CartContext     — cart items, add/remove/clear, synced to backend
-└── Router
-    ├── LandingPage     (public)
-    ├── LoginPage       (public, redirect if authed)
-    ├── SignupPage       (public, redirect if authed)
-    └── Dashboard       (protected — requires valid JWT)
-        └── ProductCard × N
-```
-
----
 
 ## 🛠 Tech Stack
 
@@ -291,12 +275,11 @@ MIT — free to use, fork, and build on.
 
 <div align="center">
 
-**AniCart** · Built by [Ashwin](https://github.com/yourusername)
+**AniCart** · Built by [Superduash](https://github.com/Superduash)
 
-*B.Tech IT · Full-Stack Developer*
 
 ⭐ Star this repo if it helped you or if you'd like to see it grow.
 
-<img src="https://capsule-render.vercel.app/api?type=venom&height=120&section=footer&color=0:22d3ee,40:7c3aed,70:6d28d9,100:312e81"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&height=120&section=footer&color=0:22d3ee,40:7c3aed,70:6d28d9,100:312e81"/>
 
 </div>
