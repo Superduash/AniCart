@@ -79,7 +79,7 @@ The project demonstrates a production-style MERN stack implementation: a React f
 
 ---
 
-## 🏗 Architecture
+## Architecture
 
 ```
         Browser (React SPA)
