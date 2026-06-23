@@ -25,3 +25,4 @@ coverage/
 Thumbs.db
 __pycache__/
 .venv/
+node_modules
