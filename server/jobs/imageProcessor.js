@@ -1,0 +1,397 @@
+/**
+ * BullMQ Worker for Image Processing
+ *
+ * Processes uploaded images in the background:
+ * - Downloads original from R2
+ * - Generates variants (4K, 2K, 1080p, preview, thumbnail)
+ * - Uploads variants to R2
+ * - Updates Product document with processed assets
+ *
+ * Production-hardened with:
+ * - Sharp memory protection
+ * - Worker monitoring
+ * - Graceful error handling
+ */
+
+const { Worker } = require('bullmq');
+const sharp = require('sharp');
+const { GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { redisConnection } = require('../config/redis');
+const { s3Client, bucketName, publicUrl } = require('../config/r2');
+const Product = require('../models/Product');
+const uploadService = require('../services/uploadService');
+
+// Sharp Memory Protection
+sharp.concurrency(1);
+sharp.cache(false);
+
+// Configuration
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
+const WATERMARK_OPACITY = 0.25;
+const WATERMARK_PATH = require('path').join(__dirname, '..', 'assets', 'watermark.png');
+
+const PAID_VARIANT_CONFIG = {
+  '4k': { width: 3840, quality: 88, effort: 4, mimeType: 'image/webp' },
+  '2k': { width: 2560, quality: 85, effort: 4, mimeType: 'image/webp' },
+  '1080p': { width: 1080, quality: 82, effort: 4, mimeType: 'image/webp' },
+};
+
+const PUBLIC_VARIANT_CONFIG = {
+  preview: { width: 1280, quality: 70, mimeType: 'image/jpeg', format: 'jpeg', progressive: true },
+  thumbnail: { width: 400, quality: 55, effort: 2, mimeType: 'image/webp', format: 'webp' },
+};
+
+const RESOLUTION_DISPLAY_MAP = {
+  '4k': '4K Ultra HD',
+  '2k': '2K QHD',
+  '1080p': '1080p Full HD',
+};
+
+let watermarkOverlayBufferPromise = null;
+
+/**
+ * Get watermark buffer with applied opacity
+ */
+async function getWatermarkOverlayBuffer() {
+  if (!watermarkOverlayBufferPromise) {
+    watermarkOverlayBufferPromise = (async () => {
+      const fs = require('fs/promises');
+      const watermarkFileBuffer = await fs.readFile(WATERMARK_PATH);
+
+      const { data, info } = await sharp(watermarkFileBuffer)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+      const alphaChannelOffset = 3;
+      const channels = info.channels;
+
+      for (let i = alphaChannelOffset; i < data.length; i += channels) {
+        data[i] = Math.round(data[i] * WATERMARK_OPACITY);
+      }
+
+      return sharp(data, { raw: info }).png().toBuffer();
+    })().catch((error) => {
+      watermarkOverlayBufferPromise = null;
+      throw error;
+    });
+  }
+
+  return watermarkOverlayBufferPromise;
+}
+
+/**
+ * Determine available resolutions based on image width
+ */
+function determineAvailableResolutions(width) {
+  if (width >= 3840) return ['4k', '2k', '1080p'];
+  if (width >= 2560) return ['2k', '1080p'];
+  if (width >= 1280) return ['1080p'];
+  return [];
+}
+
+/**
+ * Build WebP variant buffer
+ */
+async function buildWebpVariant(buffer, width, quality, effort = 4) {
+  return sharp(buffer)
+    .resize({
+      width,
+      withoutEnlargement: true,
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .webp({ quality, effort })
+    .toBuffer();
+}
+
+/**
+ * Build preview variant with watermark (for paid products)
+ */
+async function buildPreviewVariantWithWatermark(buffer, width, quality, progressive = true) {
+  const watermarkOverlayBuffer = await getWatermarkOverlayBuffer();
+
+  return sharp(buffer)
+    .resize({
+      width,
+      withoutEnlargement: true,
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .composite([{ input: watermarkOverlayBuffer, gravity: 'center' }])
+    .jpeg({ quality, progressive })
+    .toBuffer();
+}
+
+/**
+ * Build preview variant without watermark (for free products)
+ */
+async function buildPreviewVariant(buffer, width, quality, progressive = true) {
+  return sharp(buffer)
+    .resize({
+      width,
+      withoutEnlargement: true,
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .jpeg({ quality, progressive })
+    .toBuffer();
+}
+
+/**
+ * Download original image from R2
+ */
+async function downloadFromR2(key) {
+  const response = await s3Client.send(
+    new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    })
+  );
+
+  const chunks = [];
+  for await (const chunk of response.Body) {
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
+}
+
+/**
+ * Process image job
+ */
+async function processImageJob(job) {
+  const startTime = Date.now();
+  const { productId, r2OriginalKey, creatorId } = job.data;
+
+  console.log(`[Worker] Starting image processing for product ${productId}`);
+
+  // Step 1: Update progress to 0%
+  await job.updateProgress(0);
+
+  // Get product
+  const product = await Product.findById(productId);
+  if (!product) {
+    throw new Error(`Product ${productId} not found`);
+  }
+
+  // Step 2: Download original from R2
+  console.log(`[Worker] Downloading original from R2: ${r2OriginalKey}`);
+  const originalBuffer = await downloadFromR2(r2OriginalKey);
+
+  // Step 3: Check file size (> 50MB = flagged)
+  if (originalBuffer.length > MAX_FILE_SIZE_BYTES) {
+    console.log(`[Worker] File too large (${originalBuffer.length} bytes), flagging product`);
+    product.assets.status = 'flagged';
+    await product.save();
+    return { status: 'flagged', reason: 'File too large' };
+  }
+
+  // Step 4: Update progress to 30%
+  await job.updateProgress(30);
+
+  // Get metadata
+  const metadata = await sharp(originalBuffer).metadata();
+  const availableResolutions = determineAvailableResolutions(metadata.width);
+
+  if (availableResolutions.length === 0) {
+    throw new Error('Image too small, minimum width is 1280px');
+  }
+
+  // Step 5: Generate variants
+  console.log(`[Worker] Generating variants for resolutions: ${availableResolutions.join(', ')}`);
+
+  const privateAssets = {
+    original: { key: r2OriginalKey },
+    '4k': null,
+    '2k': null,
+    '1080p': null,
+  };
+
+  const failedVariants = [];
+
+  // Generate paid variants
+  for (const resolution of availableResolutions) {
+    const config = PAID_VARIANT_CONFIG[resolution];
+    try {
+      const variantBuffer = await buildWebpVariant(
+        originalBuffer,
+        config.width,
+        config.quality,
+        config.effort
+      );
+      const variantKey = uploadService.generateAssetKey(productId, resolution, 'webp', 'private');
+      const uploadedVariant = await uploadService.uploadPrivateToR2(
+        variantBuffer,
+        variantKey,
+        config.mimeType
+      );
+
+      privateAssets[resolution] = {
+        key: uploadedVariant.key,
+        contentType: config.mimeType,
+        size: variantBuffer.length,
+      };
+    } catch (error) {
+      console.error(`[Worker] Failed to generate ${resolution} variant:`, error.message);
+      failedVariants.push(resolution);
+    }
+  }
+
+  // Step 6: Update progress to 90%
+  await job.updateProgress(90);
+
+  // Generate preview and thumbnail
+  const isPaidProduct = Number(product.price || 0) > 0;
+  const previewVariantConfig = PUBLIC_VARIANT_CONFIG.preview;
+
+  const previewBuffer = isPaidProduct
+    ? await buildPreviewVariantWithWatermark(
+        originalBuffer,
+        previewVariantConfig.width,
+        previewVariantConfig.quality,
+        previewVariantConfig.progressive
+      )
+    : await buildPreviewVariant(
+        originalBuffer,
+        previewVariantConfig.width,
+        previewVariantConfig.quality,
+        previewVariantConfig.progressive
+      );
+
+  const previewKey = uploadService.generateAssetKey(productId, 'preview', 'jpg', 'public');
+  const previewUpload = await uploadService.uploadPublicToR2(
+    previewBuffer,
+    previewKey,
+    previewVariantConfig.mimeType
+  );
+
+  const thumbnailBuffer = await buildWebpVariant(
+    originalBuffer,
+    PUBLIC_VARIANT_CONFIG.thumbnail.width,
+    PUBLIC_VARIANT_CONFIG.thumbnail.quality,
+    PUBLIC_VARIANT_CONFIG.thumbnail.effort
+  );
+  const thumbnailKey = uploadService.generateAssetKey(productId, 'thumbnail', 'webp', 'public');
+  const thumbnailUpload = await uploadService.uploadPublicToR2(
+    thumbnailBuffer,
+    thumbnailKey,
+    PUBLIC_VARIANT_CONFIG.thumbnail.mimeType
+  );
+
+  // Step 7: Update Product document
+  const successfulResolutions = availableResolutions.filter(
+    (resolution) => Boolean(privateAssets[resolution])
+  );
+
+  product.availableResolutions = successfulResolutions;
+  product.assets = {
+    original: privateAssets.original,
+    '4k': privateAssets['4k'],
+    '2k': privateAssets['2k'],
+    '1080p': privateAssets['1080p'],
+    preview: {
+      key: previewUpload.key,
+      url: previewUpload.url,
+      contentType: previewVariantConfig.mimeType,
+      size: previewBuffer.length,
+    },
+    thumbnail: {
+      key: thumbnailUpload.key,
+      url: thumbnailUpload.url,
+      contentType: PUBLIC_VARIANT_CONFIG.thumbnail.mimeType,
+      size: thumbnailBuffer.length,
+    },
+    status: failedVariants.length > 0 ? 'flagged' : 'ready',
+  };
+  product.img = thumbnailUpload.url;
+  if (successfulResolutions.length > 0) {
+    product.resolution = RESOLUTION_DISPLAY_MAP[successfulResolutions[0]] || product.resolution;
+  }
+  product.status = failedVariants.length > 0 ? 'review' : 'active';
+
+  await product.save();
+
+  // Step 8: Update progress to 100%
+  await job.updateProgress(100);
+
+  const processingTime = Date.now() - startTime;
+  console.log(`[Worker] Image processing completed in ${processingTime}ms`);
+
+  return {
+    status: product.assets.status,
+    processingTime,
+    resolutions: successfulResolutions,
+    failedVariants,
+  };
+}
+
+/**
+ * Handle job failure
+ */
+async function handleJobFailure(job, error) {
+  console.error(`[Worker] Job ${job.id} failed:`, error.message);
+
+  const { productId } = job.data;
+
+  try {
+    const product = await Product.findById(productId);
+    if (product) {
+      product.assets.status = 'flagged';
+      product.status = 'review';
+      await product.save();
+      console.log(`[Worker] Product ${productId} flagged due to processing error`);
+    }
+  } catch (saveError) {
+    console.error(`[Worker] Failed to update product status:`, saveError.message);
+  }
+}
+
+/**
+ * Create and export the BullMQ Worker
+ * Concurrency MUST be 1
+ */
+const imageProcessorWorker = new Worker(
+  'image-processing',
+  async (job) => {
+    try {
+      return await processImageJob(job);
+    } catch (error) {
+      await handleJobFailure(job, error);
+      throw error;
+    }
+  },
+  {
+    connection: redisConnection,
+    concurrency: 1, // MUST be 1 as per requirements
+    limiter: {
+      max: 10,
+      duration: 60000, // 10 jobs per minute
+    },
+  }
+);
+
+// Worker event handlers with enhanced monitoring
+imageProcessorWorker.on('active', (job) => {
+  console.log(`[QUEUE] Job ${job.id} started`);
+});
+
+imageProcessorWorker.on('progress', (job, progress) => {
+  console.log(`[QUEUE] Job ${job.id} progress: ${progress}%`);
+});
+
+imageProcessorWorker.on('completed', (job, result) => {
+  console.log(`[QUEUE] Job ${job.id} completed`);
+});
+
+imageProcessorWorker.on('failed', (job, err) => {
+  console.log(`[QUEUE] Job ${job.id} failed: ${err.message}`);
+});
+
+imageProcessorWorker.on('error', (error) => {
+  console.error('[WORKER] Error:', error.message);
+});
+
+console.log('[WORKER] Image processor worker registered (concurrency=1, cache=disabled)');
+
+module.exports = imageProcessorWorker;

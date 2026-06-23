@@ -1,71 +1,27 @@
-# Dependencies
+# Frontend
+client/node_modules/
+client/dist/
+client/build/
+client/.next/
+client/.env
+client/.env.local
+
+# Backend
+server/node_modules/
+server/uploads/
+server/logs/
+server/.env
+server/.env.*
+
+# General
 node_modules/
-
-# Keep lock files committed for reproducible installs
-!package-lock.json
-!yarn.lock
-!pnpm-lock.yaml
-
-# Environment variables
-.env
-.env.local
-.env.*.local
-.env.production.local
-
-# IDE / Editor
 .vscode/
 .idea/
-*.swp
-*.swo
-*~
-.DS_Store
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-
-# Logs
-logs/
+.qoder/
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-
-# Build/dist directories
-dist/
-build/
-out/
-/client/build/
-/client/dist/
-
-# React specific
-/client/.env.local
-/client/.env.development.local
-/client/.env.test.local
-/client/.env.production.local
-
-# Runtime data
-pids/
-*.pid
-*.seed
-*.pid.lock
-
-# Coverage
+*.tmp
 coverage/
-.nyc_output/
-/client/coverage/
-
-# Misc
-.cache/
-tmp/
-temp/
-
-# OS generated files
+.DS_Store
 Thumbs.db
-
-# Testing
-.mocha
-test/coverage
+__pycache__/
+.venv/

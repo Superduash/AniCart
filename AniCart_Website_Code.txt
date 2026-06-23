@@ -1,0 +1,3498 @@
+================================================================================
+AniCart-Website - IMPORTANT CODE EXPORT
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE: package.json
+--------------------------------------------------------------------------------
+
+{
+  "name": "client",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "axios": "^1.13.6",
+    "framer-motion": "^12.38.0",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "react-router-dom": "^7.13.2",
+    "react-scripts": "5.0.1"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "devDependencies": {}
+}
+
+
+--------------------------------------------------------------------------------
+FILE: public/index.html
+--------------------------------------------------------------------------------
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <link rel="apple-touch-icon" href="%PUBLIC_URL%/logo192.png" />
+    <!--
+      manifest.json provides metadata used when your web app is installed on a
+      user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
+    -->
+    <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <!--
+      Notice the use of %PUBLIC_URL% in the tags above.
+      It will be replaced with the URL of the `public` folder during the build.
+      Only files inside the `public` folder can be referenced from the HTML.
+
+      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
+      work correctly both with client-side routing and a non-root public URL.
+      Learn how to configure a non-root public URL by running `npm run build`.
+    -->
+    <title>React App</title>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+    <!--
+      This HTML file is a template.
+      If you open it directly in the browser, you will see an empty page.
+
+      You can add webfonts, meta tags, or analytics to this file.
+      The build step will place the bundled scripts into the <body> tag.
+
+      To begin the development, run `npm start` or `yarn start`.
+      To create a production bundle, use `npm run build` or `yarn build`.
+    -->
+  </body>
+</html>
+
+
+--------------------------------------------------------------------------------
+FILE: src/App.css
+--------------------------------------------------------------------------------
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,300&display=swap');
+
+/* ═══════════════════════════════════════════
+   ANICART — DESIGN SYSTEM
+═══════════════════════════════════════════ */
+:root {
+  --bg-void: #020617;
+  --bg-deep: #050d1f;
+  --bg-surface: #0a1628;
+  --glass: rgba(15, 23, 42, 0.6);
+  --glass-light: rgba(30, 50, 90, 0.35);
+  --glass-border: rgba(0, 243, 255, 0.12);
+  --glass-border-hover: rgba(0, 243, 255, 0.4);
+
+  --neon: #00f3ff;
+  --neon-dim: rgba(0, 243, 255, 0.15);
+  --neon-glow: 0 0 20px rgba(0, 243, 255, 0.6), 0 0 60px rgba(0, 243, 255, 0.2);
+  --neon-text-glow: 0 0 10px rgba(0, 243, 255, 0.8), 0 0 30px rgba(0, 243, 255, 0.4);
+
+  --pink: #ff2d78;
+  --pink-glow: 0 0 20px rgba(255, 45, 120, 0.6);
+  --purple: #7c3aed;
+  --purple-light: #a855f7;
+
+  --text-primary: #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --text-neon: #00f3ff;
+
+  --card-radius: 16px;
+  --btn-radius: 12px;
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ═══ RESET & BASE ═══ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Exo 2', sans-serif;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  cursor: default;
+}
+
+/* ═══ SCROLLBAR ═══ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-void); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--neon), var(--purple));
+  border-radius: 3px;
+}
+
+/* ═══ ANIMATED STARFIELD BACKGROUND ═══ */
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.starfield::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(0,243,255,0.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 55% 15%, rgba(0,243,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 35%, rgba(255,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 80%, rgba(0,243,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 70%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 10%, rgba(0,243,255,0.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 65%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 15% 40%, rgba(0,243,255,0.9) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 90%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 25%, rgba(124,58,237,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 85% 55%, rgba(255,45,120,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 5% 65%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 45%, rgba(0,243,255,0.4) 0%, transparent 100%),
+    radial-gradient(2px 2px at 75% 20%, rgba(0,243,255,0.7) 0%, transparent 100%);
+  animation: twinkle 4s ease-in-out infinite alternate;
+}
+
+.starfield::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 10%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 30%, rgba(0,243,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 55%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 88% 75%, rgba(0,243,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 12% 90%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 55% 35%, rgba(124,58,237,0.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 78% 85%, rgba(255,45,120,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 92% 45%, rgba(255,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 33% 70%, rgba(0,243,255,0.5) 0%, transparent 100%);
+  animation: twinkle 6s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes twinkle {
+  0% { opacity: 0.4; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.02); }
+}
+
+/* ═══ NEBULA BG BLOBS ═══ */
+.nebula {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.nebula-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  animation: drift 15s ease-in-out infinite;
+}
+
+.nebula-blob:nth-child(1) {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(0,243,255,0.06) 0%, transparent 70%);
+  top: -10%; left: -10%;
+  animation-delay: 0s;
+}
+.nebula-blob:nth-child(2) {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(124,58,237,0.08) 0%, transparent 70%);
+  top: 30%; right: -15%;
+  animation-delay: -5s;
+}
+.nebula-blob:nth-child(3) {
+  width: 400px; height: 400px;
+  background: radial-gradient(circle, rgba(255,45,120,0.06) 0%, transparent 70%);
+  bottom: -5%; left: 30%;
+  animation-delay: -10s;
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 30px) scale(0.95); }
+}
+
+/* ═══ PAGE WRAPPER ═══ */
+.page-wrapper {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* ═══ GLASS CARD ═══ */
+.glass-card {
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--card-radius);
+  transition: var(--transition);
+}
+
+.glass-card:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow: 0 0 30px rgba(0, 243, 255, 0.08);
+}
+
+/* ═══ NAVBAR ═══ */
+.navbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: 0 40px;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.nav-logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--neon);
+  text-shadow: var(--neon-text-glow);
+  text-decoration: none;
+  letter-spacing: 2px;
+  cursor: pointer;
+}
+
+.nav-logo span {
+  color: var(--pink);
+  text-shadow: var(--pink-glow);
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+
+.nav-links a, .nav-links button {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.nav-links a:hover, .nav-links button:hover {
+  color: var(--neon);
+  background: var(--neon-dim);
+}
+
+.nav-btn-outline {
+  border: 1px solid var(--glass-border) !important;
+}
+
+.nav-btn-solid {
+  background: linear-gradient(135deg, var(--neon), #0099cc) !important;
+  color: var(--bg-void) !important;
+  font-weight: 700 !important;
+}
+
+.nav-btn-solid:hover {
+  box-shadow: var(--neon-glow) !important;
+  color: var(--bg-void) !important;
+}
+
+/* ═══ BUTTONS ═══ */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: linear-gradient(135deg, var(--neon) 0%, #0099cc 100%);
+  color: var(--bg-void);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--btn-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, transparent 100%);
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.btn-primary:hover::before { opacity: 1; }
+.btn-primary:hover {
+  box-shadow: var(--neon-glow);
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px 32px;
+  background: transparent;
+  color: var(--neon);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: 1px solid var(--neon);
+  border-radius: var(--btn-radius);
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+}
+
+.btn-secondary:hover {
+  background: var(--neon-dim);
+  box-shadow: var(--neon-glow);
+  transform: translateY(-2px);
+}
+
+.btn-pink {
+  background: linear-gradient(135deg, var(--pink) 0%, #cc1155 100%) !important;
+  color: white !important;
+}
+
+.btn-pink:hover {
+  box-shadow: var(--pink-glow) !important;
+}
+
+.btn-full { width: 100%; }
+.btn-lg { padding: 16px 40px; font-size: 0.9rem; }
+
+/* ═══ FORM ELEMENTS ═══ */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.form-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.form-input-icon {
+  position: absolute;
+  left: 16px;
+  color: var(--text-muted);
+  font-size: 1rem;
+  pointer-events: none;
+  z-index: 1;
+  transition: var(--transition);
+}
+
+.form-input {
+  width: 100%;
+  padding: 14px 16px 14px 46px;
+  background: rgba(10, 22, 40, 0.8);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: 'Exo 2', sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  transition: var(--transition);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-input:focus {
+  border-color: var(--neon);
+  box-shadow: 0 0 0 3px rgba(0, 243, 255, 0.1), inset 0 0 20px rgba(0, 243, 255, 0.03);
+  background: rgba(10, 22, 40, 0.95);
+}
+
+.form-input:focus + .form-input-icon,
+.form-input-wrapper:focus-within .form-input-icon {
+  color: var(--neon);
+}
+
+.form-input-wrapper:focus-within .form-input-icon {
+  color: var(--neon);
+}
+
+.toggle-password {
+  position: absolute;
+  right: 16px;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  transition: var(--transition);
+  padding: 4px;
+}
+
+.toggle-password:hover { color: var(--neon); }
+
+/* ═══ TOAST ═══ */
+.toast-container {
+  position: fixed;
+  top: 90px;
+  right: 24px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  border-left: 3px solid var(--neon);
+  min-width: 280px;
+  max-width: 380px;
+  animation: slideInRight 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.toast.error { border-color: var(--pink); }
+.toast.success { border-color: #00ff88; }
+.toast.warning { border-color: #ffd700; }
+
+.toast-icon { font-size: 1.1rem; }
+.toast-msg {
+  flex: 1;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.toast-close {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0 4px;
+  transition: var(--transition);
+}
+.toast-close:hover { color: var(--text-primary); }
+
+@keyframes slideInRight {
+  from { transform: translateX(120%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+/* ═══ AUTH PAGES ═══ */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 20px 40px;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 460px;
+  position: relative;
+}
+
+.auth-card {
+  padding: 48px 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon), transparent);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 36px;
+}
+
+.auth-logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--neon);
+  text-shadow: var(--neon-text-glow);
+  margin-bottom: 8px;
+  letter-spacing: 3px;
+}
+
+.auth-logo span {
+  color: var(--pink);
+  text-shadow: var(--pink-glow);
+}
+
+.auth-subtitle {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.auth-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.auth-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 8px 0;
+}
+
+.auth-divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--glass-border);
+}
+
+.auth-divider-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.auth-social-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.auth-social-btn:hover {
+  border-color: var(--glass-border-hover);
+  color: var(--text-primary);
+  background: var(--glass-light);
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.auth-link {
+  color: var(--neon);
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.auth-link:hover {
+  text-shadow: var(--neon-text-glow);
+}
+
+.form-error {
+  font-size: 0.82rem;
+  color: var(--pink);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: -8px;
+}
+
+.password-strength {
+  margin-top: -8px;
+}
+
+.strength-bar {
+  height: 3px;
+  background: var(--glass-border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+
+.strength-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: var(--transition-slow);
+}
+
+.strength-text {
+  font-size: 0.78rem;
+  font-family: 'Rajdhani', sans-serif;
+  letter-spacing: 1px;
+}
+
+.loading-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(2,6,23,0.3);
+  border-top-color: var(--bg-void);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ═══ LANDING PAGE ═══ */
+
+/* Hero */
+.landing-page {
+  min-height: 100vh;
+}
+
+.hero-section {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 40px 60px;
+  position: relative;
+}
+
+.hero-content {
+  max-width: 800px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  background: var(--neon-dim);
+  border: 1px solid rgba(0,243,255,0.3);
+  border-radius: 50px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--neon);
+  margin-bottom: 28px;
+  animation: fadeInDown 0.8s ease;
+}
+
+.hero-badge-dot {
+  width: 6px; height: 6px;
+  background: var(--neon);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--neon);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.hero-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(2.5rem, 6vw, 5rem);
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  animation: fadeInUp 0.8s ease 0.1s both;
+}
+
+.hero-title-line1 {
+  display: block;
+  color: var(--text-primary);
+}
+
+.hero-title-line2 {
+  display: block;
+  background: linear-gradient(135deg, var(--neon), var(--purple-light), var(--pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 0 20px rgba(0,243,255,0.3));
+}
+
+.hero-desc {
+  font-size: 1.15rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 40px;
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
+  animation: fadeInUp 0.8s ease 0.2s both;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+  animation: fadeInUp 0.8s ease 0.3s both;
+}
+
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  margin-top: 64px;
+  padding-top: 40px;
+  border-top: 1px solid var(--glass-border);
+  animation: fadeInUp 0.8s ease 0.4s both;
+}
+
+.stat-item { text-align: center; }
+
+.stat-number {
+  font-family: 'Orbitron', monospace;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--neon);
+  text-shadow: var(--neon-text-glow);
+  display: block;
+}
+
+.stat-label {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Floating cards decorations */
+.hero-float-cards {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.float-card {
+  position: absolute;
+  border-radius: 12px;
+  animation: float-card linear infinite;
+  opacity: 0.15;
+}
+
+/* Features Section */
+.section {
+  padding: 100px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+.section-tag {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.8rem;
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  color: var(--neon);
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.section-title span {
+  color: var(--neon);
+}
+
+.section-desc {
+  margin-top: 16px;
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.7;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.feature-card {
+  padding: 32px;
+  position: relative;
+  overflow: hidden;
+  transition: var(--transition);
+}
+
+.feature-card:hover {
+  transform: translateY(-6px);
+}
+
+.feature-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(0,243,255,0.04) 0%, transparent 70%);
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.feature-card:hover::after { opacity: 1; }
+
+.feature-icon-wrap {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.feature-icon-wrap.neon {
+  background: rgba(0,243,255,0.1);
+  border: 1px solid rgba(0,243,255,0.2);
+  color: var(--neon);
+}
+
+.feature-icon-wrap.pink {
+  background: rgba(255,45,120,0.1);
+  border: 1px solid rgba(255,45,120,0.2);
+  color: var(--pink);
+}
+
+.feature-icon-wrap.purple {
+  background: rgba(124,58,237,0.1);
+  border: 1px solid rgba(124,58,237,0.2);
+  color: var(--purple-light);
+}
+
+.feature-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+}
+
+.feature-desc {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* Products Showcase */
+.products-section {
+  padding: 100px 40px;
+  background: linear-gradient(180deg, transparent 0%, rgba(0,243,255,0.02) 50%, transparent 100%);
+}
+
+.products-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.product-card {
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  transition: var(--transition);
+  cursor: pointer;
+  position: relative;
+}
+
+.product-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(0,243,255,0.12);
+}
+
+.product-img-wrap {
+  position: relative;
+  height: 200px;
+  overflow: hidden;
+}
+
+.product-img-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.product-card:hover .product-img-wrap img {
+  transform: scale(1.08);
+}
+
+.product-badge {
+  position: absolute;
+  top: 12px; left: 12px;
+  padding: 4px 12px;
+  background: var(--neon);
+  color: var(--bg-void);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border-radius: 6px;
+}
+
+.product-badge.pink { background: var(--pink); color: white; }
+
+.product-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(2,6,23,0.8) 0%, transparent 60%);
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  padding: 12px;
+  opacity: 0;
+  transition: var(--transition);
+}
+
+.product-card:hover .product-overlay { opacity: 1; }
+
+.product-quick-add {
+  padding: 8px 16px;
+  background: var(--neon);
+  color: var(--bg-void);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.product-info {
+  padding: 16px;
+  background: var(--glass);
+  border-top: 1px solid var(--glass-border);
+}
+
+.product-name {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.product-series {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.product-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.product-price {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--neon);
+}
+
+.product-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: #ffd700;
+}
+
+/* CTA Banner */
+.cta-section {
+  padding: 80px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.cta-card {
+  padding: 64px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, rgba(0,243,255,0.05) 0%, transparent 70%);
+}
+
+.cta-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+}
+
+.cta-desc {
+  font-size: 1rem;
+  color: var(--text-secondary);
+  max-width: 480px;
+  margin: 0 auto 32px;
+  line-height: 1.7;
+}
+
+.cta-buttons {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Footer */
+.footer {
+  border-top: 1px solid var(--glass-border);
+  padding: 40px;
+  text-align: center;
+}
+
+.footer-logo {
+  font-family: 'Orbitron', monospace;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--neon);
+  text-shadow: var(--neon-text-glow);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.footer-logo span { color: var(--pink); }
+
+.footer-tagline {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+.footer-links {
+  display: flex;
+  gap: 24px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  list-style: none;
+}
+
+.footer-links a {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: var(--transition);
+}
+
+.footer-links a:hover { color: var(--neon); }
+
+.footer-copy {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+/* Dashboard */
+.dashboard-page {
+  min-height: 100vh;
+  padding: 90px 40px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.dashboard-header {
+  margin-bottom: 48px;
+  padding-bottom: 32px;
+  border-bottom: 1px solid var(--glass-border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.dashboard-greeting {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.9rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--neon);
+  margin-bottom: 8px;
+}
+
+.dashboard-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+/* ═══ ANIMATIONS ═══ */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-up {
+  animation: fadeInUp 0.7s ease both;
+}
+
+/* ═══ SCAN LINE ═══ */
+.scanline {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* ═══ CURSOR GLOW ═══ */
+.cursor-glow {
+  position: fixed;
+  width: 300px;
+  height: 300px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(circle, rgba(0, 243, 255, 0.04) 0%, transparent 70%);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: left 0.1s, top 0.1s;
+}
+
+/* ═══ RESPONSIVE ═══ */
+@media (max-width: 768px) {
+  .navbar { padding: 0 20px; }
+  .hero-section { padding: 100px 20px 60px; }
+  .hero-stats { gap: 24px; flex-wrap: wrap; }
+  .section { padding: 60px 20px; }
+  .products-section { padding: 60px 20px; }
+  .cta-section { padding: 60px 20px; }
+  .cta-card { padding: 40px 24px; }
+  .auth-card { padding: 36px 24px; }
+  .footer { padding: 32px 20px; }
+  .dashboard-page { padding: 90px 20px 40px; }
+}
+
+@media (max-width: 480px) {
+  .hero-cta { flex-direction: column; align-items: center; }
+  .nav-links { gap: 4px; }
+  .nav-links a, .nav-links button { padding: 8px 12px; font-size: 0.8rem; }
+}
+
+
+--------------------------------------------------------------------------------
+FILE: src/App.js
+--------------------------------------------------------------------------------
+
+import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
+import './App.css';
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
+import Dashboard from './pages/Dashboard';
+
+// ══════════════════════════════════════════
+// CONTEXTS
+// ══════════════════════════════════════════
+
+export const AuthContext = createContext(null);
+export const CartContext = createContext(null);
+export const ToastContext = createContext(null);
+export const NavigationContext = createContext(null);
+
+// ══════════════════════════════════════════
+// TOAST SYSTEM
+// ══════════════════════════════════════════
+
+const TOAST_ICONS = {
+  success: '✦',
+  error: '✕',
+  warning: '⚠',
+  info: '◈',
+};
+
+function ToastContainer({ toasts, removeToast }) {
+  return (
+    <div className="toast-container">
+      {toasts.map((t) => (
+        <div key={t.id} className={`toast ${t.type}`}>
+          <span className="toast-icon">{TOAST_ICONS[t.type] || '◈'}</span>
+          <span className="toast-msg">{t.message}</span>
+          <button className="toast-close" onClick={() => removeToast(t.id)}>✕</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════
+// STARFIELD & EFFECTS
+// ══════════════════════════════════════════
+
+function BackgroundEffects() {
+  const [mousePos, setMousePos] = useState({ x: -999, y: -999 });
+
+  useEffect(() => {
+    const handler = (e) => setMousePos({ x: e.clientX, y: e.clientY });
+    window.addEventListener('mousemove', handler);
+    return () => window.removeEventListener('mousemove', handler);
+  }, []);
+
+  return (
+    <>
+      <div className="scanline" />
+      <div
+        className="cursor-glow"
+        style={{ left: mousePos.x, top: mousePos.y }}
+      />
+      <div className="starfield" />
+      <div className="nebula">
+        <div className="nebula-blob" />
+        <div className="nebula-blob" />
+        <div className="nebula-blob" />
+      </div>
+    </>
+  );
+}
+
+// ══════════════════════════════════════════
+// MAIN APP
+// ══════════════════════════════════════════
+
+const PAGES = {
+  LANDING: 'landing',
+  LOGIN: 'login',
+  SIGNUP: 'signup',
+  DASHBOARD: 'dashboard',
+};
+
+// Sample products data
+const PRODUCTS_DATA = [
+  {
+    id: 1, name: 'Itadori Yuji — Cursed Pulse',
+    series: 'Jujutsu Kaisen', price: 4.99,
+    badge: 'HOT', badgeType: 'neon',
+    rating: 4.9, reviews: 234,
+    img: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD', tags: ['Action', 'Dark Fantasy'],
+  },
+  {
+    id: 2, name: 'Mikasa Ackerman — Titan\'s Edge',
+    series: 'Attack on Titan', price: 3.99,
+    badge: 'NEW', badgeType: 'pink',
+    rating: 4.8, reviews: 189,
+    img: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD', tags: ['Action', 'Post-Apocalyptic'],
+  },
+  {
+    id: 3, name: 'Nezuko — Bamboo Blossom',
+    series: 'Demon Slayer', price: 5.99,
+    badge: 'BESTSELLER', badgeType: 'neon',
+    rating: 5.0, reviews: 412,
+    img: 'https://images.unsplash.com/photo-1492576540313-31ad3a64ba5e?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD', tags: ['Fantasy', 'Adventure'],
+  },
+  {
+    id: 4, name: 'Naruto — Nine-Tails Awakening',
+    series: 'Naruto Shippuden', price: 3.49,
+    badge: 'CLASSIC', badgeType: 'neon',
+    rating: 4.7, reviews: 567,
+    img: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&h=300&fit=crop',
+    resolution: '2K HD', tags: ['Action', 'Ninja'],
+  },
+  {
+    id: 5, name: 'Gojo Satoru — Infinity Veil',
+    series: 'Jujutsu Kaisen', price: 6.99,
+    badge: 'PREMIUM', badgeType: 'pink',
+    rating: 4.9, reviews: 321,
+    img: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD', tags: ['Action', 'Supernatural'],
+  },
+  {
+    id: 6, name: 'Levi Ackerman — Thunder Spear',
+    series: 'Attack on Titan', price: 4.49,
+    badge: 'NEW', badgeType: 'neon',
+    rating: 4.8, reviews: 276,
+    img: 'https://images.unsplash.com/photo-1547636780-9b865e394b50?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD', tags: ['Action', 'Drama'],
+  },
+  {
+    id: 7, name: 'Luffy — Gear Fifth',
+    series: 'One Piece', price: 5.49,
+    badge: 'HOT', badgeType: 'pink',
+    rating: 4.9, reviews: 398,
+    img: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD', tags: ['Adventure', 'Comedy'],
+  },
+  {
+    id: 8, name: 'Zoro — Asura Phantom',
+    series: 'One Piece', price: 4.99,
+    badge: 'CLASSIC', badgeType: 'neon',
+    rating: 4.7, reviews: 245,
+    img: 'https://images.unsplash.com/photo-1580130732478-4e339fb33746?w=400&h=300&fit=crop',
+    resolution: '2K HD', tags: ['Action', 'Adventure'],
+  },
+];
+
+export default function App() {
+  const [currentPage, setCurrentPage] = useState(PAGES.LANDING);
+  const [user, setUser] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [toasts, setToasts] = useState([]);
+  const [products] = useState(PRODUCTS_DATA);
+
+  // Load persisted state
+  useEffect(() => {
+    try {
+      const savedUser = localStorage.getItem('anicart_user');
+      const savedCart = localStorage.getItem('anicart_cart');
+      if (savedUser) setUser(JSON.parse(savedUser));
+      if (savedCart) setCart(JSON.parse(savedCart));
+    } catch (e) {}
+  }, []);
+
+  // Persist cart
+  useEffect(() => {
+    localStorage.setItem('anicart_cart', JSON.stringify(cart));
+  }, [cart]);
+
+  // ── Toast helpers ──
+  const addToast = useCallback((message, type = 'info') => {
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  // ── Auth helpers ──
+  const login = useCallback((userData) => {
+    const enriched = { ...userData, joinedAt: new Date().toISOString() };
+    setUser(enriched);
+    localStorage.setItem('anicart_user', JSON.stringify(enriched));
+  }, []);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setCart([]);
+    localStorage.removeItem('anicart_user');
+    localStorage.removeItem('anicart_cart');
+    setCurrentPage(PAGES.LANDING);
+    addToast('Disconnected from AniCart. See you in the databank!', 'info');
+  }, [addToast]);
+
+  // ── Cart helpers ──
+  const addToCart = useCallback((product) => {
+    setCart((prev) => {
+      const existing = prev.find((i) => i.id === product.id);
+      if (existing) {
+        addToast(`${product.name} quantity updated!`, 'success');
+        return prev.map((i) =>
+          i.id === product.id ? { ...i, qty: i.qty + 1 } : i
+        );
+      }
+      addToast(`${product.name} added to cart! 🛒`, 'success');
+      return [...prev, { ...product, qty: 1 }];
+    });
+  }, [addToast]);
+
+  const removeFromCart = useCallback((id) => {
+    setCart((prev) => prev.filter((i) => i.id !== id));
+    addToast('Item removed from cart.', 'info');
+  }, [addToast]);
+
+  const updateQty = useCallback((id, delta) => {
+    setCart((prev) =>
+      prev
+        .map((i) => i.id === id ? { ...i, qty: Math.max(0, i.qty + delta) } : i)
+        .filter((i) => i.qty > 0)
+    );
+  }, []);
+
+  const clearCart = useCallback(() => {
+    setCart([]);
+    addToast('Cart cleared.', 'info');
+  }, [addToast]);
+
+  const cartTotal = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const cartCount = cart.reduce((sum, i) => sum + i.qty, 0);
+
+  // ── Navigation ──
+  const navigate = useCallback((page) => {
+    if (page === PAGES.DASHBOARD && !user) {
+      setCurrentPage(PAGES.LOGIN);
+      addToast('Please log in to access your Dashboard.', 'warning');
+      return;
+    }
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [user, addToast]);
+
+  const navValue = { navigate, PAGES, currentPage };
+  const authValue = { user, login, logout };
+  const cartValue = { cart, addToCart, removeFromCart, updateQty, clearCart, cartTotal, cartCount, products };
+  const toastValue = { addToast };
+
+  const renderPage = () => {
+    switch (currentPage) {
+      case PAGES.LOGIN:    return <LoginPage />;
+      case PAGES.SIGNUP:   return <SignupPage />;
+      case PAGES.DASHBOARD: return <Dashboard />;
+      default:             return <LandingPage />;
+    }
+  };
+
+  return (
+    <NavigationContext.Provider value={navValue}>
+      <AuthContext.Provider value={authValue}>
+        <CartContext.Provider value={cartValue}>
+          <ToastContext.Provider value={toastValue}>
+            <BackgroundEffects />
+            <div className="page-wrapper">
+              {renderPage()}
+            </div>
+            <ToastContainer toasts={toasts} removeToast={removeToast} />
+          </ToastContext.Provider>
+        </CartContext.Provider>
+      </AuthContext.Provider>
+    </NavigationContext.Provider>
+  );
+}
+
+// ── Custom Hooks ──
+export const useAuth = () => useContext(AuthContext);
+export const useCart = () => useContext(CartContext);
+export const useToast = () => useContext(ToastContext);
+export const useNavigation = () => useContext(NavigationContext);
+
+
+--------------------------------------------------------------------------------
+FILE: src/index.css
+--------------------------------------------------------------------------------
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+
+body {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  background: #020617;
+  color: #e2e8f0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+
+--------------------------------------------------------------------------------
+FILE: src/index.js
+--------------------------------------------------------------------------------
+
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import App from './App';
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>
+);
+
+
+--------------------------------------------------------------------------------
+FILE: src/pages/Dashboard.jsx
+--------------------------------------------------------------------------------
+
+import React, { useState } from 'react';
+import { useAuth, useCart, useToast, useNavigation } from '../App';
+
+// ═══ STAT CARD ═══
+function StatCard({ icon, label, value, color = 'neon', sub }) {
+  const colors = {
+    neon: { bg: 'rgba(0,243,255,0.08)', border: 'rgba(0,243,255,0.2)', text: 'var(--neon)' },
+    pink: { bg: 'rgba(255,45,120,0.08)', border: 'rgba(255,45,120,0.2)', text: 'var(--pink)' },
+    purple: { bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.2)', text: 'var(--purple-light)' },
+    gold: { bg: 'rgba(255,215,0,0.08)', border: 'rgba(255,215,0,0.2)', text: '#ffd700' },
+  };
+  const c = colors[color];
+
+  return (
+    <div className="glass-card" style={{
+      padding: '24px', display: 'flex', gap: 16, alignItems: 'center',
+      border: `1px solid ${c.border}`, background: c.bg,
+    }}>
+      <div style={{
+        width: 52, height: 52, borderRadius: 14, display: 'flex', alignItems: 'center',
+        justifyContent: 'center', fontSize: '1.5rem',
+        background: `rgba(${color === 'neon' ? '0,243,255' : color === 'pink' ? '255,45,120' : color === 'purple' ? '124,58,237' : '255,215,0'}, 0.15)`,
+      }}>
+        {icon}
+      </div>
+      <div>
+        <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '1.6rem',
+          fontWeight: 800, color: c.text }}>{value}</div>
+        <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.85rem',
+          fontWeight: 600, color: 'var(--text-secondary)', letterSpacing: '1px' }}>{label}</div>
+        {sub && <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{sub}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ═══ DASHBOARD NAV ═══
+function DashboardNav({ active, setActive }) {
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: '◈' },
+    { id: 'cart',     label: 'My Cart',  icon: '🛒' },
+    { id: 'library',  label: 'Library',  icon: '✦' },
+    { id: 'profile',  label: 'Profile',  icon: '◉' },
+  ];
+
+  return (
+    <div style={{
+      display: 'flex', gap: 4, marginBottom: 40,
+      background: 'rgba(10,22,40,0.6)', padding: 6, borderRadius: 14,
+      border: '1px solid var(--glass-border)', flexWrap: 'wrap',
+    }}>
+      {tabs.map((tab) => (
+        <button
+          key={tab.id}
+          onClick={() => setActive(tab.id)}
+          style={{
+            flex: '1 1 auto', padding: '10px 20px', border: 'none', borderRadius: 10,
+            cursor: 'pointer', transition: 'all 0.3s', fontFamily: 'Rajdhani, sans-serif',
+            fontWeight: 700, fontSize: '0.9rem', letterSpacing: '1px', textTransform: 'uppercase',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+            background: active === tab.id
+              ? 'linear-gradient(135deg, var(--neon) 0%, #0099cc 100%)'
+              : 'transparent',
+            color: active === tab.id ? 'var(--bg-void)' : 'var(--text-muted)',
+            boxShadow: active === tab.id ? 'var(--neon-glow)' : 'none',
+          }}
+        >
+          {tab.icon} {tab.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+// ═══ OVERVIEW TAB ═══
+function OverviewTab() {
+  const { user } = useAuth();
+  const { cart, cartTotal, cartCount, products, addToCart } = useCart();
+  const { addToast } = useToast();
+  const { navigate, PAGES } = useNavigation();
+
+  const recentActivity = [
+    { action: 'Account created', time: 'Just now', icon: '✦', color: 'var(--neon)' },
+    { action: 'Welcome to AniCart Databank', time: 'Just now', icon: '◈', color: 'var(--purple-light)' },
+    { action: 'First login bonus unlocked', time: 'Just now', icon: '🎉', color: '#ffd700' },
+  ];
+
+  return (
+    <div>
+      {/* Stats grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 40 }}>
+        <StatCard icon="🛒" label="Cart Items" value={cartCount} color="neon" sub={`$${cartTotal.toFixed(2)} total`} />
+        <StatCard icon="✦" label="Wallpapers Owned" value="0" color="purple" sub="Start shopping!" />
+        <StatCard icon="⚡" label="Points Earned" value="150" color="gold" sub="Welcome bonus" />
+        <StatCard icon="🔥" label="Streak Days" value="1" color="pink" sub="Keep it up!" />
+      </div>
+
+      {/* Two column layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 40 }}>
+        {/* Recent Activity */}
+        <div className="glass-card" style={{ padding: 24 }}>
+          <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.95rem',
+            fontWeight: 700, color: 'var(--text-primary)', marginBottom: 20,
+            display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: 'var(--neon)' }}>◈</span> Recent Activity
+          </div>
+          {recentActivity.map((a, i) => (
+            <div key={i} style={{
+              display: 'flex', gap: 12, alignItems: 'flex-start',
+              paddingBottom: i < recentActivity.length - 1 ? 16 : 0,
+              marginBottom: i < recentActivity.length - 1 ? 16 : 0,
+              borderBottom: i < recentActivity.length - 1 ? '1px solid var(--glass-border)' : 'none',
+            }}>
+              <div style={{ fontSize: '1rem', marginTop: 1 }}>{a.icon}</div>
+              <div>
+                <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600,
+                  fontSize: '0.9rem', color: 'var(--text-primary)' }}>{a.action}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: 2 }}>{a.time}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Quick access */}
+        <div className="glass-card" style={{ padding: 24 }}>
+          <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.95rem',
+            fontWeight: 700, color: 'var(--text-primary)', marginBottom: 20,
+            display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: 'var(--pink)' }}>✦</span> Quick Access
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {[
+              { label: 'Browse Store', icon: '🌌', action: () => navigate(PAGES.LANDING) },
+              { label: 'View Cart', icon: '🛒', action: () => {} },
+              { label: 'Edit Profile', icon: '◉', action: () => addToast('Profile editing coming soon!', 'info') },
+              { label: 'Download Manager', icon: '⬇', action: () => addToast('Downloads coming soon!', 'info') },
+            ].map((item, i) => (
+              <button
+                key={i}
+                onClick={item.action}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '12px 16px', border: '1px solid var(--glass-border)',
+                  borderRadius: 10, background: 'rgba(255,255,255,0.02)',
+                  cursor: 'pointer', transition: 'all 0.3s', textAlign: 'left',
+                  color: 'var(--text-secondary)', fontFamily: 'Rajdhani, sans-serif',
+                  fontWeight: 600, fontSize: '0.9rem', letterSpacing: '1px',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(0,243,255,0.3)';
+                  e.currentTarget.style.color = 'var(--text-primary)';
+                  e.currentTarget.style.background = 'rgba(0,243,255,0.04)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--glass-border)';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
+                }}
+              >
+                <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
+                {item.label}
+                <span style={{ marginLeft: 'auto', opacity: 0.4 }}>→</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Recommended */}
+      <div className="glass-card" style={{ padding: 24 }}>
+        <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.95rem',
+          fontWeight: 700, color: 'var(--text-primary)', marginBottom: 20,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span><span style={{ color: 'var(--purple-light)' }}>✦</span> Recommended for You</span>
+          <button
+            onClick={() => navigate(PAGES.LANDING)}
+            style={{ background: 'none', border: 'none', color: 'var(--neon)',
+              cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600,
+              fontSize: '0.82rem', letterSpacing: '1px' }}>
+            VIEW ALL →
+          </button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
+          {products.slice(0, 4).map((p) => (
+            <div
+              key={p.id}
+              onClick={() => addToCart(p)}
+              style={{
+                borderRadius: 10, overflow: 'hidden', cursor: 'pointer',
+                border: '1px solid var(--glass-border)', transition: 'all 0.3s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'rgba(0,243,255,0.3)';
+                e.currentTarget.style.transform = 'translateY(-3px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--glass-border)';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+            >
+              <img src={p.img} alt={p.name}
+                style={{ width: '100%', height: 100, objectFit: 'cover', display: 'block' }} />
+              <div style={{ padding: '10px 10px', background: 'rgba(10,22,40,0.8)' }}>
+                <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+                  fontSize: '0.82rem', color: 'var(--text-primary)',
+                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {p.name}
+                </div>
+                <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.8rem',
+                  color: 'var(--neon)', fontWeight: 700, marginTop: 4 }}>
+                  ${p.price.toFixed(2)}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ CART TAB ═══
+function CartTab() {
+  const { cart, removeFromCart, updateQty, cartTotal, clearCart } = useCart();
+  const { addToast } = useToast();
+  const { navigate, PAGES } = useNavigation();
+
+  const handleCheckout = () => {
+    if (cart.length === 0) { addToast('Cart is empty!', 'warning'); return; }
+    addToast(`Order placed! $${cartTotal.toFixed(2)} — Thank you! 🎉 (Demo Mode)`, 'success');
+    clearCart();
+  };
+
+  if (cart.length === 0) {
+    return (
+      <div className="glass-card" style={{ padding: 80, textAlign: 'center' }}>
+        <div style={{ fontSize: '4rem', marginBottom: 24 }}>🛒</div>
+        <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '1.1rem',
+          color: 'var(--text-primary)', marginBottom: 12 }}>Your Cart is Empty</div>
+        <div style={{ color: 'var(--text-muted)', marginBottom: 32, fontSize: '0.95rem' }}>
+          Explore the store and add wallpapers to your collection.
+        </div>
+        <button className="btn-primary" onClick={() => navigate(PAGES.LANDING)}>
+          ◈ Browse Store
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+        {/* Cart items */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {cart.map((item) => (
+            <div key={item.id} className="glass-card" style={{ padding: 20, display: 'flex', gap: 16 }}>
+              <img src={item.img} alt={item.name}
+                style={{ width: 100, height: 70, objectFit: 'cover', borderRadius: 10, flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+                  fontSize: '1rem', color: 'var(--text-primary)', marginBottom: 4 }}>
+                  {item.name}
+                </div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 12 }}>
+                  {item.series} · {item.resolution}
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <button
+                      onClick={() => updateQty(item.id, -1)}
+                      style={{ width: 30, height: 30, borderRadius: 8,
+                        background: 'var(--glass-light)', border: '1px solid var(--glass-border)',
+                        color: 'var(--text-primary)', cursor: 'pointer', fontSize: '1.1rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>−</button>
+                    <span style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.95rem',
+                      color: 'var(--neon)', fontWeight: 700, minWidth: 20, textAlign: 'center' }}>
+                      {item.qty}
+                    </span>
+                    <button
+                      onClick={() => updateQty(item.id, 1)}
+                      style={{ width: 30, height: 30, borderRadius: 8,
+                        background: 'var(--glass-light)', border: '1px solid var(--glass-border)',
+                        color: 'var(--text-primary)', cursor: 'pointer', fontSize: '1.1rem',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center' }}>+</button>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                    <span style={{ fontFamily: 'Orbitron, monospace', fontSize: '1.1rem',
+                      color: 'var(--neon)', fontWeight: 800 }}>
+                      ${(item.price * item.qty).toFixed(2)}
+                    </span>
+                    <button onClick={() => removeFromCart(item.id)} style={{
+                      background: 'rgba(255,45,120,0.1)', border: '1px solid rgba(255,45,120,0.2)',
+                      borderRadius: 8, padding: '6px 12px', color: 'var(--pink)',
+                      cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600,
+                      fontSize: '0.82rem', transition: 'all 0.2s',
+                    }}>REMOVE</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Order summary */}
+        <div>
+          <div className="glass-card" style={{ padding: 24, position: 'sticky', top: 90 }}>
+            <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.95rem',
+              fontWeight: 700, color: 'var(--text-primary)', marginBottom: 20 }}>
+              Order Summary
+            </div>
+
+            {cart.map((item) => (
+              <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between',
+                marginBottom: 10, fontSize: '0.88rem' }}>
+                <span style={{ color: 'var(--text-secondary)', flex: 1 }}>
+                  {item.name.split('—')[0].trim()} ×{item.qty}
+                </span>
+                <span style={{ color: 'var(--text-primary)', fontFamily: 'Exo 2' }}>
+                  ${(item.price * item.qty).toFixed(2)}
+                </span>
+              </div>
+            ))}
+
+            <div style={{ borderTop: '1px solid var(--glass-border)', marginTop: 16, paddingTop: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8,
+                fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <span>Subtotal</span>
+                <span>${cartTotal.toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8,
+                fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <span>Processing Fee</span>
+                <span style={{ color: '#00ff88' }}>FREE</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20,
+                fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <span>Tax</span>
+                <span>${(cartTotal * 0.08).toFixed(2)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between',
+                borderTop: '1px solid var(--glass-border)', paddingTop: 16, marginBottom: 20 }}>
+                <span style={{ fontFamily: 'Orbitron, monospace', fontWeight: 700,
+                  color: 'var(--text-primary)', fontSize: '0.9rem' }}>Total</span>
+                <span style={{ fontFamily: 'Orbitron, monospace', fontWeight: 800,
+                  color: 'var(--neon)', fontSize: '1.3rem', textShadow: 'var(--neon-text-glow)' }}>
+                  ${(cartTotal * 1.08).toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <button className="btn-primary btn-full" onClick={handleCheckout}>
+              ◈ Place Order
+            </button>
+            <button onClick={clearCart} style={{
+              width: '100%', marginTop: 10, background: 'none',
+              border: '1px solid rgba(255,45,120,0.2)', borderRadius: 10,
+              padding: '10px', color: 'var(--pink)', cursor: 'pointer',
+              fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '0.9rem',
+              transition: 'all 0.2s',
+            }}>
+              Clear Cart
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ LIBRARY TAB ═══
+function LibraryTab() {
+  const { navigate, PAGES } = useNavigation();
+  return (
+    <div className="glass-card" style={{ padding: 80, textAlign: 'center' }}>
+      <div style={{ fontSize: '4rem', marginBottom: 24 }}>🌌</div>
+      <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '1.1rem',
+        color: 'var(--text-primary)', marginBottom: 12 }}>Library Empty</div>
+      <div style={{ color: 'var(--text-muted)', marginBottom: 8, fontSize: '0.95rem' }}>
+        Your purchased wallpapers will appear here.
+      </div>
+      <div style={{ color: 'var(--text-muted)', marginBottom: 32, fontSize: '0.88rem' }}>
+        Complete a purchase to unlock instant downloads.
+      </div>
+      <button className="btn-primary" onClick={() => navigate(PAGES.LANDING)}>
+        ✦ Start Your Collection
+      </button>
+    </div>
+  );
+}
+
+// ═══ PROFILE TAB ═══
+function ProfileTab() {
+  const { user, logout } = useAuth();
+  const { addToast } = useToast();
+  const { navigate, PAGES } = useNavigation();
+
+  const [editing, setEditing] = useState(false);
+  const [displayName, setDisplayName] = useState(user?.name || '');
+
+  const handleSave = () => {
+    addToast('Profile updated successfully! ✦', 'success');
+    setEditing(false);
+  };
+
+  const profileFields = [
+    { label: 'Display Name', value: user?.name, icon: '✦' },
+    { label: 'Email Address', value: user?.email, icon: '◈' },
+    { label: 'Member Since', value: user?.joinedAt ? new Date(user.joinedAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'Today', icon: '◉' },
+    { label: 'Account Type', value: 'Standard', icon: '⚡' },
+    { label: 'Points Balance', value: '150 AP', icon: '★' },
+  ];
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+      {/* Avatar & info */}
+      <div className="glass-card" style={{ padding: 40, textAlign: 'center' }}>
+        <div style={{
+          width: 100, height: 100, borderRadius: '50%', margin: '0 auto 20px',
+          background: 'linear-gradient(135deg, var(--neon), var(--purple-light))',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'Orbitron, monospace', fontWeight: 900, fontSize: '2.5rem',
+          color: 'var(--bg-void)', boxShadow: 'var(--neon-glow)',
+          border: '3px solid rgba(0,243,255,0.3)',
+        }}>
+          {user?.avatar}
+        </div>
+
+        <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '1.3rem',
+          fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}>
+          {user?.name}
+        </div>
+        <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.85rem',
+          letterSpacing: '2px', color: 'var(--neon)', marginBottom: 24 }}>
+          ◈ STANDARD PILOT
+        </div>
+
+        <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginBottom: 32 }}>
+          {[['0', 'Purchases'], ['150', 'Points'], ['1', 'Day Streak']].map(([val, lab]) => (
+            <div key={lab}>
+              <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '1.3rem',
+                fontWeight: 800, color: 'var(--neon)' }}>{val}</div>
+              <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.75rem',
+                color: 'var(--text-muted)', letterSpacing: '1px' }}>{lab}</div>
+            </div>
+          ))}
+        </div>
+
+        <button className="btn-secondary btn-full"
+          onClick={() => addToast('Avatar customization coming soon!', 'info')} style={{ marginBottom: 10 }}>
+          Change Avatar
+        </button>
+        <button
+          onClick={() => { logout(); navigate(PAGES.LANDING); }}
+          style={{
+            width: '100%', padding: '12px', background: 'rgba(255,45,120,0.08)',
+            border: '1px solid rgba(255,45,120,0.2)', borderRadius: 10, color: 'var(--pink)',
+            cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+            fontSize: '0.9rem', letterSpacing: '1px', transition: 'all 0.2s',
+          }}
+        >
+          DISCONNECT / LOGOUT
+        </button>
+      </div>
+
+      {/* Profile fields */}
+      <div className="glass-card" style={{ padding: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.95rem',
+            fontWeight: 700, color: 'var(--text-primary)' }}>Profile Details</div>
+          {!editing && (
+            <button onClick={() => setEditing(true)} style={{
+              background: 'var(--neon-dim)', border: '1px solid rgba(0,243,255,0.2)',
+              borderRadius: 8, padding: '6px 16px', color: 'var(--neon)',
+              cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '0.82rem',
+            }}>EDIT</button>
+          )}
+        </div>
+
+        {editing ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="form-group">
+              <label className="form-label">Display Name</label>
+              <div className="form-input-wrapper">
+                <span className="form-input-icon">✦</span>
+                <input
+                  className="form-input"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Email (Cannot be changed)</label>
+              <div className="form-input-wrapper">
+                <span className="form-input-icon">◈</span>
+                <input className="form-input" value={user?.email} disabled
+                  style={{ opacity: 0.5 }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn-primary" style={{ flex: 1, padding: '12px' }}
+                onClick={handleSave}>Save Changes</button>
+              <button onClick={() => setEditing(false)} style={{
+                flex: 1, padding: '12px', background: 'none',
+                border: '1px solid var(--glass-border)', borderRadius: 10,
+                color: 'var(--text-secondary)', cursor: 'pointer',
+                fontFamily: 'Rajdhani, sans-serif', fontWeight: 600,
+              }}>Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {profileFields.map((f, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '14px 0',
+                borderBottom: i < profileFields.length - 1 ? '1px solid var(--glass-border)' : 'none',
+              }}>
+                <span style={{ color: 'var(--neon)', width: 16, textAlign: 'center' }}>{f.icon}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.78rem',
+                    letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: 2 }}>
+                    {f.label}
+                  </div>
+                  <div style={{ fontFamily: 'Exo 2, sans-serif', fontSize: '0.92rem',
+                    color: 'var(--text-primary)', fontWeight: 500 }}>
+                    {f.value}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══ MAIN DASHBOARD ═══
+export default function Dashboard() {
+  const { user, logout } = useAuth();
+  const { navigate, PAGES } = useNavigation();
+  const { cartCount } = useCart();
+  const [activeTab, setActiveTab] = useState('overview');
+
+  if (!user) {
+    navigate(PAGES.LOGIN);
+    return null;
+  }
+
+  const timeOfDay = () => {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good Morning';
+    if (h < 18) return 'Good Afternoon';
+    return 'Good Evening';
+  };
+
+  return (
+    <div className="dashboard-page">
+      {/* Navbar strip */}
+      <nav className="navbar">
+        <div className="nav-logo" onClick={() => navigate(PAGES.LANDING)}>
+          ANI<span>CART</span>
+        </div>
+        <ul className="nav-links">
+          <li><button className="nav-btn-outline" onClick={() => navigate(PAGES.LANDING)}>← Store</button></li>
+          <li>
+            <button style={{
+              background: 'none', border: 'none', cursor: 'pointer', display: 'flex',
+              alignItems: 'center', gap: 8, color: 'var(--text-secondary)',
+              fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, padding: '8px',
+            }} onClick={logout}>
+              <div style={{
+                width: 30, height: 30, borderRadius: '50%',
+                background: 'linear-gradient(135deg, var(--neon), var(--purple-light))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '0.8rem',
+                color: 'var(--bg-void)',
+              }}>
+                {user.avatar}
+              </div>
+              {user.name}
+            </button>
+          </li>
+        </ul>
+      </nav>
+
+      {/* Dashboard header */}
+      <div className="dashboard-header">
+        <div>
+          <div className="dashboard-greeting">{timeOfDay()}, Pilot ◈</div>
+          <div className="dashboard-title">Welcome to Your Databank, {user.name}</div>
+          <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.9rem',
+            color: 'var(--text-muted)', marginTop: 8 }}>
+            {user.email} · Standard Account
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <div style={{
+            padding: '10px 20px', background: 'var(--neon-dim)',
+            border: '1px solid rgba(0,243,255,0.2)', borderRadius: 10,
+            fontFamily: 'Orbitron, monospace', fontSize: '0.8rem', fontWeight: 700,
+            color: 'var(--neon)', display: 'flex', alignItems: 'center', gap: 8,
+          }}>
+            🛒 {cartCount} items
+          </div>
+          <button className="btn-primary" onClick={() => navigate(PAGES.LANDING)}>
+            ◈ Browse Store
+          </button>
+        </div>
+      </div>
+
+      {/* Nav tabs */}
+      <DashboardNav active={activeTab} setActive={setActiveTab} />
+
+      {/* Tab content */}
+      {activeTab === 'overview' && <OverviewTab />}
+      {activeTab === 'cart'     && <CartTab />}
+      {activeTab === 'library'  && <LibraryTab />}
+      {activeTab === 'profile'  && <ProfileTab />}
+    </div>
+  );
+}
+
+
+--------------------------------------------------------------------------------
+FILE: src/pages/LandingPage.jsx
+--------------------------------------------------------------------------------
+
+import React, { useState, useEffect, useRef } from 'react';
+import { useAuth, useCart, useToast, useNavigation } from '../App';
+
+// ═══ NAVBAR ═══
+function Navbar({ cartOpen, setCartOpen }) {
+  const { user, logout } = useAuth();
+  const { cartCount } = useCart();
+  const { navigate, PAGES } = useNavigation();
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 20);
+    window.addEventListener('scroll', handler);
+    return () => window.removeEventListener('scroll', handler);
+  }, []);
+
+  return (
+    <nav className="navbar" style={{
+      boxShadow: scrolled ? '0 4px 30px rgba(0,0,0,0.4)' : 'none',
+      borderBottomColor: scrolled ? 'rgba(0,243,255,0.15)' : 'rgba(0,243,255,0.08)',
+    }}>
+      {/* Logo */}
+      <div className="nav-logo" onClick={() => navigate(PAGES.LANDING)}>
+        ANI<span>CART</span>
+      </div>
+
+      {/* Desktop links */}
+      <ul className="nav-links" style={{ display: window.innerWidth < 600 && mobileOpen ? 'none' : 'flex' }}>
+        <li><a onClick={() => navigate(PAGES.LANDING)}>Home</a></li>
+        <li><a onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}>Store</a></li>
+        <li><a onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}>Features</a></li>
+
+        {user ? (
+          <>
+            <li>
+              <button className="nav-btn-outline" onClick={() => navigate(PAGES.DASHBOARD)}>
+                Dashboard
+              </button>
+            </li>
+            <li>
+              <button
+                onClick={() => setCartOpen(!cartOpen)}
+                style={{
+                  position: 'relative', background: 'none', border: '1px solid var(--glass-border)',
+                  borderRadius: 8, padding: '8px 16px', color: 'var(--text-secondary)',
+                  cursor: 'pointer', transition: 'all 0.3s', fontFamily: 'Rajdhani, sans-serif',
+                  fontWeight: 600, fontSize: '0.95rem', letterSpacing: '1px', textTransform: 'uppercase',
+                }}
+              >
+                🛒 Cart
+                {cartCount > 0 && (
+                  <span style={{
+                    position: 'absolute', top: -6, right: -6, width: 18, height: 18,
+                    background: 'var(--pink)', borderRadius: '50%', fontSize: '0.7rem',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: 'Orbitron, monospace', fontWeight: 700, color: 'white',
+                  }}>
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
+              </button>
+            </li>
+            <li>
+              <button
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', gap: 8, color: 'var(--text-secondary)',
+                  fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '0.95rem',
+                  letterSpacing: '1px', textTransform: 'uppercase', padding: '8px 8px',
+                }}
+                onClick={logout}
+              >
+                <div style={{
+                  width: 30, height: 30, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, var(--neon), var(--purple-light))',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '0.8rem',
+                  color: 'var(--bg-void)',
+                }}>
+                  {user.avatar}
+                </div>
+                Logout
+              </button>
+            </li>
+          </>
+        ) : (
+          <>
+            <li><button className="nav-btn-outline" onClick={() => navigate(PAGES.LOGIN)}>Login</button></li>
+            <li><button className="nav-btn-solid" onClick={() => navigate(PAGES.SIGNUP)}>Sign Up</button></li>
+          </>
+        )}
+      </ul>
+    </nav>
+  );
+}
+
+// ═══ CART SIDEBAR ═══
+function CartSidebar({ open, onClose }) {
+  const { cart, removeFromCart, updateQty, cartTotal, clearCart } = useCart();
+  const { navigate, PAGES } = useNavigation();
+  const { user } = useAuth();
+  const { addToast } = useToast();
+
+  const handleCheckout = () => {
+    if (!user) { navigate(PAGES.LOGIN); addToast('Please log in to checkout.', 'warning'); return; }
+    if (cart.length === 0) { addToast('Your cart is empty!', 'warning'); return; }
+    addToast(`Order placed! Total: $${cartTotal.toFixed(2)} 🎉 (Demo Mode)`, 'success');
+    clearCart();
+    onClose();
+  };
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        onClick={onClose}
+        style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200,
+          opacity: open ? 1 : 0, pointerEvents: open ? 'all' : 'none', transition: 'opacity 0.3s',
+        }}
+      />
+      {/* Drawer */}
+      <div style={{
+        position: 'fixed', top: 0, right: 0, bottom: 0, width: 380, zIndex: 201,
+        background: 'rgba(5,13,31,0.98)', backdropFilter: 'blur(20px)',
+        borderLeft: '1px solid var(--glass-border)',
+        transform: open ? 'translateX(0)' : 'translateX(100%)',
+        transition: 'transform 0.4s cubic-bezier(0.4,0,0.2,1)',
+        display: 'flex', flexDirection: 'column',
+      }}>
+        {/* Header */}
+        <div style={{ padding: '24px', borderBottom: '1px solid var(--glass-border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div>
+            <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '1rem', fontWeight: 700,
+              color: 'var(--neon)' }}>Shopping Cart</div>
+            <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.8rem',
+              letterSpacing: '2px', color: 'var(--text-muted)', marginTop: 2 }}>
+              DATABANK ACQUISITION
+            </div>
+          </div>
+          <button onClick={onClose} style={{
+            background: 'none', border: '1px solid var(--glass-border)', borderRadius: 8,
+            width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1rem', transition: 'all 0.2s',
+          }}>✕</button>
+        </div>
+
+        {/* Items */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+          {cart.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+              <div style={{ fontSize: '3rem', marginBottom: 16 }}>🛒</div>
+              <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.9rem',
+                color: 'var(--text-muted)', marginBottom: 8 }}>Cart is empty</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                Add some wallpapers from the store!
+              </div>
+            </div>
+          ) : (
+            cart.map((item) => (
+              <div key={item.id} style={{
+                display: 'flex', gap: 12, padding: '12px', borderRadius: 12,
+                background: 'rgba(15,23,42,0.5)', border: '1px solid var(--glass-border)',
+                marginBottom: 10,
+              }}>
+                <img src={item.img} alt={item.name} style={{
+                  width: 64, height: 48, objectFit: 'cover', borderRadius: 8, flexShrink: 0,
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700,
+                    fontSize: '0.9rem', color: 'var(--text-primary)',
+                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {item.name}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginBottom: 8 }}>
+                    {item.series}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <button onClick={() => updateQty(item.id, -1)} style={{
+                        width: 24, height: 24, borderRadius: 6, background: 'var(--glass-light)',
+                        border: '1px solid var(--glass-border)', color: 'var(--text-primary)',
+                        cursor: 'pointer', fontSize: '0.9rem', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>−</button>
+                      <span style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.85rem',
+                        color: 'var(--neon)', minWidth: 16, textAlign: 'center' }}>{item.qty}</span>
+                      <button onClick={() => updateQty(item.id, 1)} style={{
+                        width: 24, height: 24, borderRadius: 6, background: 'var(--glass-light)',
+                        border: '1px solid var(--glass-border)', color: 'var(--text-primary)',
+                        cursor: 'pointer', fontSize: '0.9rem', display: 'flex',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>+</button>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.9rem',
+                        color: 'var(--neon)', fontWeight: 700 }}>
+                        ${(item.price * item.qty).toFixed(2)}
+                      </span>
+                      <button onClick={() => removeFromCart(item.id)} style={{
+                        background: 'none', border: 'none', color: 'var(--pink)',
+                        cursor: 'pointer', fontSize: '0.85rem', padding: '2px 4px',
+                      }}>✕</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Footer */}
+        {cart.length > 0 && (
+          <div style={{ padding: '16px', borderTop: '1px solid var(--glass-border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16,
+              alignItems: 'center' }}>
+              <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600,
+                color: 'var(--text-secondary)', letterSpacing: '1px', fontSize: '0.9rem' }}>TOTAL</span>
+              <span style={{ fontFamily: 'Orbitron, monospace', fontSize: '1.3rem',
+                fontWeight: 800, color: 'var(--neon)', textShadow: 'var(--neon-text-glow)' }}>
+                ${cartTotal.toFixed(2)}
+              </span>
+            </div>
+            <button className="btn-primary btn-full" onClick={handleCheckout}>
+              ◈ Proceed to Checkout
+            </button>
+            <button onClick={clearCart} style={{
+              width: '100%', marginTop: 8, background: 'none', border: 'none',
+              color: 'var(--text-muted)', cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif',
+              fontSize: '0.85rem', padding: '8px', transition: 'all 0.2s',
+            }}>
+              Clear Cart
+            </button>
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+// ═══ PRODUCT CARD ═══
+function ProductCard({ product }) {
+  const { addToCart } = useCart();
+  const { user } = useAuth();
+  const { navigate, PAGES } = useNavigation();
+  const { addToast } = useToast();
+
+  const handleAdd = () => {
+    if (!user) {
+      addToast('Please log in to add items to cart!', 'warning');
+      navigate(PAGES.LOGIN);
+      return;
+    }
+    addToCart(product);
+  };
+
+  return (
+    <div className="glass-card product-card">
+      <div className="product-img-wrap">
+        <img src={product.img} alt={product.name} loading="lazy" />
+        {product.badge && (
+          <div className={`product-badge ${product.badgeType === 'pink' ? 'pink' : ''}`}>
+            {product.badge}
+          </div>
+        )}
+        <div className="product-overlay">
+          <button className="product-quick-add" onClick={handleAdd}>
+            + ADD TO CART
+          </button>
+        </div>
+      </div>
+      <div className="product-info">
+        <div className="product-name">{product.name}</div>
+        <div className="product-series">{product.series} · {product.resolution}</div>
+        <div className="product-footer">
+          <div className="product-price">${product.price.toFixed(2)}</div>
+          <div className="product-rating">
+            ★ {product.rating}
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({product.reviews})</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══ FEATURES DATA ═══
+const FEATURES = [
+  {
+    icon: '⚡', color: 'neon',
+    title: 'Ultra HD Wallpapers',
+    desc: 'Download stunning 4K and 8K anime wallpapers crafted by top artists from around the world.',
+  },
+  {
+    icon: '🔐', color: 'pink',
+    title: 'Secure Authentication',
+    desc: 'Military-grade encryption protects your account and payment data. Your privacy is paramount.',
+  },
+  {
+    icon: '🛒', color: 'purple',
+    title: 'Smart Cart System',
+    desc: 'Add, remove, and manage your picks instantly. Lightning-fast checkout with one tap.',
+  },
+  {
+    icon: '🌌', color: 'neon',
+    title: 'New Drops Weekly',
+    desc: 'Fresh anime artwork added every week. Be the first to grab exclusive limited edition packs.',
+  },
+  {
+    icon: '📱', color: 'pink',
+    title: 'Cross-Device Access',
+    desc: 'Your collection syncs seamlessly across desktop, tablet, and mobile. Always with you.',
+  },
+  {
+    icon: '♾️', color: 'purple',
+    title: 'Lifetime License',
+    desc: 'Pay once, use forever. Every wallpaper comes with a personal use license.',
+  },
+];
+
+// ═══ COUNTER ANIMATION ═══
+function AnimatedCounter({ target, suffix = '' }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !started.current) {
+        started.current = true;
+        let start = 0;
+        const step = target / 60;
+        const timer = setInterval(() => {
+          start += step;
+          if (start >= target) { setCount(target); clearInterval(timer); }
+          else setCount(Math.floor(start));
+        }, 16);
+      }
+    }, { threshold: 0.5 });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, [target]);
+
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
+}
+
+// ═══ MAIN LANDING PAGE ═══
+export default function LandingPage() {
+  const { navigate, PAGES } = useNavigation();
+  const { products } = useCart();
+  const [cartOpen, setCartOpen] = useState(false);
+  const [activeFilter, setActiveFilter] = useState('All');
+
+  const filters = ['All', 'Jujutsu Kaisen', 'Attack on Titan', 'Demon Slayer', 'One Piece', 'Naruto'];
+
+  const filteredProducts = activeFilter === 'All'
+    ? products
+    : products.filter((p) => p.series === activeFilter);
+
+  return (
+    <div className="landing-page">
+      <Navbar cartOpen={cartOpen} setCartOpen={setCartOpen} />
+      <CartSidebar open={cartOpen} onClose={() => setCartOpen(false)} />
+
+      {/* ─── HERO ─── */}
+      <section className="hero-section">
+        <div className="hero-content">
+          <div className="hero-badge">
+            <div className="hero-badge-dot" />
+            ◈ The Ultimate Anime Store is Live
+          </div>
+
+          <h1 className="hero-title">
+            <span className="hero-title-line1">Enter the</span>
+            <span className="hero-title-line2">Anime Universe</span>
+          </h1>
+
+          <p className="hero-desc">
+            Premium anime wallpapers, merchandise, and digital art — curated for true fans.
+            Your gateway to the most immersive anime shopping experience on the planet.
+          </p>
+
+          <div className="hero-cta">
+            <button
+              className="btn-primary btn-lg"
+              onClick={() => document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              ◈ Explore Store
+            </button>
+            <button
+              className="btn-secondary btn-lg"
+              onClick={() => navigate(PAGES.SIGNUP)}
+            >
+              Create Account →
+            </button>
+          </div>
+
+          {/* Stats */}
+          <div className="hero-stats">
+            <div className="stat-item">
+              <span className="stat-number"><AnimatedCounter target={50} suffix="K+" /></span>
+              <span className="stat-label">Wallpapers</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-number"><AnimatedCounter target={200} suffix="K+" /></span>
+              <span className="stat-label">Happy Fans</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-number"><AnimatedCounter target={500} suffix="+" /></span>
+              <span className="stat-label">Anime Series</span>
+            </div>
+            <div className="stat-item">
+              <span className="stat-number"><AnimatedCounter target={4} suffix="K" /></span>
+              <span className="stat-label">Resolution</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Decorative orbs */}
+        <div style={{ position: 'absolute', top: '20%', right: '8%', width: 200, height: 200,
+          borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,243,255,0.06) 0%, transparent 70%)',
+          animation: 'drift 12s ease-in-out infinite', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '15%', left: '5%', width: 150, height: 150,
+          borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,45,120,0.06) 0%, transparent 70%)',
+          animation: 'drift 8s ease-in-out infinite 4s', pointerEvents: 'none' }} />
+      </section>
+
+      {/* ─── FEATURES ─── */}
+      <section className="section" id="features">
+        <div className="section-header">
+          <div className="section-tag">◈ Why AniCart</div>
+          <h2 className="section-title">Built for <span>True Fans</span></h2>
+          <p className="section-desc">
+            Every feature engineered to give you the best anime shopping experience in the universe.
+          </p>
+        </div>
+
+        <div className="features-grid">
+          {FEATURES.map((f, i) => (
+            <div key={i} className="glass-card feature-card">
+              <div className={`feature-icon-wrap ${f.color}`}>{f.icon}</div>
+              <div className="feature-title">{f.title}</div>
+              <div className="feature-desc">{f.desc}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ─── PRODUCTS ─── */}
+      <div className="products-section" id="products">
+        <div className="products-inner">
+          <div className="section-header">
+            <div className="section-tag">◈ Digital Collection</div>
+            <h2 className="section-title">Featured <span>Wallpapers</span></h2>
+            <p className="section-desc">
+              Hand-picked 4K artwork from the most iconic anime series. Hover to quick-add.
+            </p>
+          </div>
+
+          {/* Filter tabs */}
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 40 }}>
+            {filters.map((f) => (
+              <button
+                key={f}
+                onClick={() => setActiveFilter(f)}
+                style={{
+                  padding: '8px 20px',
+                  borderRadius: 50,
+                  border: '1px solid',
+                  borderColor: activeFilter === f ? 'var(--neon)' : 'var(--glass-border)',
+                  background: activeFilter === f ? 'var(--neon-dim)' : 'transparent',
+                  color: activeFilter === f ? 'var(--neon)' : 'var(--text-muted)',
+                  fontFamily: 'Rajdhani, sans-serif',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  letterSpacing: '1px',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          <div className="products-grid">
+            {filteredProducts.map((p) => (
+              <ProductCard key={p.id} product={p} />
+            ))}
+          </div>
+
+          {filteredProducts.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-muted)',
+              fontFamily: 'Rajdhani, sans-serif', fontSize: '1rem', letterSpacing: '2px' }}>
+              NO WALLPAPERS FOUND FOR THIS FILTER
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ─── MARQUEE TICKER ─── */}
+      <div style={{ overflow: 'hidden', borderTop: '1px solid var(--glass-border)',
+        borderBottom: '1px solid var(--glass-border)', padding: '14px 0',
+        background: 'rgba(0,243,255,0.02)' }}>
+        <div style={{
+          display: 'flex', gap: 60, animation: 'marquee 20s linear infinite',
+          whiteSpace: 'nowrap', width: 'max-content',
+        }}>
+          {Array(3).fill(
+            ['◈ JUJUTSU KAISEN', '✦ DEMON SLAYER', '◈ ATTACK ON TITAN', '✦ ONE PIECE',
+             '◈ NARUTO', '✦ MY HERO ACADEMIA', '◈ BLEACH', '✦ CHAINSAW MAN', '◈ SPY × FAMILY']
+          ).flat().map((t, i) => (
+            <span key={i} style={{
+              fontFamily: 'Orbitron, monospace', fontSize: '0.75rem', fontWeight: 600,
+              letterSpacing: '3px', color: i % 2 === 0 ? 'var(--neon)' : 'var(--text-muted)',
+              opacity: 0.7,
+            }}>{t}</span>
+          ))}
+        </div>
+        <style>{`@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-33.33%); } }`}</style>
+      </div>
+
+      {/* ─── CTA BANNER ─── */}
+      <div className="cta-section">
+        <div className="glass-card cta-card">
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 2,
+            background: 'linear-gradient(90deg, transparent, var(--neon), var(--pink), transparent)',
+          }} />
+          <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.8rem', letterSpacing: '4px',
+            textTransform: 'uppercase', color: 'var(--neon)', marginBottom: 16 }}>
+            ◈ Limited Time Access
+          </div>
+          <h2 className="cta-title">
+            Join 200,000+ Anime Fans<br />in the Databank
+          </h2>
+          <p className="cta-desc">
+            Sign up today and get your first wallpaper pack absolutely free. 
+            No credit card required. Cancel anytime.
+          </p>
+          <div className="cta-buttons">
+            <button className="btn-primary btn-lg" onClick={() => navigate(PAGES.SIGNUP)}>
+              ✦ Start Free Today
+            </button>
+            <button className="btn-secondary btn-lg" onClick={() => navigate(PAGES.LOGIN)}>
+              Sign In →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── FOOTER ─── */}
+      <footer className="footer">
+        <div style={{ position: 'absolute', top: 0, left: '10%', right: '10%', height: 1,
+          background: 'linear-gradient(90deg, transparent, var(--glass-border), transparent)' }} />
+        <div className="footer-logo">ANI<span>CART</span></div>
+        <div className="footer-tagline">
+          "Enter the Databank. Initiate Link. Explore the Anime Universe." 🌌
+        </div>
+        <ul className="footer-links">
+          {['Home', 'Store', 'Features', 'About', 'Contact', 'Privacy', 'Terms'].map((link) => (
+            <li key={link}>
+              <a
+                onClick={() => {
+                  if (link === 'Home') navigate(PAGES.LANDING);
+                  else if (link === 'Store')
+                    document.getElementById('products')?.scrollIntoView({ behavior: 'smooth' });
+                  else if (link === 'Features')
+                    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                style={{ cursor: 'pointer' }}
+              >
+                {link}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div className="footer-copy">
+          © 2024 AniCart by Ashwin · Built with React + Node.js · All rights reserved
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+
+--------------------------------------------------------------------------------
+FILE: src/pages/LoginPage.jsx
+--------------------------------------------------------------------------------
+
+import React, { useState, useEffect } from 'react';
+import { useAuth, useToast, useNavigation } from '../App';
+
+const DEMO_USERS = [
+  { email: 'ashwin@anicart.com', password: 'Anime@123', name: 'Ashwin', avatar: 'A' },
+  { email: 'demo@anicart.com',   password: 'Demo@1234', name: 'Demo User', avatar: 'D' },
+];
+
+export default function LoginPage() {
+  const { login, user } = useAuth();
+  const { addToast } = useToast();
+  const { navigate, PAGES } = useNavigation();
+
+  const [form, setForm] = useState({ email: '', password: '' });
+  const [errors, setErrors] = useState({});
+  const [showPwd, setShowPwd] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState(0);
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) navigate(PAGES.DASHBOARD);
+  }, [user]);
+
+  // Pre-fill from saved email
+  useEffect(() => {
+    const saved = localStorage.getItem('anicart_remember_email');
+    if (saved) { setForm((p) => ({ ...p, email: saved })); setRememberMe(true); }
+  }, []);
+
+  const validate = () => {
+    const e = {};
+    if (!form.email.trim()) e.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email';
+    if (!form.password) e.password = 'Password is required';
+    else if (form.password.length < 6) e.password = 'Password must be at least 6 characters';
+    return e;
+  };
+
+  const handleChange = (field) => (e) => {
+    setForm((p) => ({ ...p, [field]: e.target.value }));
+    if (errors[field]) setErrors((p) => ({ ...p, [field]: '' }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    if (loginAttempts >= 5) {
+      addToast('Too many attempts. Please wait a moment.', 'error'); return;
+    }
+
+    setLoading(true);
+
+    // Simulated API delay
+    await new Promise((r) => setTimeout(r, 1400));
+
+    // Check against demo users
+    const matched = DEMO_USERS.find(
+      (u) => u.email.toLowerCase() === form.email.toLowerCase() && u.password === form.password
+    );
+
+    if (matched) {
+      if (rememberMe) localStorage.setItem('anicart_remember_email', form.email);
+      else localStorage.removeItem('anicart_remember_email');
+      login({ name: matched.name, email: matched.email, avatar: matched.avatar });
+      addToast(`Welcome back, ${matched.name}! ⚡`, 'success');
+      navigate(PAGES.DASHBOARD);
+    } else {
+      setLoginAttempts((p) => p + 1);
+      setErrors({ password: 'Invalid email or password. Try demo@anicart.com / Demo@1234' });
+      addToast('Authentication failed. Check your credentials.', 'error');
+    }
+
+    setLoading(false);
+  };
+
+  const handleDemoLogin = async () => {
+    setLoading(true);
+    setForm({ email: 'demo@anicart.com', password: 'Demo@1234' });
+    await new Promise((r) => setTimeout(r, 900));
+    login({ name: 'Demo User', email: 'demo@anicart.com', avatar: 'D' });
+    addToast('Logged in as Demo User! Explore freely. ✦', 'success');
+    navigate(PAGES.DASHBOARD);
+    setLoading(false);
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-container">
+
+        {/* Decorative lines */}
+        <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)',
+          width: 1, height: 60, background: 'linear-gradient(to bottom, transparent, rgba(0,243,255,0.4))' }} />
+
+        <div className="glass-card auth-card animate-fade-up">
+          {/* Header */}
+          <div className="auth-header">
+            <div className="auth-logo">ANI<span>CART</span></div>
+            <div className="auth-subtitle">◈ Databank Access Terminal ◈</div>
+            <div style={{ marginTop: 20 }}>
+              <div className="auth-title">Initiate Link</div>
+              <div className="auth-desc">Sign in to access your anime universe</div>
+            </div>
+          </div>
+
+          {/* Demo login */}
+          <button className="auth-social-btn" onClick={handleDemoLogin} disabled={loading}>
+            <span style={{ fontSize: '1.1rem' }}>⚡</span>
+            Enter with Demo Account
+          </button>
+
+          {/* Divider */}
+          <div className="auth-divider" style={{ margin: '20px 0' }}>
+            <div className="auth-divider-line" />
+            <span className="auth-divider-text">or continue with email</span>
+            <div className="auth-divider-line" />
+          </div>
+
+          {/* Form */}
+          <form className="auth-form" onSubmit={handleSubmit} noValidate>
+            {/* Email */}
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <div className="form-input-wrapper">
+                <span className="form-input-icon">◈</span>
+                <input
+                  className="form-input"
+                  type="email"
+                  placeholder="pilot@anicart.com"
+                  value={form.email}
+                  onChange={handleChange('email')}
+                  autoComplete="email"
+                  disabled={loading}
+                />
+              </div>
+              {errors.email && <div className="form-error">⚠ {errors.email}</div>}
+            </div>
+
+            {/* Password */}
+            <div className="form-group">
+              <label className="form-label">Password</label>
+              <div className="form-input-wrapper">
+                <span className="form-input-icon">◉</span>
+                <input
+                  className="form-input"
+                  type={showPwd ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={handleChange('password')}
+                  autoComplete="current-password"
+                  disabled={loading}
+                />
+                <button
+                  type="button"
+                  className="toggle-password"
+                  onClick={() => setShowPwd(!showPwd)}
+                  tabIndex={-1}
+                >
+                  {showPwd ? '◎' : '●'}
+                </button>
+              </div>
+              {errors.password && <div className="form-error">⚠ {errors.password}</div>}
+            </div>
+
+            {/* Remember me & forgot */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  style={{ accentColor: 'var(--neon)', width: 14, height: 14 }}
+                />
+                <span style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+                  Remember me
+                </span>
+              </label>
+              <button
+                type="button"
+                style={{ background: 'none', border: 'none', color: 'var(--neon)', fontSize: '0.88rem',
+                  fontFamily: 'Rajdhani, sans-serif', cursor: 'pointer', fontWeight: 600 }}
+                onClick={() => addToast('Password reset link sent to your email! (demo mode)', 'info')}
+              >
+                Forgot Password?
+              </button>
+            </div>
+
+            {/* Submit */}
+            <button
+              type="submit"
+              className="btn-primary btn-full"
+              disabled={loading}
+              style={{ marginTop: 8 }}
+            >
+              {loading ? (
+                <><span className="loading-spinner" /> Authenticating...</>
+              ) : (
+                <>◈ Initiate Link</>
+              )}
+            </button>
+          </form>
+
+          {/* Footer */}
+          <div className="auth-footer">
+            No account yet?{' '}
+            <span className="auth-link" onClick={() => navigate(PAGES.SIGNUP)}>
+              Create Profile →
+            </span>
+          </div>
+
+          {/* Back to landing */}
+          <div style={{ textAlign: 'center', marginTop: 12 }}>
+            <span
+              className="auth-link"
+              onClick={() => navigate(PAGES.LANDING)}
+              style={{ fontSize: '0.82rem', color: 'var(--text-muted)', opacity: 0.7 }}
+            >
+              ← Back to Landing
+            </span>
+          </div>
+
+          {/* Hint */}
+          <div style={{ marginTop: 24, padding: '12px 16px', background: 'rgba(0,243,255,0.04)',
+            border: '1px solid rgba(0,243,255,0.12)', borderRadius: 10 }}>
+            <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.78rem',
+              letterSpacing: '1px', color: 'var(--text-muted)', textAlign: 'center' }}>
+              DEMO CREDENTIALS
+            </div>
+            <div style={{ fontFamily: 'Exo 2, sans-serif', fontSize: '0.82rem',
+              color: 'var(--neon)', textAlign: 'center', marginTop: 4 }}>
+              demo@anicart.com &nbsp;/&nbsp; Demo@1234
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+--------------------------------------------------------------------------------
+FILE: src/pages/SignupPage.jsx
+--------------------------------------------------------------------------------
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useAuth, useToast, useNavigation } from '../App';
+
+function getPasswordStrength(pwd) {
+  let score = 0;
+  if (!pwd) return { score: 0, label: '', color: '#475569', width: '0%' };
+  if (pwd.length >= 8) score++;
+  if (pwd.length >= 12) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^A-Za-z0-9]/.test(pwd)) score++;
+
+  const levels = [
+    { label: '', color: '#475569', width: '0%' },
+    { label: 'Weak', color: '#ff2d78', width: '20%' },
+    { label: 'Fair', color: '#ffd700', width: '40%' },
+    { label: 'Good', color: '#00ccff', width: '60%' },
+    { label: 'Strong', color: '#00f3ff', width: '80%' },
+    { label: 'Excellent', color: '#00ff88', width: '100%' },
+  ];
+  return levels[Math.min(score, 5)];
+}
+
+export default function SignupPage() {
+  const { login, user } = useAuth();
+  const { addToast } = useToast();
+  const { navigate, PAGES } = useNavigation();
+
+  const [form, setForm] = useState({
+    name: '', email: '', password: '', confirmPassword: '', terms: false,
+  });
+  const [errors, setErrors] = useState({});
+  const [showPwd, setShowPwd] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState(1); // 2-step signup
+  const strength = getPasswordStrength(form.password);
+
+  useEffect(() => { if (user) navigate(PAGES.DASHBOARD); }, [user]);
+
+  const validateStep1 = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Name is required';
+    else if (form.name.trim().length < 2) e.name = 'Name must be at least 2 characters';
+    if (!form.email.trim()) e.email = 'Email is required';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Enter a valid email';
+    return e;
+  };
+
+  const validateStep2 = () => {
+    const e = {};
+    if (!form.password) e.password = 'Password is required';
+    else if (form.password.length < 8) e.password = 'Password must be at least 8 characters';
+    else if (!/[A-Z]/.test(form.password)) e.password = 'Include at least one uppercase letter';
+    else if (!/[0-9]/.test(form.password)) e.password = 'Include at least one number';
+    if (form.password !== form.confirmPassword) e.confirmPassword = 'Passwords do not match';
+    if (!form.terms) e.terms = 'You must accept the terms to continue';
+    return e;
+  };
+
+  const handleChange = (field) => (e) => {
+    const val = field === 'terms' ? e.target.checked : e.target.value;
+    setForm((p) => ({ ...p, [field]: val }));
+    if (errors[field]) setErrors((p) => ({ ...p, [field]: '' }));
+  };
+
+  const handleStep1 = (e) => {
+    e.preventDefault();
+    const errs = validateStep1();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    // Check if email already "exists" (demo)
+    const saved = localStorage.getItem('anicart_user');
+    if (saved) {
+      const u = JSON.parse(saved);
+      if (u.email?.toLowerCase() === form.email.toLowerCase()) {
+        setErrors({ email: 'This email is already registered. Try logging in.' });
+        return;
+      }
+    }
+    setErrors({});
+    setStep(2);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = validateStep2();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 1600));
+
+    const avatar = form.name.trim()[0].toUpperCase();
+    const newUser = {
+      name: form.name.trim(),
+      email: form.email.toLowerCase(),
+      avatar,
+      joinedAt: new Date().toISOString(),
+    };
+
+    login(newUser);
+    addToast(`Welcome to AniCart, ${newUser.name}! Your account has been created. ✦`, 'success');
+    navigate(PAGES.DASHBOARD);
+    setLoading(false);
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-container">
+
+        <div style={{ position: 'absolute', top: -60, left: '50%', transform: 'translateX(-50%)',
+          width: 1, height: 60, background: 'linear-gradient(to bottom, transparent, rgba(255,45,120,0.4))' }} />
+
+        <div className="glass-card auth-card animate-fade-up">
+
+          {/* Step indicator */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 28 }}>
+            {[1, 2].map((s) => (
+              <div
+                key={s}
+                style={{
+                  flex: 1, height: 3, borderRadius: 2,
+                  background: s <= step
+                    ? 'linear-gradient(90deg, var(--neon), var(--pink))'
+                    : 'var(--glass-border)',
+                  transition: 'all 0.5s ease',
+                }}
+              />
+            ))}
+          </div>
+
+          {/* Header */}
+          <div className="auth-header">
+            <div className="auth-logo">ANI<span>CART</span></div>
+            <div className="auth-subtitle">◈ New Profile Initialization ◈</div>
+            <div style={{ marginTop: 20 }}>
+              <div className="auth-title">
+                {step === 1 ? 'Create Your Profile' : 'Secure Your Account'}
+              </div>
+              <div className="auth-desc">
+                {step === 1
+                  ? 'Step 1 of 2 — Identity Configuration'
+                  : 'Step 2 of 2 — Security Protocol Setup'}
+              </div>
+            </div>
+          </div>
+
+          {/* ─── STEP 1 ─── */}
+          {step === 1 && (
+            <form className="auth-form" onSubmit={handleStep1} noValidate>
+              {/* Name */}
+              <div className="form-group">
+                <label className="form-label">Display Name</label>
+                <div className="form-input-wrapper">
+                  <span className="form-input-icon">✦</span>
+                  <input
+                    className="form-input"
+                    type="text"
+                    placeholder="Anime Pilot"
+                    value={form.name}
+                    onChange={handleChange('name')}
+                    autoComplete="name"
+                  />
+                </div>
+                {errors.name && <div className="form-error">⚠ {errors.name}</div>}
+              </div>
+
+              {/* Email */}
+              <div className="form-group">
+                <label className="form-label">Email Address</label>
+                <div className="form-input-wrapper">
+                  <span className="form-input-icon">◈</span>
+                  <input
+                    className="form-input"
+                    type="email"
+                    placeholder="pilot@anicart.com"
+                    value={form.email}
+                    onChange={handleChange('email')}
+                    autoComplete="email"
+                  />
+                </div>
+                {errors.email && <div className="form-error">⚠ {errors.email}</div>}
+              </div>
+
+              <button type="submit" className="btn-primary btn-full" style={{ marginTop: 8 }}>
+                Continue → Security Setup
+              </button>
+
+              {/* Back */}
+              <div style={{ textAlign: 'center' }}>
+                <span
+                  style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.88rem',
+                    color: 'var(--text-muted)', cursor: 'pointer', transition: 'all 0.2s' }}
+                  onClick={() => navigate(PAGES.LOGIN)}
+                >
+                  Already have an account?{' '}
+                  <span style={{ color: 'var(--neon)', fontWeight: 600 }}>Sign In →</span>
+                </span>
+              </div>
+            </form>
+          )}
+
+          {/* ─── STEP 2 ─── */}
+          {step === 2 && (
+            <form className="auth-form" onSubmit={handleSubmit} noValidate>
+              {/* Identity summary */}
+              <div style={{ padding: '12px 16px', background: 'rgba(0,243,255,0.04)',
+                border: '1px solid rgba(0,243,255,0.15)', borderRadius: 10, marginTop: -4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 38, height: 38, borderRadius: '50%',
+                    background: 'linear-gradient(135deg, var(--neon), var(--purple-light))',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '1rem',
+                    color: 'var(--bg-void)' }}>
+                    {form.name.trim()[0]?.toUpperCase() || '?'}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 700, fontFamily: 'Rajdhani, sans-serif',
+                      fontSize: '1rem', color: 'var(--text-primary)' }}>{form.name}</div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{form.email}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    style={{ marginLeft: 'auto', background: 'none', border: 'none',
+                      color: 'var(--neon)', cursor: 'pointer', fontSize: '0.82rem',
+                      fontFamily: 'Rajdhani, sans-serif', fontWeight: 600 }}
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="form-group">
+                <label className="form-label">Create Password</label>
+                <div className="form-input-wrapper">
+                  <span className="form-input-icon">◉</span>
+                  <input
+                    className="form-input"
+                    type={showPwd ? 'text' : 'password'}
+                    placeholder="Min 8 chars, uppercase + number"
+                    value={form.password}
+                    onChange={handleChange('password')}
+                    autoComplete="new-password"
+                    disabled={loading}
+                  />
+                  <button type="button" className="toggle-password"
+                    onClick={() => setShowPwd(!showPwd)} tabIndex={-1}>
+                    {showPwd ? '◎' : '●'}
+                  </button>
+                </div>
+                {errors.password && <div className="form-error">⚠ {errors.password}</div>}
+
+                {/* Strength meter */}
+                {form.password && (
+                  <div className="password-strength">
+                    <div className="strength-bar">
+                      <div
+                        className="strength-fill"
+                        style={{ width: strength.width, background: strength.color }}
+                      />
+                    </div>
+                    <span className="strength-text" style={{ color: strength.color }}>
+                      {strength.label && `Strength: ${strength.label}`}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div className="form-group">
+                <label className="form-label">Confirm Password</label>
+                <div className="form-input-wrapper">
+                  <span className="form-input-icon">◉</span>
+                  <input
+                    className="form-input"
+                    type={showConfirm ? 'text' : 'password'}
+                    placeholder="Re-enter your password"
+                    value={form.confirmPassword}
+                    onChange={handleChange('confirmPassword')}
+                    autoComplete="new-password"
+                    disabled={loading}
+                  />
+                  <button type="button" className="toggle-password"
+                    onClick={() => setShowConfirm(!showConfirm)} tabIndex={-1}>
+                    {showConfirm ? '◎' : '●'}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <div className="form-error">⚠ {errors.confirmPassword}</div>
+                )}
+                {form.confirmPassword && form.password === form.confirmPassword && (
+                  <div style={{ fontSize: '0.82rem', color: '#00ff88', display: 'flex', gap: 6, alignItems: 'center' }}>
+                    ✓ Passwords match
+                  </div>
+                )}
+              </div>
+
+              {/* Terms */}
+              <div className="form-group">
+                <label style={{ display: 'flex', gap: 10, cursor: 'pointer', alignItems: 'flex-start' }}>
+                  <input
+                    type="checkbox"
+                    checked={form.terms}
+                    onChange={handleChange('terms')}
+                    style={{ accentColor: 'var(--neon)', marginTop: 3, flexShrink: 0 }}
+                  />
+                  <span style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.88rem',
+                    color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                    I agree to the{' '}
+                    <span style={{ color: 'var(--neon)', fontWeight: 600, cursor: 'pointer' }}
+                      onClick={() => addToast('Terms of Service — AniCart Databank Protocol v2.4', 'info')}>
+                      Terms of Service
+                    </span>{' '}
+                    and{' '}
+                    <span style={{ color: 'var(--neon)', fontWeight: 600, cursor: 'pointer' }}
+                      onClick={() => addToast('Privacy Policy — Your data is protected by quantum encryption!', 'info')}>
+                      Privacy Policy
+                    </span>
+                  </span>
+                </label>
+                {errors.terms && <div className="form-error">⚠ {errors.terms}</div>}
+              </div>
+
+              <button type="submit" className="btn-primary btn-full btn-pink" disabled={loading}
+                style={{ marginTop: 4 }}>
+                {loading ? (
+                  <><span className="loading-spinner" style={{ borderTopColor: 'white' }} /> Initializing Profile...</>
+                ) : (
+                  <>✦ Create My AniCart Profile</>
+                )}
+              </button>
+
+              <button type="button"
+                onClick={() => { setStep(1); setErrors({}); }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)',
+                  fontSize: '0.88rem', fontFamily: 'Rajdhani, sans-serif', cursor: 'pointer',
+                  textAlign: 'center', transition: 'all 0.2s' }}
+              >
+                ← Back to Step 1
+              </button>
+            </form>
+          )}
+
+          {/* Footer */}
+          <div className="auth-footer" style={{ marginTop: 24 }}>
+            <span
+              className="auth-link"
+              onClick={() => navigate(PAGES.LANDING)}
+              style={{ fontSize: '0.82rem', color: 'var(--text-muted)', opacity: 0.7 }}
+            >
+              ← Back to Landing
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+

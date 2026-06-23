@@ -1,0 +1,7086 @@
+================================================================================
+AniCart-Server - IMPORTANT CODE EXPORT
+================================================================================
+
+--------------------------------------------------------------------------------
+FILE: app.js
+--------------------------------------------------------------------------------
+
+/**
+ * Express application — middleware, routes, error handling.
+ */
+
+const express = require('express');
+const config = require('./config');
+
+// Sentry setup (conditional)
+let Sentry;
+if (config.SENTRY_DSN) {
+  Sentry = require('@sentry/node');
+  Sentry.init({
+    dsn: config.SENTRY_DSN,
+    environment: config.NODE_ENV || 'development',
+    tracesSampleRate: 1.0,
+  });
+}
+const cors = require('cors');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
+const morgan = require('morgan');
+const cookieParser = require('cookie-parser');
+
+const { errorHandler, notFound } = require('./middleware/errorHandler');
+const routes = require('./routes');
+const { router: workerRoutes, serverAdapter: bullBoardAdapter } = require('./routers/workerRoutes');
+
+const app = express();
+
+// Trust a single reverse-proxy hop (e.g., Render/Nginx/Netlify proxy).
+app.set('trust proxy', 1);
+
+// Sentry request handler (must be first)
+if (Sentry) {
+  app.use(Sentry.Handlers.requestHandler());
+}
+
+app.use(helmet());
+
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'https://anicartweb.netlify.app',
+  config.CLIENT_URL,
+].filter((url) => url && url !== 'undefined');
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
+
+app.use(morgan(config.isDevelopment ? 'dev' : 'combined'));
+
+app.use(express.json({ limit: '10mb' }));
+app.use(mongoSanitize());
+app.use(hpp());
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+app.use(cookieParser());
+
+app.get('/', (req, res) => {
+  res.send('AniCart API is running...');
+});
+// TEST ROUTES — REMOVE LATER
+app.get('/test/crash', (req, res) => {
+  throw new Error('Crash test - synchronous');
+});
+
+app.get('/test/rejection', async (req, res) => {
+  return Promise.reject(new Error('Crash test - unhandled rejection'));
+});
+
+app.get('/test/async-crash', async (req, res) => {
+  setTimeout(() => {
+    throw new Error('Crash test - async');
+  }, 100);
+  res.send('Async crash incoming...');
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: 'Server is running',
+    timestamp: new Date().toISOString(),
+    environment: config.NODE_ENV,
+  });
+});
+
+app.use('/api/v1', routes);
+
+// Worker health endpoint
+app.use('/api/v1/worker', workerRoutes);
+
+// Bull Board dashboard for BullMQ
+app.use('/admin/queues', bullBoardAdapter.getRouter());
+
+app.use(notFound);
+
+// Sentry error handler BEFORE custom error handler
+if (Sentry) {
+  app.use(Sentry.Handlers.errorHandler());
+}
+
+// Custom error handler LAST
+app.use(errorHandler);
+
+module.exports = app;
+
+
+--------------------------------------------------------------------------------
+FILE: config/db.js
+--------------------------------------------------------------------------------
+
+const mongoose = require("mongoose");
+const logger = require('../utils/logger');
+
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      maxPoolSize: 5,
+      minPoolSize: 1,
+    });
+    logger.info('MongoDB connected');
+  } catch (error) {
+    logger.error('MongoDB connection failed', { error: error.message });
+    process.exit(1);
+  }
+};
+
+module.exports = connectDB;
+
+--------------------------------------------------------------------------------
+FILE: config/index.js
+--------------------------------------------------------------------------------
+
+/**
+ * Configuration Module
+ * 
+ * Centralizes all environment variables and configuration settings.
+ * Provides default values and validates required configurations.
+ */
+
+require('dotenv').config();
+const logger = require('../utils/logger');
+
+const config = {
+  // Server configuration
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  PORT: parseInt(process.env.PORT, 10) || 5000,
+  
+  // Database configuration
+  MONGODB_URI: process.env.MONGODB_URI,
+  
+  // JWT configuration
+  JWT_SECRET: process.env.JWT_SECRET,
+  JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || process.env.JWT_SECRET,
+  JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
+  JWT_ACCESS_EXPIRY: process.env.JWT_ACCESS_EXPIRY || '15m',
+  JWT_REFRESH_EXPIRY: process.env.JWT_REFRESH_EXPIRY || '7d',
+  SENTRY_DSN: process.env.SENTRY_DSN,
+
+  // Cloudflare R2 configuration
+  R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+  R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+  R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+
+  // Stripe configuration
+  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+
+  // Upstash Redis configuration
+  REDIS_URL: process.env.REDIS_URL,
+  UPSTASH_REDIS_REST_URL: process.env.UPSTASH_REDIS_REST_URL,
+  UPSTASH_REDIS_REST_TOKEN: process.env.UPSTASH_REDIS_REST_TOKEN,
+
+  // Email configuration
+  EMAIL_USER: process.env.EMAIL_USER,
+  EMAIL_PASS: process.env.EMAIL_PASS,
+  CLIENT_URL: process.env.CLIENT_URL || process.env.FRONTEND_URL || 'http://localhost:3000',
+
+  // Backward compatibility aliases
+  FRONTEND_URL: process.env.FRONTEND_URL || process.env.CLIENT_URL || 'http://localhost:3000',
+  
+  // Security configuration
+  BCRYPT_SALT_ROUNDS: parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12,
+  
+  // Helper properties
+  isDevelopment: process.env.NODE_ENV === 'development',
+  isProduction: process.env.NODE_ENV === 'production',
+};
+
+// Validate required configurations
+// NOTE: SENTRY_DSN is optional - app will run without Sentry if not set
+const requiredConfigs = [
+  'MONGODB_URI',
+  'JWT_SECRET',
+  'R2_ACCOUNT_ID',
+  'R2_ACCESS_KEY_ID',
+  'R2_SECRET_ACCESS_KEY',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+];
+
+requiredConfigs.forEach((key) => {
+  if (!config[key]) {
+    logger.error(`FATAL ERROR: ${key} is not defined in environment variables`);
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+});
+
+module.exports = config;
+
+
+--------------------------------------------------------------------------------
+FILE: config/r2.js
+--------------------------------------------------------------------------------
+
+const { S3Client } = require('@aws-sdk/client-s3');
+
+const accountId = process.env.R2_ACCOUNT_ID;
+const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+
+const s3Client = new S3Client({
+  region: 'auto',
+  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId,
+    secretAccessKey,
+  },
+});
+
+const bucketName = process.env.R2_BUCKET_NAME;
+const publicUrl = process.env.R2_PUBLIC_URL;
+
+module.exports = {
+  s3Client,
+  bucketName,
+  publicUrl,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: config/redis.js
+--------------------------------------------------------------------------------
+
+/**
+ * Redis Configuration Module
+ *
+ * Provides two Redis clients:
+ * 1. redisConnection (IORedis) - For BullMQ queue/worker (TCP/TLS)
+ * 2. upstashRedis (HTTP) - For caching using Upstash REST API
+ */
+
+const IORedis = require('ioredis');
+const { Redis } = require('@upstash/redis');
+const config = require('./index');
+
+if (!config.REDIS_URL) {
+  throw new Error('REDIS_URL is missing. Check your .env file');
+}
+
+const redisConnection = new IORedis(config.REDIS_URL, {
+  maxRetriesPerRequest: null,
+  tls: {},
+  retryStrategy: (times) => Math.min(times * 50, 2000),
+});
+
+redisConnection.on('connect', () => {
+  console.log('[REDIS] BullMQ Redis connected');
+});
+
+redisConnection.on('error', (err) => {
+  console.error('[REDIS] Error:', err.message);
+});
+
+const upstashRedis = new Redis({
+  url: config.UPSTASH_REDIS_REST_URL,
+  token: config.UPSTASH_REDIS_REST_TOKEN,
+});
+
+module.exports = {
+  redisConnection,
+  upstashRedis,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: controllers/authController.js
+--------------------------------------------------------------------------------
+
+/**
+ * Auth Controller
+ *
+ * HTTP handlers for authentication. Business logic lives in authService.
+ */
+
+const { successResponse } = require('../utils/apiResponse');
+const catchAsync = require('../utils/catchAsync');
+const config = require('../config');
+const CONSTANTS = require('../utils/constants');
+const authService = require('../services/authService');
+const { verifyAccessToken } = require('../utils/generateToken');
+const { blacklistToken } = require('../services/tokenBlacklistService');
+
+const refreshCookieOptions = {
+  httpOnly: true,
+  secure: config.isProduction,
+  sameSite: 'strict',
+  maxAge: CONSTANTS.COOKIE.MAX_AGE_MS,
+};
+
+const clearCookieOptions = {
+  httpOnly: true,
+  secure: config.isProduction,
+  sameSite: 'strict',
+  expires: new Date(0),
+};
+
+/**
+ * @desc    Register a new user
+ * @route   POST /api/auth/register
+ * @access  Public
+ */
+const register = catchAsync(async (req, res) => {
+  const { name, email, password } = req.body;
+
+  const { user } = await authService.register({
+    name,
+    email,
+    password,
+  });
+
+  res.status(201).json(
+    successResponse({
+      message: 'Registration successful. Please check your email to verify your account.',
+      data: { user },
+    })
+  );
+});
+
+/**
+ * @desc    Verify email via token
+ * @route   GET /api/auth/verify-email/:token
+ * @access  Public
+ */
+const verifyEmail = catchAsync(async (req, res) => {
+  await authService.verifyEmail(req.params.token);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Email verified successfully. You can now login.',
+    })
+  );
+});
+
+/**
+ * @desc    Resend account verification email
+ * @route   POST /api/auth/resend-verification
+ * @access  Public
+ */
+const resendVerification = catchAsync(async (req, res) => {
+  const { email } = req.body;
+  const result = await authService.resendVerification(email);
+
+  if (result.reason === 'already_verified') {
+    return res.status(200).json(
+      successResponse({
+        message: 'Email is already verified. You can login.',
+      })
+    );
+  }
+
+  // Keep response generic when account is missing.
+  return res.status(200).json(
+    successResponse({
+      message: 'If an account with that email exists, a verification link has been sent.',
+    })
+  );
+});
+
+/**
+ * @desc    Login user
+ * @route   POST /api/auth/login
+ * @access  Public
+ */
+const login = catchAsync(async (req, res) => {
+  const { email, password } = req.body;
+
+  const { user, accessToken, refreshToken } = await authService.login({
+    email,
+    password,
+  });
+
+  res.cookie(CONSTANTS.COOKIE.REFRESH_TOKEN_NAME, refreshToken, refreshCookieOptions);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Login successful',
+      data: {
+        user,
+        accessToken,
+      },
+    })
+  );
+});
+
+/**
+ * @desc    Logout user / clear refresh token cookie
+ * @route   POST /api/auth/logout
+ * @access  Private
+ */
+const logout = catchAsync(async (req, res) => {
+  const authorizationHeader = req.headers.authorization || '';
+  const token = authorizationHeader.startsWith('Bearer ')
+    ? authorizationHeader.split(' ')[1]
+    : null;
+
+  if (token) {
+    const decoded = verifyAccessToken(token);
+
+    if (decoded.jti && decoded.exp) {
+      const nowInSeconds = Math.floor(Date.now() / 1000);
+      const remainingTtl = decoded.exp - nowInSeconds;
+
+      if (remainingTtl > 0) {
+        await blacklistToken(decoded.jti, remainingTtl);
+      }
+    }
+  }
+
+  res.cookie(CONSTANTS.COOKIE.REFRESH_TOKEN_NAME, '', clearCookieOptions);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Logout successful',
+    })
+  );
+});
+
+/**
+ * @desc    Get current logged-in user
+ * @route   GET /api/auth/me
+ * @access  Private
+ */
+const getMe = catchAsync(async (req, res) => {
+  const user = await authService.getMe(req.user.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'User retrieved successfully',
+      data: { user },
+    })
+  );
+});
+
+/**
+ * @desc    Refresh access token using refresh token
+ * @route   POST /api/auth/refresh
+ * @access  Public (requires valid refresh token cookie)
+ */
+const refreshToken = catchAsync(async (req, res) => {
+  const token = req.cookies[CONSTANTS.COOKIE.REFRESH_TOKEN_NAME];
+
+  try {
+    const tokens = await authService.refreshToken(token);
+
+    res.cookie(CONSTANTS.COOKIE.REFRESH_TOKEN_NAME, tokens.refreshToken, refreshCookieOptions);
+
+    res.status(200).json(
+      successResponse({
+        message: 'Token refreshed successfully',
+        data: {
+          accessToken: tokens.accessToken,
+        },
+      })
+    );
+  } catch (err) {
+    if (token) {
+      res.cookie(CONSTANTS.COOKIE.REFRESH_TOKEN_NAME, '', clearCookieOptions);
+    }
+    throw err;
+  }
+});
+
+/**
+ * @desc    Request password reset link
+ * @route   POST /api/auth/forgot-password
+ * @access  Public
+ */
+const forgotPassword = catchAsync(async (req, res) => {
+  const { email } = req.body;
+  await authService.forgotPassword(email);
+
+  res.status(200).json(
+    successResponse({
+      message: 'If an account with that email exists, a reset link has been sent.',
+    })
+  );
+});
+
+/**
+ * @desc    Reset password with token
+ * @route   POST /api/auth/reset-password/:token
+ * @access  Public
+ */
+const resetPassword = catchAsync(async (req, res) => {
+  await authService.resetPassword(req.params.token, req.body.password);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Password reset successful.',
+    })
+  );
+});
+
+module.exports = {
+  register,
+  verifyEmail,
+  resendVerification,
+  forgotPassword,
+  resetPassword,
+  login,
+  logout,
+  getMe,
+  refreshToken,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: controllers/cartController.js
+--------------------------------------------------------------------------------
+
+/**
+ * Cart Controller
+ *
+ * HTTP handlers for cart operations. Business logic lives in cartService.
+ */
+
+const { successResponse } = require('../utils/apiResponse');
+const catchAsync = require('../utils/catchAsync');
+const cartService = require('../services/cartService');
+
+/**
+ * @desc    Get user's cart with populated product details
+ * @route   GET /api/cart
+ * @access  Private
+ */
+const getCart = catchAsync(async (req, res) => {
+  const { cart, summary } = await cartService.getCart(req.user.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Cart retrieved successfully',
+      data: {
+        cart,
+        summary,
+      },
+    })
+  );
+});
+
+/**
+ * @desc    Add product to cart
+ * @route   POST /api/cart/add
+ * @access  Private
+ */
+const addToCart = catchAsync(async (req, res) => {
+  const { productId } = req.body;
+
+  const { cart, summary } = await cartService.addToCart(req.user.id, productId);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Item added to cart',
+      data: {
+        cart,
+        summary,
+      },
+    })
+  );
+});
+
+/**
+ * @desc    Update item quantity in cart
+ * @route   PUT /api/cart/update
+ * @access  Private
+ */
+const updateCartItem = catchAsync(async (req, res) => {
+  const { productId } = req.body;
+
+  const { cart, summary } = await cartService.updateCartItem(
+    req.user.id,
+    productId
+  );
+
+  res.status(200).json(
+    successResponse({
+      message: 'Cart updated successfully',
+      data: {
+        cart,
+        summary,
+      },
+    })
+  );
+});
+
+/**
+ * @desc    Remove item from cart
+ * @route   DELETE /api/cart/remove/:productId
+ * @access  Private
+ */
+const removeFromCart = catchAsync(async (req, res) => {
+  const { productId } = req.params;
+
+  const { cart, summary } = await cartService.removeFromCart(
+    req.user.id,
+    productId
+  );
+
+  res.status(200).json(
+    successResponse({
+      message: 'Item removed from cart',
+      data: {
+        cart,
+        summary,
+      },
+    })
+  );
+});
+
+/**
+ * @desc    Clear entire cart
+ * @route   DELETE /api/cart/clear
+ * @access  Private
+ */
+const clearCart = catchAsync(async (req, res) => {
+  const { cart } = await cartService.clearCart(req.user.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Cart cleared successfully',
+      data: {
+        cart,
+      },
+    })
+  );
+});
+
+/**
+ * @desc    Sync cart with client-side cart (for initial load)
+ * @route   POST /api/cart/sync
+ * @access  Private
+ */
+const syncCart = catchAsync(async (req, res) => {
+  const { items } = req.body;
+
+  const { cart, summary } = await cartService.syncCart(req.user.id, items);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Cart synced successfully',
+      data: {
+        cart,
+        summary,
+      },
+    })
+  );
+});
+
+module.exports = {
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeFromCart,
+  clearCart,
+  syncCart,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: controllers/creatorController.js
+--------------------------------------------------------------------------------
+
+/**
+ * Creator controller
+ * Handles creator application flow and admin review actions.
+ */
+
+const User = require('../models/User');
+const ApiError = require('../utils/apiError');
+const CONSTANTS = require('../utils/constants');
+const { successResponse } = require('../utils/apiResponse');
+const catchAsync = require('../utils/catchAsync');
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
+
+const resolveCreatorLevel = (salesCount = 0) => {
+  if (salesCount >= 50) {
+    return { creatorLevel: 'pro', uploadLimit: 1000 };
+  }
+
+  if (salesCount >= 10) {
+    return { creatorLevel: 'growing', uploadLimit: 20 };
+  }
+
+  return { creatorLevel: 'new', uploadLimit: 5 };
+};
+
+const applyCreator = catchAsync(async (req, res) => {
+  const { displayName, portfolioLink, paymentEmail, rightsAgreement } = req.body;
+
+  const user = await User.findById(req.user.id);
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+
+  if (user.role === CONSTANTS.ROLES.CREATOR) {
+    throw ApiError.badRequest('You are already a creator.');
+  }
+
+  if (user.role !== CONSTANTS.ROLES.USER) {
+    throw ApiError.badRequest('Only users can apply to become creators.');
+  }
+
+  if (user.creatorRequest?.status === 'pending') {
+    throw ApiError.badRequest('Creator application is already pending.');
+  }
+
+  const now = new Date();
+  const accountAgeMs = now.getTime() - new Date(user.createdAt).getTime();
+  const isLocked = user.lockUntil && new Date(user.lockUntil) > now;
+  const canAutoApprove =
+    user.isVerified === true &&
+    accountAgeMs > ONE_DAY_MS &&
+    (rightsAgreement === true || rightsAgreement === 'true') &&
+    !isLocked;
+
+  user.creatorRequest = {
+    status: canAutoApprove ? 'approved' : 'pending',
+    displayName: String(displayName).trim(),
+    portfolioLink: portfolioLink ? String(portfolioLink).trim() : undefined,
+    paymentEmail: String(paymentEmail).trim().toLowerCase(),
+    requestedAt: now,
+    reviewedAt: canAutoApprove ? now : undefined,
+  };
+
+  if (canAutoApprove) {
+    user.role = CONSTANTS.ROLES.CREATOR;
+    if (!user.creatorStats) {
+      user.creatorStats = {};
+    }
+    const { creatorLevel, uploadLimit } = resolveCreatorLevel(user.creatorStats?.salesCount || 0);
+    user.creatorStats.uploadsThisMonth = user.creatorStats?.uploadsThisMonth || 0;
+    user.creatorStats.salesCount = user.creatorStats?.salesCount || 0;
+    user.creatorStats.creatorLevel = creatorLevel;
+    user.creatorStats.uploadLimit = uploadLimit;
+  }
+
+  await user.save();
+
+  const message = canAutoApprove
+    ? 'You are now a creator.'
+    : 'Application submitted and under review.';
+
+  return res.status(200).json(
+    successResponse({
+      message,
+      data: {
+        creatorRequest: user.creatorRequest,
+        role: user.role,
+      },
+    })
+  );
+});
+
+const getPendingCreatorRequests = catchAsync(async (req, res) => {
+  const users = await User.find({ 'creatorRequest.status': 'pending' })
+    .select('name email role creatorRequest createdAt')
+    .sort({ 'creatorRequest.requestedAt': -1 });
+
+  return res.status(200).json(
+    successResponse({
+      message: 'Pending creator requests fetched successfully',
+      data: { users },
+    })
+  );
+});
+
+const approveCreator = catchAsync(async (req, res) => {
+  const { userId } = req.params;
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+
+  const { creatorLevel, uploadLimit } = resolveCreatorLevel(user.creatorStats?.salesCount || 0);
+
+  user.role = CONSTANTS.ROLES.CREATOR;
+  if (!user.creatorRequest) {
+    user.creatorRequest = {};
+  }
+  if (!user.creatorStats) {
+    user.creatorStats = {};
+  }
+  user.creatorRequest.status = 'approved';
+  user.creatorRequest.reviewedAt = new Date();
+  user.creatorStats.uploadsThisMonth = user.creatorStats?.uploadsThisMonth || 0;
+  user.creatorStats.salesCount = user.creatorStats?.salesCount || 0;
+  user.creatorStats.creatorLevel = creatorLevel;
+  user.creatorStats.uploadLimit = uploadLimit;
+
+  await user.save();
+
+  return res.status(200).json(
+    successResponse({
+      message: 'Creator approved',
+      data: {
+        userId: user._id,
+        role: user.role,
+        creatorRequest: user.creatorRequest,
+      },
+    })
+  );
+});
+
+const rejectCreator = catchAsync(async (req, res) => {
+  const { userId } = req.params;
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+
+  user.role = CONSTANTS.ROLES.USER;
+  if (!user.creatorRequest) {
+    user.creatorRequest = {};
+  }
+  user.creatorRequest.status = 'rejected';
+  user.creatorRequest.reviewedAt = new Date();
+
+  await user.save();
+
+  return res.status(200).json(
+    successResponse({
+      message: 'Creator rejected',
+      data: {
+        userId: user._id,
+        role: user.role,
+        creatorRequest: user.creatorRequest,
+      },
+    })
+  );
+});
+
+module.exports = {
+  applyCreator,
+  getPendingCreatorRequests,
+  approveCreator,
+  rejectCreator,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: controllers/orderController.js
+--------------------------------------------------------------------------------
+
+/**
+ * Order Controller
+ *
+ * HTTP handlers for orders. Business logic lives in orderService.
+ */
+
+const { successResponse, paginatedResponse } = require('../utils/apiResponse');
+const catchAsync = require('../utils/catchAsync');
+const orderService = require('../services/orderService');
+
+/**
+ * @desc    Create order from cart (checkout)
+ * @route   POST /api/v1/orders/checkout
+ * @access  Private
+ */
+const checkout = catchAsync(async (req, res) => {
+  const populatedOrder = await orderService.checkout(req.user.id);
+
+  res.status(201).json(
+    successResponse({
+      message: 'Order placed successfully',
+      data: { order: populatedOrder },
+    })
+  );
+});
+
+/**
+ * @desc    Get user's order history
+ * @route   GET /api/v1/orders
+ * @access  Private
+ */
+const getOrders = catchAsync(async (req, res) => {
+  const { orders, page, limit, total } = await orderService.getOrders(
+    req.user.id,
+    req.query
+  );
+
+  res.status(200).json(
+    paginatedResponse({
+      message: 'Orders retrieved successfully',
+      data: orders,
+      page,
+      limit,
+      total,
+    })
+  );
+});
+
+/**
+ * @desc    Get single order detail
+ * @route   GET /api/v1/orders/:id
+ * @access  Private
+ */
+const getOrder = catchAsync(async (req, res) => {
+  const order = await orderService.getOrder(req.user.id, req.params.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Order retrieved successfully',
+      data: { order },
+    })
+  );
+});
+
+/**
+ * @desc    Cancel an order (only if not completed)
+ * @route   PUT /api/v1/orders/:id/cancel
+ * @access  Private
+ */
+const cancelOrder = catchAsync(async (req, res) => {
+  const order = await orderService.cancelOrder(req.user.id, req.params.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Order cancelled successfully',
+      data: { order },
+    })
+  );
+});
+
+/**
+ * @desc    Get order statistics for user
+ * @route   GET /api/v1/orders/stats/summary
+ * @access  Private
+ */
+const getOrderStats = catchAsync(async (req, res) => {
+  const summary = await orderService.getOrderStats(req.user.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Order statistics retrieved successfully',
+      data: { stats: summary },
+    })
+  );
+});
+
+module.exports = {
+  checkout,
+  getOrders,
+  getOrder,
+  cancelOrder,
+  getOrderStats,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: controllers/productController.js
+--------------------------------------------------------------------------------
+
+/**
+ * Product Controller
+ *
+ * HTTP handlers for products. Business logic lives in productService.
+ */
+
+const { successResponse, paginatedResponse } = require('../utils/apiResponse');
+const catchAsync = require('../utils/catchAsync');
+const productService = require('../services/productService');
+
+/**
+ * @desc    Get all products with optional filtering and pagination
+ * @route   GET /api/v1/products
+ * @access  Public
+ */
+const getProducts = catchAsync(async (req, res) => {
+  const { products, page, limit, total, meta } = await productService.getProducts(
+    req.query
+  );
+
+  res.status(200).json(
+    paginatedResponse({
+      message: 'Products retrieved successfully',
+      data: products,
+      page,
+      limit,
+      total,
+      meta,
+    })
+  );
+});
+
+/**
+ * @desc    Get single product by ID
+ * @route   GET /api/v1/products/:id
+ * @access  Public
+ */
+const getProduct = catchAsync(async (req, res) => {
+  const product = await productService.getProduct(req.params.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Product retrieved successfully',
+      data: { product },
+    })
+  );
+});
+
+/**
+ * @desc    Create new product (Admin only)
+ * @route   POST /api/v1/products
+ * @access  Private/Admin
+ */
+const createProduct = catchAsync(async (req, res) => {
+  const product = await productService.createProduct(req.body);
+
+  res.status(201).json(
+    successResponse({
+      message: 'Product created successfully',
+      data: { product },
+    })
+  );
+});
+
+/**
+ * @desc    Update product (Admin only)
+ * @route   PUT /api/v1/products/:id
+ * @access  Private/Admin
+ */
+const updateProduct = catchAsync(async (req, res) => {
+  const product = await productService.updateProduct(req.params.id, req.body);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Product updated successfully',
+      data: { product },
+    })
+  );
+});
+
+/**
+ * @desc    Soft delete product (Admin only)
+ * @route   DELETE /api/v1/products/:id
+ * @access  Private/Admin
+ */
+const deleteProduct = catchAsync(async (req, res) => {
+  await productService.deleteProduct(req.params.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Product deleted successfully',
+    })
+  );
+});
+
+/**
+ * @desc    Get all product series (for filters)
+ * @route   GET /api/v1/products/series/list
+ * @access  Public
+ */
+const getSeries = catchAsync(async (req, res) => {
+  const series = await productService.getSeries();
+
+  res.status(200).json(
+    successResponse({
+      message: 'Series retrieved successfully',
+      data: { series },
+    })
+  );
+});
+
+/**
+ * @desc    Restore soft-deleted product (Admin only)
+ * @route   PUT /api/v1/products/:id/restore
+ * @access  Private/Admin
+ */
+const restoreProduct = catchAsync(async (req, res) => {
+  const product = await productService.restoreProduct(req.params.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Product restored successfully',
+      data: { product },
+    })
+  );
+});
+
+module.exports = {
+  getProducts,
+  getProduct,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getSeries,
+  restoreProduct,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: controllers/uploadController.js
+--------------------------------------------------------------------------------
+
+const catchAsync = require('../utils/catchAsync');
+const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs/promises');
+const sharp = require('sharp');
+
+const Product = require('../models/Product');
+const User = require('../models/User');
+const ApiError = require('../utils/apiError');
+const ApiResponse = require('../utils/apiResponse');
+const CONSTANTS = require('../utils/constants');
+const uploadService = require('../services/uploadService');
+const { enqueueImageProcessing, getJobStatus } = require('../jobs/queues');
+
+const MIN_WIDTH_PX = 1280;
+const MAX_DIMENSION_PX = 10000;
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+const WATERMARK_OPACITY = 0.25;
+const WATERMARK_PATH = path.join(__dirname, '..', 'assets', 'watermark.png');
+const MONGO_OBJECT_ID_REGEX = /^[a-fA-F0-9]{24}$/;
+const ALLOWED_UPLOAD_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
+
+const PAID_VARIANT_CONFIG = {
+  '4k': { width: 3840, quality: 88, effort: 4, mimeType: 'image/webp' },
+  '2k': { width: 2560, quality: 85, effort: 4, mimeType: 'image/webp' },
+  '1080p': { width: 1080, quality: 82, effort: 4, mimeType: 'image/webp' },
+};
+
+const PUBLIC_VARIANT_CONFIG = {
+  preview: { width: 1280, quality: 70, mimeType: 'image/jpeg', format: 'jpeg', progressive: true },
+  thumbnail: { width: 400, quality: 55, effort: 2, mimeType: 'image/webp', format: 'webp' },
+};
+
+const RESOLUTION_DISPLAY_MAP = {
+  '4k': '4K Ultra HD',
+  '2k': '2K QHD',
+  '1080p': '1080p Full HD',
+};
+
+let fileTypeFromBuffer;
+let watermarkOverlayBufferPromise;
+
+const detectFileTypeFromBuffer = async (buffer) => {
+  if (!fileTypeFromBuffer) {
+    ({ fileTypeFromBuffer } = await import('file-type'));
+  }
+
+  return fileTypeFromBuffer(buffer);
+};
+
+const getWatermarkOverlayBuffer = async () => {
+  if (!watermarkOverlayBufferPromise) {
+    watermarkOverlayBufferPromise = (async () => {
+      let watermarkFileBuffer;
+      try {
+        watermarkFileBuffer = await fs.readFile(WATERMARK_PATH);
+      } catch (error) {
+        throw ApiError.internal('Missing watermark asset at assets/watermark.png');
+      }
+
+      const { data, info } = await sharp(watermarkFileBuffer)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+      const alphaChannelOffset = 3;
+      const channels = info.channels;
+
+      for (let i = alphaChannelOffset; i < data.length; i += channels) {
+        data[i] = Math.round(data[i] * WATERMARK_OPACITY);
+      }
+
+      return sharp(data, { raw: info }).png().toBuffer();
+    })().catch((error) => {
+      watermarkOverlayBufferPromise = null;
+      throw error;
+    });
+  }
+
+  return watermarkOverlayBufferPromise;
+};
+
+const determineAvailableResolutions = (width) => {
+  if (width >= 3840) {
+    return ['4k', '2k', '1080p'];
+  }
+
+  if (width >= 2560) {
+    return ['2k', '1080p'];
+  }
+
+  if (width >= 1280) {
+    return ['1080p'];
+  }
+
+  return [];
+};
+
+const buildWebpVariant = async (buffer, width, quality, effort = 4) => {
+  return sharp(buffer)
+    .resize({
+      width,
+      withoutEnlargement: true,
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .webp({ quality, effort })
+    .toBuffer();
+};
+
+const buildPreviewVariantWithWatermark = async (buffer, width, quality, progressive = true) => {
+  const watermarkOverlayBuffer = await getWatermarkOverlayBuffer();
+
+  return sharp(buffer)
+    .resize({
+      width,
+      withoutEnlargement: true,
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .composite([
+      {
+        input: watermarkOverlayBuffer,
+        gravity: 'center',
+      },
+    ])
+    .jpeg({ quality, progressive })
+    .toBuffer();
+};
+
+const buildPreviewVariant = async (buffer, width, quality, progressive = true) => {
+  return sharp(buffer)
+    .resize({
+      width,
+      withoutEnlargement: true,
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .jpeg({ quality, progressive })
+    .toBuffer();
+};
+
+const uploadWallpaper = catchAsync(async (req, res) => {
+  // Background processing via BullMQ - returns 202 immediately
+  if (
+    !req.user ||
+    ![CONSTANTS.ROLES.ADMIN, CONSTANTS.ROLES.CREATOR].includes(req.user.role)
+  ) {
+    throw ApiError.forbidden('Only creators can upload wallpapers.');
+  }
+
+  if (!req.file) {
+    throw ApiError.badRequest('Wallpaper file is required');
+  }
+
+  if (req.file.size > MAX_FILE_SIZE_BYTES) {
+    throw ApiError.badRequest('File too large. Max size is 25MB');
+  }
+
+  const {
+    productId,
+    rightsConfirmed,
+    licenseType,
+    authorName,
+    sourceLink,
+    copyrightOwner,
+  } = req.body;
+
+  if (!productId) {
+    throw ApiError.badRequest('productId is required');
+  }
+
+  if (!MONGO_OBJECT_ID_REGEX.test(productId)) {
+    throw ApiError.badRequest('Invalid productId format');
+  }
+
+  const rightsConfirmedValue = rightsConfirmed === true || rightsConfirmed === 'true';
+  if (rightsConfirmedValue !== true) {
+    throw ApiError.badRequest('You must confirm you own the rights to upload this image.');
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) {
+    throw ApiError.notFound('Product not found');
+  }
+
+  // Validate image type
+  const detectedFileType = await detectFileTypeFromBuffer(req.file.buffer);
+  if (!detectedFileType || !ALLOWED_UPLOAD_MIME_TYPES.has(detectedFileType.mime)) {
+    throw ApiError.badRequest('Invalid file type. Only JPEG, PNG, WEBP allowed.');
+  }
+
+  // Check for duplicates
+  const fileHash = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
+  const duplicate = await Product.findOne({ fileHash });
+  if (duplicate) {
+    throw ApiError.badRequest('Duplicate image detected. This wallpaper already exists.');
+  }
+
+  // Update product metadata
+  product.rightsConfirmed = true;
+  product.termsAcceptedAt = new Date();
+  product.fileHash = fileHash;
+  if (licenseType !== undefined) product.licenseType = String(licenseType).trim();
+  if (authorName !== undefined) product.authorName = String(authorName).trim();
+  if (sourceLink !== undefined) product.sourceLink = String(sourceLink).trim();
+  if (copyrightOwner !== undefined) product.copyrightOwner = String(copyrightOwner).trim();
+  product.status = 'pending';
+  product.assets = {
+    ...(product.assets || {}),
+    status: 'processing',
+  };
+  await product.save();
+
+  // Upload original to R2
+  const originalExtension = detectedFileType.ext || 'bin';
+  const originalMimeType = detectedFileType.mime || req.file.mimetype || 'application/octet-stream';
+  const originalKey = uploadService.generateAssetKey(
+    productId,
+    'original',
+    originalExtension,
+    'private'
+  );
+
+  try {
+    const originalUpload = await uploadService.uploadPrivateToR2(
+      req.file.buffer,
+      originalKey,
+      originalMimeType
+    );
+
+    // Update product with original asset
+    product.assets.original = {
+      key: originalUpload.key,
+      contentType: originalMimeType,
+      size: req.file.buffer.length,
+    };
+    await product.save();
+
+    // Enqueue background processing job
+    const job = await enqueueImageProcessing({
+      productId,
+      r2OriginalKey: originalUpload.key,
+      creatorId: req.user.id,
+    });
+
+    // Increment creator upload count
+    if (req.user?.role === CONSTANTS.ROLES.CREATOR) {
+      await User.findByIdAndUpdate(req.user.id, {
+        $inc: {
+          'creatorStats.uploadsThisMonth': 1,
+        },
+      });
+    }
+
+    // Return 202 Accepted - processing in background
+    return res.status(202).json(
+      ApiResponse.successResponse({
+        message: 'Wallpaper uploaded successfully. Processing in background.',
+        data: {
+          productId,
+          status: 'processing',
+          jobId: job.id,
+          originalUrl: originalUpload.key,
+        },
+      })
+    );
+  } catch (error) {
+    // Mark product as failed on upload error
+    product.status = 'rejected';
+    product.assets = {
+      ...(product.assets || {}),
+      status: 'failed',
+    };
+    await product.save();
+
+    throw error;
+  }
+});
+
+/**
+ * Get upload processing status
+ * GET /upload/status/:productId
+ */
+const getUploadStatus = catchAsync(async (req, res) => {
+  const { productId } = req.params;
+
+  if (!productId || !MONGO_OBJECT_ID_REGEX.test(productId)) {
+    throw ApiError.badRequest('Invalid productId format');
+  }
+
+  const product = await Product.findById(productId);
+  if (!product) {
+    throw ApiError.notFound('Product not found');
+  }
+
+  // Get job status from BullMQ
+  const jobStatus = await getJobStatus(productId);
+
+  // Build response
+  const response = {
+    status: product.assets?.status || 'unknown',
+    progress: jobStatus?.progress || 0,
+    previewUrl: product.assets?.preview?.url || null,
+    thumbnailUrl: product.assets?.thumbnail?.url || null,
+    availableResolutions: product.availableResolutions || [],
+  };
+
+  // Add job details if available
+  if (jobStatus) {
+    response.jobState = jobStatus.state;
+    response.processedOn = jobStatus.processedOn;
+    response.finishedOn = jobStatus.finishedOn;
+    if (jobStatus.failedReason) {
+      response.error = jobStatus.failedReason;
+    }
+  }
+
+  return res.status(200).json(
+    ApiResponse.successResponse({
+      data: response,
+    })
+  );
+});
+
+module.exports = {
+  uploadWallpaper,
+  getUploadStatus,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: controllers/userController.js
+--------------------------------------------------------------------------------
+
+/**
+ * User Controller
+ *
+ * HTTP handlers for user profile. Business logic lives in userService.
+ */
+
+const { successResponse } = require('../utils/apiResponse');
+const catchAsync = require('../utils/catchAsync');
+const userService = require('../services/userService');
+
+/**
+ * @desc    Get user profile
+ * @route   GET /api/users/profile
+ * @access  Private
+ */
+const getProfile = catchAsync(async (req, res) => {
+  const user = await userService.getProfile(req.user.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Profile retrieved successfully',
+      data: { user },
+    })
+  );
+});
+
+/**
+ * @desc    Update user profile
+ * @route   PUT /api/users/profile
+ * @access  Private
+ */
+const updateProfile = catchAsync(async (req, res) => {
+  const { name } = req.body;
+
+  const user = await userService.updateProfile(req.user.id, { name });
+
+  res.status(200).json(
+    successResponse({
+      message: 'Profile updated successfully',
+      data: { user },
+    })
+  );
+});
+
+/**
+ * @desc    Change user password
+ * @route   PUT /api/users/password
+ * @access  Private
+ */
+const changePassword = catchAsync(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  await userService.changePassword(req.user.id, {
+    currentPassword,
+    newPassword,
+  });
+
+  res.status(200).json(
+    successResponse({
+      message: 'Password changed successfully',
+    })
+  );
+});
+
+/**
+ * @desc    Get user's library (purchased wallpapers)
+ * @route   GET /api/users/library
+ * @access  Private
+ */
+const getLibrary = catchAsync(async (req, res) => {
+  const library = await userService.getLibrary(req.user.id);
+
+  res.status(200).json(
+    successResponse({
+      message: 'Library retrieved successfully',
+      data: { library },
+    })
+  );
+});
+
+module.exports = {
+  getProfile,
+  updateProfile,
+  changePassword,
+  getLibrary,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: db/database.js
+--------------------------------------------------------------------------------
+
+const mongoose = require('mongoose');
+const config = require('../config');
+const logger = require('../utils/logger');
+
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(config.MONGODB_URI, {
+      maxPoolSize: 5,
+      minPoolSize: 1,
+    });
+    logger.info('MongoDB connected', { host: conn.connection.host });
+  } catch (error) {
+    logger.error('MongoDB connection error', { error: error.message });
+    process.exit(1);
+  }
+};
+
+module.exports = connectDB;
+
+
+--------------------------------------------------------------------------------
+FILE: jobs/cleanupOrphanedFiles.js
+--------------------------------------------------------------------------------
+
+/**
+ * Orphaned R2 File Cleanup Job
+ *
+ * Runs daily at 3 AM to clean up orphaned files in R2.
+ * An orphaned file is one that exists in R2 but has no corresponding Product document.
+ *
+ * Process:
+ * 1. List all files under "originals/" prefix in R2
+ * 2. For each file, check if a Product exists with that original key
+ * 3. If no Product exists and file is older than 24 hours → delete from R2
+ */
+
+const { ListObjectsV2Command, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { s3Client, bucketName } = require('../config/r2');
+const Product = require('../models/Product');
+const logger = require('../utils/logger');
+
+const ORPHANED_FILE_AGE_THRESHOLD_MS = 24 * 60 * 60 * 1000; // 24 hours
+const CLEANUP_PREFIX = 'originals/';
+
+/**
+ * Extract product ID from R2 key
+ * Key format: originals/{productId}/original.{ext}
+ */
+function extractProductIdFromKey(key) {
+  const match = key.match(/^originals\/([a-f0-9]{24})\/original\./);
+  return match ? match[1] : null;
+}
+
+/**
+ * Get file metadata to check age
+ */
+async function getFileMetadata(key) {
+  try {
+    const response = await s3Client.send(
+      new HeadObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      })
+    );
+    return {
+      lastModified: response.LastModified,
+      size: response.ContentLength,
+    };
+  } catch (error) {
+    logger.error(`Failed to get metadata for ${key}`, { error: error.message });
+    return null;
+  }
+}
+
+/**
+ * Delete file from R2
+ */
+async function deleteFromR2(key) {
+  try {
+    await s3Client.send(
+      new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+      })
+    );
+    return true;
+  } catch (error) {
+    logger.error(`Failed to delete ${key} from R2`, { error: error.message });
+    return false;
+  }
+}
+
+/**
+ * List all files under a prefix in R2
+ */
+async function listAllFiles(prefix) {
+  const files = [];
+  let continuationToken = null;
+
+  do {
+    const command = new ListObjectsV2Command({
+      Bucket: bucketName,
+      Prefix: prefix,
+      ContinuationToken: continuationToken,
+      MaxKeys: 1000,
+    });
+
+    const response = await s3Client.send(command);
+
+    if (response.Contents) {
+      files.push(...response.Contents);
+    }
+
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+
+  return files;
+}
+
+/**
+ * Check if product exists with given original key
+ */
+async function productExistsWithKey(key) {
+  const productId = extractProductIdFromKey(key);
+
+  if (!productId) {
+    return false;
+  }
+
+  const product = await Product.findById(productId);
+  return !!product;
+}
+
+/**
+ * Run the cleanup job
+ */
+async function runCleanup() {
+  const startTime = Date.now();
+  logger.info('[Cleanup] Starting orphaned files cleanup job');
+
+  let stats = {
+    scanned: 0,
+    orphaned: 0,
+    deleted: 0,
+    errors: 0,
+    skipped: 0,
+  };
+
+  try {
+    // List all files under originals/
+    const files = await listAllFiles(CLEANUP_PREFIX);
+    stats.scanned = files.length;
+
+    logger.info(`[Cleanup] Found ${files.length} files to scan`);
+
+    for (const file of files) {
+      const key = file.Key;
+
+      // Skip non-original files (variants, previews, thumbnails)
+      if (!key.includes('/original.')) {
+        stats.skipped++;
+        continue;
+      }
+
+      // Check if file is older than threshold
+      const metadata = await getFileMetadata(key);
+      if (!metadata) {
+        stats.errors++;
+        continue;
+      }
+
+      const fileAge = Date.now() - new Date(metadata.lastModified).getTime();
+      if (fileAge < ORPHANED_FILE_AGE_THRESHOLD_MS) {
+        // File is too new, skip it
+        continue;
+      }
+
+      // Check if product exists
+      const productExists = await productExistsWithKey(key);
+
+      if (!productExists) {
+        stats.orphaned++;
+        logger.info(`[Cleanup] Found orphaned file: ${key} (age: ${Math.round(fileAge / 3600000)}h)`);
+
+        // Delete the orphaned file
+        const deleted = await deleteFromR2(key);
+        if (deleted) {
+          stats.deleted++;
+          logger.info(`[Cleanup] Deleted orphaned file: ${key}`);
+        } else {
+          stats.errors++;
+        }
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    logger.info('[Cleanup] Cleanup job completed', {
+      duration: `${duration}ms`,
+      ...stats,
+    });
+
+    return stats;
+  } catch (error) {
+    logger.error('[Cleanup] Cleanup job failed', { error: error.message });
+    throw error;
+  }
+}
+
+/**
+ * Schedule cleanup job to run daily at 3 AM
+ * Returns the interval ID for cleanup
+ */
+function scheduleCleanupJob() {
+  const now = new Date();
+  const next3AM = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate(),
+    3, 0, 0, 0
+  );
+
+  // If it's already past 3 AM, schedule for tomorrow
+  if (next3AM <= now) {
+    next3AM.setDate(next3AM.getDate() + 1);
+  }
+
+  const delay = next3AM - now;
+
+  logger.info(`[Cleanup] Scheduled next cleanup at ${next3AM.toISOString()}`);
+
+  // Initial delay to reach 3 AM, then run every 24 hours
+  const timeoutId = setTimeout(() => {
+    runCleanup().catch((error) => {
+      logger.error('[Cleanup] Scheduled cleanup failed', { error: error.message });
+    });
+
+    // Schedule recurring runs every 24 hours
+    setInterval(() => {
+      runCleanup().catch((error) => {
+        logger.error('[Cleanup] Scheduled cleanup failed', { error: error.message });
+      });
+    }, 24 * 60 * 60 * 1000);
+  }, delay);
+
+  return timeoutId;
+}
+
+module.exports = {
+  runCleanup,
+  scheduleCleanupJob,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: jobs/creatorMonthlyResetJob.js
+--------------------------------------------------------------------------------
+
+/**
+ * Monthly creator quota reset job.
+ * Resets uploadsThisMonth to 0 at the beginning of each month.
+ */
+
+const User = require('../models/User');
+const CONSTANTS = require('../utils/constants');
+const logger = require('../utils/logger');
+
+const getNextMonthStart = () => {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth() + 1, 1, 0, 0, 0, 0);
+};
+
+const resetCreatorMonthlyUploads = async () => {
+  try {
+    const result = await User.updateMany(
+      { role: CONSTANTS.ROLES.CREATOR },
+      { $set: { 'creatorStats.uploadsThisMonth': 0 } }
+    );
+
+    const modified = result.modifiedCount || result.nModified || 0;
+    logger.info('Creator monthly upload counters reset', { modified });
+  } catch (error) {
+    logger.error('Creator monthly upload reset failed', { error: error.message });
+  }
+};
+
+const startCreatorMonthlyResetJob = () => {
+  const nextRun = getNextMonthStart();
+  const delay = Math.max(1000, nextRun.getTime() - Date.now());
+
+  logger.info('Next creator monthly reset scheduled', { nextRun: nextRun.toISOString() });
+
+  setTimeout(async () => {
+    await resetCreatorMonthlyUploads();
+
+    // Re-schedule every month after each run.
+    startCreatorMonthlyResetJob();
+  }, delay);
+};
+
+module.exports = {
+  startCreatorMonthlyResetJob,
+  resetCreatorMonthlyUploads,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: jobs/imageProcessor.js
+--------------------------------------------------------------------------------
+
+/**
+ * BullMQ Worker for Image Processing
+ *
+ * Processes uploaded images in the background:
+ * - Downloads original from R2
+ * - Generates variants (4K, 2K, 1080p, preview, thumbnail)
+ * - Uploads variants to R2
+ * - Updates Product document with processed assets
+ *
+ * Production-hardened with:
+ * - Sharp memory protection
+ * - Worker monitoring
+ * - Graceful error handling
+ */
+
+const { Worker } = require('bullmq');
+const sharp = require('sharp');
+const { GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { redisConnection } = require('../config/redis');
+const { s3Client, bucketName, publicUrl } = require('../config/r2');
+const Product = require('../models/Product');
+const uploadService = require('../services/uploadService');
+
+// Sharp Memory Protection
+sharp.concurrency(1);
+sharp.cache(false);
+
+// Configuration
+const MAX_FILE_SIZE_BYTES = 50 * 1024 * 1024; // 50MB
+const WATERMARK_OPACITY = 0.25;
+const WATERMARK_PATH = require('path').join(__dirname, '..', 'assets', 'watermark.png');
+
+const PAID_VARIANT_CONFIG = {
+  '4k': { width: 3840, quality: 88, effort: 4, mimeType: 'image/webp' },
+  '2k': { width: 2560, quality: 85, effort: 4, mimeType: 'image/webp' },
+  '1080p': { width: 1080, quality: 82, effort: 4, mimeType: 'image/webp' },
+};
+
+const PUBLIC_VARIANT_CONFIG = {
+  preview: { width: 1280, quality: 70, mimeType: 'image/jpeg', format: 'jpeg', progressive: true },
+  thumbnail: { width: 400, quality: 55, effort: 2, mimeType: 'image/webp', format: 'webp' },
+};
+
+const RESOLUTION_DISPLAY_MAP = {
+  '4k': '4K Ultra HD',
+  '2k': '2K QHD',
+  '1080p': '1080p Full HD',
+};
+
+let watermarkOverlayBufferPromise = null;
+
+/**
+ * Get watermark buffer with applied opacity
+ */
+async function getWatermarkOverlayBuffer() {
+  if (!watermarkOverlayBufferPromise) {
+    watermarkOverlayBufferPromise = (async () => {
+      const fs = require('fs/promises');
+      const watermarkFileBuffer = await fs.readFile(WATERMARK_PATH);
+
+      const { data, info } = await sharp(watermarkFileBuffer)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+      const alphaChannelOffset = 3;
+      const channels = info.channels;
+
+      for (let i = alphaChannelOffset; i < data.length; i += channels) {
+        data[i] = Math.round(data[i] * WATERMARK_OPACITY);
+      }
+
+      return sharp(data, { raw: info }).png().toBuffer();
+    })().catch((error) => {
+      watermarkOverlayBufferPromise = null;
+      throw error;
+    });
+  }
+
+  return watermarkOverlayBufferPromise;
+}
+
+/**
+ * Determine available resolutions based on image width
+ */
+function determineAvailableResolutions(width) {
+  if (width >= 3840) return ['4k', '2k', '1080p'];
+  if (width >= 2560) return ['2k', '1080p'];
+  if (width >= 1280) return ['1080p'];
+  return [];
+}
+
+/**
+ * Build WebP variant buffer
+ */
+async function buildWebpVariant(buffer, width, quality, effort = 4) {
+  return sharp(buffer)
+    .resize({
+      width,
+      withoutEnlargement: true,
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .webp({ quality, effort })
+    .toBuffer();
+}
+
+/**
+ * Build preview variant with watermark (for paid products)
+ */
+async function buildPreviewVariantWithWatermark(buffer, width, quality, progressive = true) {
+  const watermarkOverlayBuffer = await getWatermarkOverlayBuffer();
+
+  return sharp(buffer)
+    .resize({
+      width,
+      withoutEnlargement: true,
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .composite([{ input: watermarkOverlayBuffer, gravity: 'center' }])
+    .jpeg({ quality, progressive })
+    .toBuffer();
+}
+
+/**
+ * Build preview variant without watermark (for free products)
+ */
+async function buildPreviewVariant(buffer, width, quality, progressive = true) {
+  return sharp(buffer)
+    .resize({
+      width,
+      withoutEnlargement: true,
+      fit: 'inside',
+      kernel: sharp.kernel.lanczos3,
+    })
+    .jpeg({ quality, progressive })
+    .toBuffer();
+}
+
+/**
+ * Download original image from R2
+ */
+async function downloadFromR2(key) {
+  const response = await s3Client.send(
+    new GetObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    })
+  );
+
+  const chunks = [];
+  for await (const chunk of response.Body) {
+    chunks.push(chunk);
+  }
+
+  return Buffer.concat(chunks);
+}
+
+/**
+ * Process image job
+ */
+async function processImageJob(job) {
+  const startTime = Date.now();
+  const { productId, r2OriginalKey, creatorId } = job.data;
+
+  console.log(`[Worker] Starting image processing for product ${productId}`);
+
+  // Step 1: Update progress to 0%
+  await job.updateProgress(0);
+
+  // Get product
+  const product = await Product.findById(productId);
+  if (!product) {
+    throw new Error(`Product ${productId} not found`);
+  }
+
+  // Step 2: Download original from R2
+  console.log(`[Worker] Downloading original from R2: ${r2OriginalKey}`);
+  const originalBuffer = await downloadFromR2(r2OriginalKey);
+
+  // Step 3: Check file size (> 50MB = flagged)
+  if (originalBuffer.length > MAX_FILE_SIZE_BYTES) {
+    console.log(`[Worker] File too large (${originalBuffer.length} bytes), flagging product`);
+    product.assets.status = 'flagged';
+    await product.save();
+    return { status: 'flagged', reason: 'File too large' };
+  }
+
+  // Step 4: Update progress to 30%
+  await job.updateProgress(30);
+
+  // Get metadata
+  const metadata = await sharp(originalBuffer).metadata();
+  const availableResolutions = determineAvailableResolutions(metadata.width);
+
+  if (availableResolutions.length === 0) {
+    throw new Error('Image too small, minimum width is 1280px');
+  }
+
+  // Step 5: Generate variants
+  console.log(`[Worker] Generating variants for resolutions: ${availableResolutions.join(', ')}`);
+
+  const privateAssets = {
+    original: { key: r2OriginalKey },
+    '4k': null,
+    '2k': null,
+    '1080p': null,
+  };
+
+  const failedVariants = [];
+
+  // Generate paid variants
+  for (const resolution of availableResolutions) {
+    const config = PAID_VARIANT_CONFIG[resolution];
+    try {
+      const variantBuffer = await buildWebpVariant(
+        originalBuffer,
+        config.width,
+        config.quality,
+        config.effort
+      );
+      const variantKey = uploadService.generateAssetKey(productId, resolution, 'webp', 'private');
+      const uploadedVariant = await uploadService.uploadPrivateToR2(
+        variantBuffer,
+        variantKey,
+        config.mimeType
+      );
+
+      privateAssets[resolution] = {
+        key: uploadedVariant.key,
+        contentType: config.mimeType,
+        size: variantBuffer.length,
+      };
+    } catch (error) {
+      console.error(`[Worker] Failed to generate ${resolution} variant:`, error.message);
+      failedVariants.push(resolution);
+    }
+  }
+
+  // Step 6: Update progress to 90%
+  await job.updateProgress(90);
+
+  // Generate preview and thumbnail
+  const isPaidProduct = Number(product.price || 0) > 0;
+  const previewVariantConfig = PUBLIC_VARIANT_CONFIG.preview;
+
+  const previewBuffer = isPaidProduct
+    ? await buildPreviewVariantWithWatermark(
+        originalBuffer,
+        previewVariantConfig.width,
+        previewVariantConfig.quality,
+        previewVariantConfig.progressive
+      )
+    : await buildPreviewVariant(
+        originalBuffer,
+        previewVariantConfig.width,
+        previewVariantConfig.quality,
+        previewVariantConfig.progressive
+      );
+
+  const previewKey = uploadService.generateAssetKey(productId, 'preview', 'jpg', 'public');
+  const previewUpload = await uploadService.uploadPublicToR2(
+    previewBuffer,
+    previewKey,
+    previewVariantConfig.mimeType
+  );
+
+  const thumbnailBuffer = await buildWebpVariant(
+    originalBuffer,
+    PUBLIC_VARIANT_CONFIG.thumbnail.width,
+    PUBLIC_VARIANT_CONFIG.thumbnail.quality,
+    PUBLIC_VARIANT_CONFIG.thumbnail.effort
+  );
+  const thumbnailKey = uploadService.generateAssetKey(productId, 'thumbnail', 'webp', 'public');
+  const thumbnailUpload = await uploadService.uploadPublicToR2(
+    thumbnailBuffer,
+    thumbnailKey,
+    PUBLIC_VARIANT_CONFIG.thumbnail.mimeType
+  );
+
+  // Step 7: Update Product document
+  const successfulResolutions = availableResolutions.filter(
+    (resolution) => Boolean(privateAssets[resolution])
+  );
+
+  product.availableResolutions = successfulResolutions;
+  product.assets = {
+    original: privateAssets.original,
+    '4k': privateAssets['4k'],
+    '2k': privateAssets['2k'],
+    '1080p': privateAssets['1080p'],
+    preview: {
+      key: previewUpload.key,
+      url: previewUpload.url,
+      contentType: previewVariantConfig.mimeType,
+      size: previewBuffer.length,
+    },
+    thumbnail: {
+      key: thumbnailUpload.key,
+      url: thumbnailUpload.url,
+      contentType: PUBLIC_VARIANT_CONFIG.thumbnail.mimeType,
+      size: thumbnailBuffer.length,
+    },
+    status: failedVariants.length > 0 ? 'flagged' : 'ready',
+  };
+  product.img = thumbnailUpload.url;
+  if (successfulResolutions.length > 0) {
+    product.resolution = RESOLUTION_DISPLAY_MAP[successfulResolutions[0]] || product.resolution;
+  }
+  product.status = failedVariants.length > 0 ? 'review' : 'active';
+
+  await product.save();
+
+  // Step 8: Update progress to 100%
+  await job.updateProgress(100);
+
+  const processingTime = Date.now() - startTime;
+  console.log(`[Worker] Image processing completed in ${processingTime}ms`);
+
+  return {
+    status: product.assets.status,
+    processingTime,
+    resolutions: successfulResolutions,
+    failedVariants,
+  };
+}
+
+/**
+ * Handle job failure
+ */
+async function handleJobFailure(job, error) {
+  console.error(`[Worker] Job ${job.id} failed:`, error.message);
+
+  const { productId } = job.data;
+
+  try {
+    const product = await Product.findById(productId);
+    if (product) {
+      product.assets.status = 'flagged';
+      product.status = 'review';
+      await product.save();
+      console.log(`[Worker] Product ${productId} flagged due to processing error`);
+    }
+  } catch (saveError) {
+    console.error(`[Worker] Failed to update product status:`, saveError.message);
+  }
+}
+
+/**
+ * Create and export the BullMQ Worker
+ * Concurrency MUST be 1
+ */
+const imageProcessorWorker = new Worker(
+  'image-processing',
+  async (job) => {
+    try {
+      return await processImageJob(job);
+    } catch (error) {
+      await handleJobFailure(job, error);
+      throw error;
+    }
+  },
+  {
+    connection: redisConnection,
+    concurrency: 1, // MUST be 1 as per requirements
+    limiter: {
+      max: 10,
+      duration: 60000, // 10 jobs per minute
+    },
+  }
+);
+
+// Worker event handlers with enhanced monitoring
+imageProcessorWorker.on('active', (job) => {
+  console.log(`[QUEUE] Job ${job.id} started`);
+});
+
+imageProcessorWorker.on('progress', (job, progress) => {
+  console.log(`[QUEUE] Job ${job.id} progress: ${progress}%`);
+});
+
+imageProcessorWorker.on('completed', (job, result) => {
+  console.log(`[QUEUE] Job ${job.id} completed`);
+});
+
+imageProcessorWorker.on('failed', (job, err) => {
+  console.log(`[QUEUE] Job ${job.id} failed: ${err.message}`);
+});
+
+imageProcessorWorker.on('error', (error) => {
+  console.error('[WORKER] Error:', error.message);
+});
+
+console.log('[WORKER] Image processor worker registered (concurrency=1, cache=disabled)');
+
+module.exports = imageProcessorWorker;
+
+
+--------------------------------------------------------------------------------
+FILE: jobs/queues.js
+--------------------------------------------------------------------------------
+
+/**
+ * BullMQ Queue Configuration
+ *
+ * Defines the image-processing queue with rate limiting and job options.
+ */
+
+const { Queue, RateLimitError } = require('bullmq');
+const { redisConnection } = require('../config/redis');
+
+/**
+ * Image Processing Queue
+ * Handles background image processing jobs
+ *
+ * Rate Limiting: 10 jobs per minute per creatorId
+ */
+const imageProcessingQueue = new Queue('image-processing', {
+  connection: redisConnection,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 2000,
+    },
+    removeOnComplete: true,
+    removeOnFail: false,
+  },
+  limiter: {
+    max: 10,
+    duration: 60000, // 10 jobs per minute
+  },
+});
+
+/**
+ * Get rate limit key for a creator
+ * Used by the worker for per-creator rate limiting
+ */
+function getRateLimitKey(creatorId) {
+  return `rate-limit:${creatorId}`;
+}
+
+/**
+ * Enqueue an image processing job
+ * @param {Object} params - Job parameters
+ * @param {string} params.productId - MongoDB product ID
+ * @param {string} params.r2OriginalKey - R2 key for original image
+ * @param {string} params.creatorId - Creator user ID for rate limiting
+ * @returns {Promise<Job>} - BullMQ Job instance
+ */
+async function enqueueImageProcessing({ productId, r2OriginalKey, creatorId }) {
+  const job = await imageProcessingQueue.add(
+    'process-image',
+    {
+      productId,
+      r2OriginalKey,
+      creatorId,
+    },
+    {
+      jobId: `process-${productId}`,
+      // Group key for per-creator rate limiting
+      group: {
+        id: creatorId,
+        limit: {
+          max: 10,
+          duration: 60000,
+        },
+      },
+    }
+  );
+
+  return job;
+}
+
+/**
+ * Get job status by product ID
+ * @param {string} productId - MongoDB product ID
+ * @returns {Promise<Object|null>} - Job status or null
+ */
+async function getJobStatus(productId) {
+  const jobId = `process-${productId}`;
+  const job = await imageProcessingQueue.getJob(jobId);
+
+  if (!job) {
+    return null;
+  }
+
+  const state = await job.getState();
+  let progress = 0;
+  try {
+    if (typeof job.progress === 'function') {
+      progress = await job.progress();
+    } else if (typeof job.progress === 'number') {
+      progress = job.progress;
+    } else if (job._progress && typeof job._progress === 'number') {
+      progress = job._progress;
+    }
+  } catch (err) {
+    // Some BullMQ versions expose progress differently; default to 0 on error
+    progress = 0;
+  }
+
+  return {
+    id: job.id,
+    state,
+    progress,
+    data: job.data,
+    returnvalue: job.returnvalue,
+    failedReason: job.failedReason,
+    timestamp: job.timestamp,
+    processedOn: job.processedOn,
+    finishedOn: job.finishedOn,
+  };
+}
+
+module.exports = {
+  imageProcessingQueue,
+  enqueueImageProcessing,
+  getJobStatus,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: middleware/authMiddleware.js
+--------------------------------------------------------------------------------
+
+/**
+ * Authentication Middleware
+ * 
+ * Verifies JWT tokens from Authorization header and attaches user info to request.
+ * Also provides role-based access control for admin routes.
+ */
+
+const { verifyAccessToken } = require('../utils/generateToken');
+const ApiError = require('../utils/apiError');
+const User = require('../models/User');
+const CONSTANTS = require('../utils/constants');
+const { isBlacklisted } = require('../services/tokenBlacklistService');
+
+/**
+ * Middleware to verify JWT access token
+ * Attaches req.user with { id, email, role } if token is valid
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+const protect = async (req, res, next) => {
+  try {
+    let token;
+
+    // Check for token in Authorization header
+    if (
+      req.headers.authorization &&
+      req.headers.authorization.startsWith('Bearer')
+    ) {
+      // Extract token from "Bearer <token>"
+      token = req.headers.authorization.split(' ')[1];
+    }
+
+    // Check if token exists
+    if (!token) {
+      return next(ApiError.unauthorized('Access denied. No token provided.'));
+    }
+
+    try {
+      // Verify token
+      const decoded = verifyAccessToken(token);
+
+      if (!decoded.jti) {
+        return next(ApiError.unauthorized('Invalid token payload. Missing jti.'));
+      }
+
+      const blacklisted = await isBlacklisted(decoded.jti);
+      if (blacklisted) {
+        return next(ApiError.unauthorized('Token has been revoked. Please login again.'));
+      }
+
+      // Verify user still exists
+      const user = await User.findById(decoded.id).select('-password');
+      if (!user) {
+        return next(ApiError.unauthorized('User not found. Token is invalid.'));
+      }
+
+      if (user.passwordChangedAt && decoded.iat) {
+        const tokenIssuedAtMs = decoded.iat * 1000;
+        if (new Date(user.passwordChangedAt).getTime() > tokenIssuedAtMs) {
+          return next(ApiError.unauthorized('Password changed recently. Please login again.'));
+        }
+      }
+
+      // Attach user info to request object
+      req.user = {
+        id: user._id.toString(),
+        email: user.email,
+        role: user.role,
+        jti: decoded.jti,
+      };
+
+      next();
+    } catch (error) {
+      if (error.name === 'TokenExpiredError') {
+        return next(ApiError.unauthorized('Token has expired. Please login again.'));
+      }
+      if (error.name === 'JsonWebTokenError') {
+        return next(ApiError.unauthorized('Invalid token.'));
+      }
+      throw error;
+    }
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Middleware to restrict access to admin users only
+ * Must be used after protect middleware
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+const adminOnly = (req, res, next) => {
+  // Check if user exists (protect middleware should run first)
+  if (!req.user) {
+    return next(ApiError.unauthorized('Authentication required'));
+  }
+
+  // Check if user has admin role
+  if (req.user.role !== CONSTANTS.ROLES.ADMIN) {
+    return next(ApiError.forbidden('Admin access required'));
+  }
+
+  next();
+};
+
+/**
+ * Middleware to restrict access to admin and creator users
+ * Must be used after protect middleware
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+const adminOrCreator = (req, res, next) => {
+  if (!req.user) {
+    return next(ApiError.unauthorized('Authentication required'));
+  }
+
+  if (
+    req.user.role !== CONSTANTS.ROLES.ADMIN &&
+    req.user.role !== CONSTANTS.ROLES.CREATOR
+  ) {
+    return next(ApiError.forbidden('Admin or creator access required'));
+  }
+
+  next();
+};
+
+/**
+ * Middleware to allow access to either the user themselves or an admin
+ * For routes where users can access their own resources
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+const ownerOrAdmin = (req, res, next) => {
+  // Check if user exists (protect middleware should run first)
+  if (!req.user) {
+    return next(ApiError.unauthorized('Authentication required'));
+  }
+
+  // Allow if admin or if user is accessing their own resource
+  const resourceUserId = req.params.userId || req.body.userId;
+  
+  if (req.user.role === CONSTANTS.ROLES.ADMIN || req.user.id === resourceUserId) {
+    return next();
+  }
+
+  next(ApiError.forbidden('You can only access your own resources'));
+};
+
+module.exports = {
+  protect,
+  adminOnly,
+  adminOrCreator,
+  ownerOrAdmin,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: middleware/checkUploadLimit.js
+--------------------------------------------------------------------------------
+
+/**
+ * Creator upload limit middleware.
+ * Blocks creator uploads when monthly quota is reached.
+ */
+
+const User = require('../models/User');
+const ApiError = require('../utils/apiError');
+const CONSTANTS = require('../utils/constants');
+
+const resolveCreatorLevel = (salesCount = 0) => {
+  if (salesCount >= 50) {
+    return { creatorLevel: 'pro', uploadLimit: 1000 };
+  }
+
+  if (salesCount >= 10) {
+    return { creatorLevel: 'growing', uploadLimit: 20 };
+  }
+
+  return { creatorLevel: 'new', uploadLimit: 5 };
+};
+
+const checkUploadLimit = async (req, res, next) => {
+  try {
+    if (!req.user) {
+      return next(ApiError.unauthorized('Authentication required'));
+    }
+
+    if (req.user.role === CONSTANTS.ROLES.ADMIN) {
+      return next();
+    }
+
+    if (req.user.role !== CONSTANTS.ROLES.CREATOR) {
+      return next();
+    }
+
+    const user = await User.findById(req.user.id).select('creatorStats role');
+    if (!user) {
+      return next(ApiError.notFound('User not found'));
+    }
+
+    if (!user.creatorStats) {
+      user.creatorStats = {};
+    }
+
+    const stats = user.creatorStats || {};
+    const salesCount = Number(stats.salesCount || 0);
+    const uploadsThisMonth = Number(stats.uploadsThisMonth || 0);
+
+    const { creatorLevel, uploadLimit } = resolveCreatorLevel(salesCount);
+
+    let changed = false;
+    if (user.creatorStats.creatorLevel !== creatorLevel) {
+      user.creatorStats.creatorLevel = creatorLevel;
+      changed = true;
+    }
+    if (user.creatorStats.uploadLimit !== uploadLimit) {
+      user.creatorStats.uploadLimit = uploadLimit;
+      changed = true;
+    }
+
+    if (changed) {
+      await user.save();
+    }
+
+    if (uploadsThisMonth >= uploadLimit) {
+      return next(ApiError.badRequest('Monthly upload limit reached.'));
+    }
+
+    return next();
+  } catch (error) {
+    return next(error);
+  }
+};
+
+module.exports = checkUploadLimit;
+
+
+--------------------------------------------------------------------------------
+FILE: middleware/errorHandler.js
+--------------------------------------------------------------------------------
+
+/**
+ * Error Handling Middleware
+ * 
+ * Centralized error handling for the Express application.
+ * Handles different types of errors and returns consistent error responses.
+ * In development, returns full error details including stack traces.
+ * In production, returns sanitized error messages.
+ */
+
+const config = require('../config');
+const ApiError = require('../utils/apiError');
+const logger = require('../utils/logger');
+
+/**
+ * Handle Mongoose validation errors
+ * @param {Error} err - Mongoose validation error
+ * @returns {ApiError} - Formatted API error
+ */
+const handleValidationError = (err) => {
+  const errors = Object.values(err.errors).map((val) => ({
+    field: val.path,
+    message: val.message,
+  }));
+  return ApiError.validationError('Validation failed', errors);
+};
+
+/**
+ * Handle Mongoose duplicate key errors
+ * @param {Error} err - Mongoose duplicate key error
+ * @returns {ApiError} - Formatted API error
+ */
+const handleDuplicateKeyError = (err) => {
+  const field = Object.keys(err.keyValue)[0];
+  const value = err.keyValue[field];
+  const message = `${field} '${value}' already exists`;
+  return ApiError.conflict(message);
+};
+
+/**
+ * Handle Mongoose cast errors (invalid ObjectId)
+ * @param {Error} err - Mongoose cast error
+ * @returns {ApiError} - Formatted API error
+ */
+const handleCastError = (err) => {
+  const message = `Invalid ${err.path}: ${err.value}`;
+  return ApiError.badRequest(message);
+};
+
+/**
+ * Handle JWT errors
+ * @param {Error} err - JWT error
+ * @returns {ApiError} - Formatted API error
+ */
+const handleJWTError = () => {
+  return ApiError.unauthorized('Invalid token. Please login again.');
+};
+
+/**
+ * Handle JWT expiration errors
+ * @param {Error} err - JWT expiration error
+ * @returns {ApiError} - Formatted API error
+ */
+const handleJWTExpiredError = () => {
+  return ApiError.unauthorized('Your token has expired. Please login again.');
+};
+
+/**
+ * Global error handling middleware
+ * @param {Error} err - Error object
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+const errorHandler = (err, req, res, next) => {
+  // Set default error values
+  err.statusCode = err.statusCode || 500;
+  err.message = err.message || 'Internal server error';
+
+  let error = { ...err };
+  error.message = err.message;
+
+  // Log error for debugging
+  logger.error('Unhandled request error', {
+    message: err.message,
+    stack: err.stack,
+    statusCode: err.statusCode,
+  });
+
+  // Handle specific error types
+  if (err.name === 'ValidationError') {
+    error = handleValidationError(err);
+  }
+  if (err.code === 11000) {
+    error = handleDuplicateKeyError(err);
+  }
+  if (err.name === 'CastError') {
+    error = handleCastError(err);
+  }
+  if (err.name === 'JsonWebTokenError') {
+    error = handleJWTError();
+  }
+  if (err.name === 'TokenExpiredError') {
+    error = handleJWTExpiredError();
+  }
+
+  // Build error response
+  const response = {
+    success: false,
+    message: error.message || err.message,
+  };
+
+  // Add field-specific errors if available
+  if (error.errors && error.errors.length > 0) {
+    response.errors = error.errors;
+  }
+
+  // Add stack trace in development mode
+  if (config.isDevelopment) {
+    response.stack = err.stack;
+    response.error = err;
+  }
+
+  // Send response
+  res.status(error.statusCode || err.statusCode).json(response);
+};
+
+/**
+ * 404 Not Found handler for undefined routes
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+const notFound = (req, res, next) => {
+  const error = ApiError.notFound(`Route ${req.originalUrl} not found`);
+  next(error);
+};
+
+module.exports = {
+  errorHandler,
+  notFound,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: middleware/multerUpload.js
+--------------------------------------------------------------------------------
+
+const multer = require('multer');
+const ApiError = require('../utils/apiError');
+
+const MAX_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: MAX_FILE_SIZE_BYTES,
+  },
+});
+
+const _singleWallpaper = upload.single('wallpaper');
+
+const singleWallpaper = (req, res, next) => {
+  _singleWallpaper(req, res, (err) => {
+    if (err && err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+      return next(ApiError.badRequest('File too large. Max size is 25MB'));
+    }
+
+    if (err) {
+      return next(err);
+    }
+
+    return next();
+  });
+};
+
+module.exports = singleWallpaper;
+
+
+--------------------------------------------------------------------------------
+FILE: middleware/rateLimiter.js
+--------------------------------------------------------------------------------
+
+/**
+ * Rate Limiting Middleware
+ * 
+ * Configures rate limiting for different routes to prevent abuse.
+ * Uses express-rate-limit with stricter limits for authentication routes.
+ */
+
+const rateLimit = require('express-rate-limit');
+const ApiError = require('../utils/apiError');
+
+// NOTE: This limiter is process-local/in-memory and temporary for early phases.
+// Day 9 plan: replace with Upstash Redis sliding-window rate limiting for shared counters.
+
+/**
+ * Create a custom rate limit handler
+ * @param {string} message - Custom error message
+ * @returns {Function} - Rate limit handler
+ */
+const createRateLimitHandler = (message) => {
+  return (req, res, next, options) => {
+    throw new ApiError(429, message || 'Too many requests, please try again later.');
+  };
+};
+
+/**
+ * Strict rate limiter for authentication routes
+ * Limits: 10 requests per 15 minutes per IP
+ */
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 10, // 10 requests per window
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: {
+    success: false,
+    message: 'Too many authentication attempts. Please try again after 15 minutes.',
+  },
+  handler: createRateLimitHandler('Too many authentication attempts. Please try again after 15 minutes.'),
+  skipSuccessfulRequests: false, // Count all requests, even successful ones
+});
+
+/**
+ * General API rate limiter
+ * Limits: 100 requests per 15 minutes per IP
+ */
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests. Please try again later.',
+  },
+  handler: createRateLimitHandler('Too many requests. Please try again later.'),
+});
+
+/**
+ * Stricter rate limiter for sensitive operations
+ * Limits: 5 requests per 15 minutes per IP
+ */
+const strictLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // 5 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: 'Too many requests for this operation. Please try again later.',
+  },
+  handler: createRateLimitHandler('Too many requests for this operation. Please try again later.'),
+});
+
+module.exports = {
+  authLimiter,
+  apiLimiter,
+  strictLimiter,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: middleware/validateRequest.js
+--------------------------------------------------------------------------------
+
+/**
+ * Request Validation Middleware
+ * 
+ * Uses express-validator to validate and sanitize request data.
+ * Provides validation chains for common fields and a middleware to check validation results.
+ */
+
+const { body, param, query, validationResult } = require('express-validator');
+const ApiError = require('../utils/apiError');
+const { checkPasswordStrength } = require('../utils/passwordStrength');
+const { isCommonPassword } = require('../utils/commonPasswords');
+
+/**
+ * Middleware to check validation results from express-validator
+ * Throws ApiError with validation details if errors exist
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next function
+ */
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  
+  if (errors.isEmpty()) {
+    return next();
+  }
+
+  // Format errors for consistent response
+  const formattedErrors = errors.array().map((error) => ({
+    field: error.path || error.param,
+    message: error.msg,
+    value: error.value,
+  }));
+
+  // Throw validation error with user-friendly summary
+  throw ApiError.validationError('Please correct the highlighted fields.', formattedErrors);
+};
+
+// ============================================
+// Auth Validations
+// ============================================
+
+const registerValidation = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Name is required')
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Name must be between 2 and 50 characters'),
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please enter a valid email address')
+    .normalizeEmail()
+    .toLowerCase(),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .custom((value) => {
+      if (isCommonPassword(value)) {
+        throw new Error('This password is too common. Please choose a more secure password.');
+      }
+
+      const { strength } = checkPasswordStrength(value);
+      if (strength === 'very_weak' || strength === 'weak') {
+        throw new Error(
+          'Password is too weak. Use at least 6-8 characters with letters and numbers.'
+        );
+      }
+
+      return true;
+    }),
+  validate,
+];
+
+const loginValidation = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please enter a valid email address')
+    .normalizeEmail()
+    .toLowerCase(),
+  body('password')
+    .trim()
+    .notEmpty()
+    .withMessage('Password is required'),
+  validate,
+];
+
+const resendVerificationValidation = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please enter a valid email address')
+    .normalizeEmail()
+    .toLowerCase(),
+  validate,
+];
+
+const forgotPasswordValidation = [
+  body('email')
+    .trim()
+    .notEmpty()
+    .withMessage('Email is required')
+    .isEmail()
+    .withMessage('Please enter a valid email address')
+    .normalizeEmail()
+    .toLowerCase(),
+  validate,
+];
+
+const verifyEmailTokenValidation = [
+  param('token')
+    .trim()
+    .notEmpty()
+    .withMessage('Verification token is required'),
+  validate,
+];
+
+const resetPasswordValidation = [
+  param('token')
+    .trim()
+    .notEmpty()
+    .withMessage('Reset token is required'),
+  body('password')
+    .notEmpty()
+    .withMessage('Password is required')
+    .custom((value) => {
+      if (isCommonPassword(value)) {
+        throw new Error('This password is too common. Please choose a more secure password.');
+      }
+
+      const { strength } = checkPasswordStrength(value);
+      if (strength === 'very_weak' || strength === 'weak') {
+        throw new Error(
+          'Password is too weak. Use at least 6-8 characters with letters and numbers.'
+        );
+      }
+
+      return true;
+    }),
+  validate,
+];
+
+// ============================================
+// User Validations
+// ============================================
+
+const updateProfileValidation = [
+  body('name')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Name cannot be empty')
+    .isLength({ min: 2, max: 50 })
+    .withMessage('Name must be between 2 and 50 characters'),
+  validate,
+];
+
+const changePasswordValidation = [
+  body('currentPassword')
+    .trim()
+    .notEmpty()
+    .withMessage('Current password is required'),
+  body('newPassword')
+    .trim()
+    .notEmpty()
+    .withMessage('New password is required')
+    .isLength({ min: 8 })
+    .withMessage('New password must be at least 8 characters long'),
+  validate,
+];
+
+const creatorApplyValidation = [
+  body('displayName')
+    .trim()
+    .notEmpty()
+    .withMessage('Display name is required')
+    .isLength({ min: 3, max: 50 })
+    .withMessage('Display name must be between 3 and 50 characters'),
+  body('paymentEmail')
+    .trim()
+    .notEmpty()
+    .withMessage('Payment email is required')
+    .isEmail()
+    .withMessage('Please enter a valid payment email')
+    .normalizeEmail()
+    .toLowerCase(),
+  body('portfolioLink')
+    .optional({ nullable: true, checkFalsy: true })
+    .trim()
+    .isURL()
+    .withMessage('Portfolio link must be a valid URL'),
+  body('rightsAgreement')
+    .custom((value) => value === true || value === 'true')
+    .withMessage('Rights agreement must be accepted'),
+  validate,
+];
+
+const creatorReviewValidation = [
+  param('userId')
+    .isMongoId()
+    .withMessage('Invalid user ID'),
+  validate,
+];
+
+// ============================================
+// Product Validations
+// ============================================
+
+const createProductValidation = [
+  body('name')
+    .trim()
+    .notEmpty()
+    .withMessage('Product name is required')
+    .isLength({ max: 100 })
+    .withMessage('Product name cannot exceed 100 characters'),
+  body('series')
+    .trim()
+    .notEmpty()
+    .withMessage('Series is required'),
+  body('price')
+    .notEmpty()
+    .withMessage('Price is required')
+    .isInt({ min: 10, max: 10000 })
+    .withMessage('Price must be between ₹10 and ₹10000'),
+  body('img')
+    .trim()
+    .notEmpty()
+    .withMessage('Product image URL is required')
+    .isURL()
+    .withMessage('Please enter a valid URL'),
+  body('badge')
+    .optional()
+    .trim()
+    .isIn(['HOT', 'NEW', 'BESTSELLER', 'CLASSIC', 'PREMIUM', ''])
+    .withMessage('Invalid badge value'),
+  body('badgeType')
+    .optional()
+    .trim()
+    .isIn(['neon', 'pink', ''])
+    .withMessage('Invalid badge type'),
+  body('rating')
+    .optional()
+    .isFloat({ min: 0, max: 5 })
+    .withMessage('Rating must be between 0 and 5'),
+  body('reviews')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Reviews count must be a positive integer'),
+  body('resolution')
+    .optional()
+    .trim(),
+  body('tags')
+    .optional()
+    .isArray()
+    .withMessage('Tags must be an array'),
+  validate,
+];
+
+const updateProductValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid product ID'),
+  body('name')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Product name cannot be empty')
+    .isLength({ max: 100 })
+    .withMessage('Product name cannot exceed 100 characters'),
+  body('series')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Series cannot be empty'),
+  body('price')
+    .optional()
+    .isInt({ min: 10, max: 10000 })
+    .withMessage('Price must be between ₹10 and ₹10000'),
+  body('img')
+    .optional()
+    .trim()
+    .notEmpty()
+    .withMessage('Image URL cannot be empty')
+    .isURL()
+    .withMessage('Please enter a valid URL'),
+  body('badge')
+    .optional()
+    .trim()
+    .isIn(['HOT', 'NEW', 'BESTSELLER', 'CLASSIC', 'PREMIUM', ''])
+    .withMessage('Invalid badge value'),
+  body('badgeType')
+    .optional()
+    .trim()
+    .isIn(['neon', 'pink', ''])
+    .withMessage('Invalid badge type'),
+  body('rating')
+    .optional()
+    .isFloat({ min: 0, max: 5 })
+    .withMessage('Rating must be between 0 and 5'),
+  body('reviews')
+    .optional()
+    .isInt({ min: 0 })
+    .withMessage('Reviews count must be a positive integer'),
+  validate,
+];
+
+const productIdValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid product ID'),
+  validate,
+];
+
+// ============================================
+// Cart Validations
+// ============================================
+
+const addToCartValidation = [
+  body('productId')
+    .trim()
+    .notEmpty()
+    .withMessage('Product ID is required')
+    .isMongoId()
+    .withMessage('Invalid product ID'),
+  validate,
+];
+
+const updateCartValidation = [
+  body('productId')
+    .trim()
+    .notEmpty()
+    .withMessage('Product ID is required')
+    .isMongoId()
+    .withMessage('Invalid product ID'),
+  body('quantity')
+    .notEmpty()
+    .withMessage('Quantity is required')
+    .isInt({ min: 1 })
+    .withMessage('Quantity must be at least 1'),
+  validate,
+];
+
+const removeFromCartValidation = [
+  param('productId')
+    .isMongoId()
+    .withMessage('Invalid product ID'),
+  validate,
+];
+
+// ============================================
+// Order Validations
+// ============================================
+
+const orderIdValidation = [
+  param('id')
+    .isMongoId()
+    .withMessage('Invalid order ID'),
+  validate,
+];
+
+// ============================================
+// Pagination Validations
+// ============================================
+
+const paginationValidation = [
+  query('page')
+    .optional()
+    .isInt({ min: 1 })
+    .withMessage('Page must be a positive integer'),
+  query('limit')
+    .optional()
+    .isInt({ min: 1, max: 100 })
+    .withMessage('Limit must be between 1 and 100'),
+  validate,
+];
+
+module.exports = {
+  validate,
+  registerValidation,
+  loginValidation,
+  resendVerificationValidation,
+  forgotPasswordValidation,
+  verifyEmailTokenValidation,
+  resetPasswordValidation,
+  updateProfileValidation,
+  changePasswordValidation,
+  creatorApplyValidation,
+  creatorReviewValidation,
+  createProductValidation,
+  updateProductValidation,
+  productIdValidation,
+  addToCartValidation,
+  updateCartValidation,
+  removeFromCartValidation,
+  orderIdValidation,
+  paginationValidation,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: models/Cart.js
+--------------------------------------------------------------------------------
+
+/**
+ * Cart Model
+ *
+ * Defines the schema for user shopping carts stored in the database.
+ * Each user has one cart with multiple items referencing products (unique per product).
+ */
+
+const mongoose = require('mongoose');
+
+const cartItemSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: [true, 'Product reference is required'],
+    },
+  },
+  {
+    _id: false,
+  }
+);
+
+const cartSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'User reference is required'],
+      unique: true,
+      index: true,
+    },
+    items: [cartItemSchema],
+  },
+  {
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  }
+);
+
+cartSchema.pre('save', function (next) {
+  const seen = new Set();
+  this.items = this.items.filter((item) => {
+    const id = item.product.toString();
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
+  next();
+});
+
+/**
+ * Virtual: number of distinct line items (one per product)
+ */
+cartSchema.virtual('itemCount').get(function () {
+  return this.items.length;
+});
+
+/**
+ * Virtual: sum of product prices (requires populated product data)
+ */
+cartSchema.virtual('totalPrice').get(function () {
+  return this.items.reduce((total, item) => {
+    const price = item.product?.price || 0;
+    return total + price;
+  }, 0);
+});
+
+/**
+ * Static method to find or create cart for a user
+ * @param {string} userId - The user ID
+ * @returns {Promise<Document>} - The cart document
+ */
+cartSchema.statics.findOrCreate = async function (userId) {
+  let cart = await this.findOne({ user: userId });
+  if (!cart) {
+    cart = await this.create({ user: userId, items: [] });
+  }
+  return cart;
+};
+
+/**
+ * Instance method to add item to cart (only if product not already present)
+ * @param {string} productId - The product ID to add
+ * @returns {Promise<Document>} - The updated cart
+ */
+cartSchema.methods.addItem = async function (productId) {
+  const exists = this.items.some(
+    (item) => item.product.toString() === productId.toString()
+  );
+  if (!exists) {
+    this.items.push({ product: productId });
+  }
+  return await this.save();
+};
+
+/**
+ * Instance method to remove item from cart
+ * @param {string} productId - The product ID to remove
+ * @returns {Promise<Document>} - The updated cart
+ */
+cartSchema.methods.removeItem = async function (productId) {
+  this.items = this.items.filter(
+    (item) => item.product.toString() !== productId.toString()
+  );
+  return await this.save();
+};
+
+/**
+ * Instance method to clear cart
+ * @returns {Promise<Document>} - The cleared cart
+ */
+cartSchema.methods.clearCart = async function () {
+  this.items = [];
+  return await this.save();
+};
+
+const Cart = mongoose.model('Cart', cartSchema);
+
+module.exports = Cart;
+
+
+--------------------------------------------------------------------------------
+FILE: models/License.js
+--------------------------------------------------------------------------------
+
+/**
+ * License Model
+ *
+ * Represents ownership/access rights for a user to a purchased product.
+ */
+
+const mongoose = require('mongoose');
+
+const licenseSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'User reference is required'],
+    },
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: [true, 'Product reference is required'],
+    },
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+    downloadCount: {
+      type: Number,
+      default: 0,
+      min: [0, 'Download count cannot be negative'],
+    },
+    maxDownloads: {
+      type: Number,
+      default: 10,
+      min: [1, 'Max downloads must be at least 1'],
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Enforce one license per (user, product) pair.
+licenseSchema.index({ user: 1, product: 1 }, { unique: true });
+
+const License = mongoose.model('License', licenseSchema);
+
+module.exports = License;
+
+
+--------------------------------------------------------------------------------
+FILE: models/Order.js
+--------------------------------------------------------------------------------
+
+/**
+ * Order Model
+ * 
+ * Defines the schema for user orders including order items,
+ * pricing breakdown (subtotal, tax, total), and order status.
+ */
+
+const mongoose = require('mongoose');
+
+const orderItemSchema = new mongoose.Schema(
+  {
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: [true, 'Product reference is required'],
+    },
+    name: {
+      type: String,
+      required: [true, 'Product name is required'],
+    },
+    price: {
+      type: Number,
+      required: [true, 'Product price is required'],
+      min: [0, 'Price cannot be negative'],
+    },
+    qty: {
+      type: Number,
+      required: [true, 'Quantity is required'],
+      min: [1, 'Quantity must be at least 1'],
+    },
+    img: {
+      type: String,
+      required: [true, 'Product image URL is required'],
+    },
+  },
+  {
+    _id: false, // Don't create separate _id for subdocuments
+  }
+);
+
+const orderSchema = new mongoose.Schema(
+  {
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'User reference is required'],
+    },
+    items: [orderItemSchema],
+    subtotal: {
+      type: Number,
+      required: [true, 'Subtotal is required'],
+      min: [0, 'Subtotal cannot be negative'],
+    },
+    tax: {
+      type: Number,
+      required: [true, 'Tax is required'],
+      min: [0, 'Tax cannot be negative'],
+      default: 0,
+    },
+    total: {
+      type: Number,
+      required: [true, 'Total is required'],
+      min: [0, 'Total cannot be negative'],
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'processing', 'completed', 'cancelled'],
+      default: 'pending',
+    },
+    stripePaymentIntentId: {
+      type: String,
+      trim: true,
+    },
+  },
+  {
+    timestamps: true,
+    // Transform output to map _id to id and remove __v
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  }
+);
+
+// Index for faster user order lookups
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ user: 1 });
+orderSchema.index({ stripePaymentIntentId: 1 }, { sparse: true });
+orderSchema.index({ status: 1 });
+
+/**
+ * Static method to calculate tax rate
+ * @returns {number} - Tax rate as decimal (e.g., 0.08 for 8%)
+ */
+orderSchema.statics.getTaxRate = function () {
+  // Default tax rate of 8%
+  return 0.08;
+};
+
+/**
+ * Static method to create order from cart
+ * @param {string} userId - The user ID
+ * @param {Array} cartItems - Array of cart items with populated products
+ * @returns {Promise<Document>} - The created order
+ */
+orderSchema.statics.createFromCart = async function (userId, cartItems) {
+  const taxRate = this.getTaxRate();
+  
+  // Map cart items to order items
+  const orderItems = cartItems.map((item) => ({
+    product: item.product._id,
+    name: item.product.name,
+    price: item.product.price,
+    qty: item.qty ?? 1,
+    img: item.product.img,
+  }));
+
+  // Calculate totals
+  const subtotal = orderItems.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const tax = parseFloat((subtotal * taxRate).toFixed(2));
+  const total = parseFloat((subtotal + tax).toFixed(2));
+
+  // Create order
+  const order = await this.create({
+    user: userId,
+    items: orderItems,
+    subtotal,
+    tax,
+    total,
+    status: 'completed', // Auto-complete for digital products
+  });
+
+  return order;
+};
+
+/**
+ * Instance method to update order status
+ * @param {string} newStatus - The new status
+ * @returns {Promise<Document>} - The updated order
+ */
+orderSchema.methods.updateStatus = async function (newStatus) {
+  this.status = newStatus;
+  return await this.save();
+};
+
+/**
+ * Instance method to cancel order
+ * @returns {Promise<Document>} - The cancelled order
+ */
+orderSchema.methods.cancel = async function () {
+  if (this.status === 'completed') {
+    throw new Error('Cannot cancel a completed order');
+  }
+  this.status = 'cancelled';
+  return await this.save();
+};
+
+const Order = mongoose.model('Order', orderSchema);
+
+module.exports = Order;
+
+
+--------------------------------------------------------------------------------
+FILE: models/Product.js
+--------------------------------------------------------------------------------
+
+/**
+ * Product Model
+ * 
+ * Defines the schema for anime wallpaper products including
+ * metadata like series, pricing, badges, ratings, and tags.
+ */
+
+const mongoose = require('mongoose');
+
+const productSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Product name is required'],
+      trim: true,
+      maxlength: [100, 'Product name cannot exceed 100 characters'],
+    },
+    series: {
+      type: String,
+      required: [true, 'Series is required'],
+      trim: true,
+      index: true,
+    },
+    anime: {
+      type: String,
+      trim: true,
+    },
+    price: {
+      type: Number,
+      required: [true, 'Price is required'],
+      min: [0, 'Price cannot be negative'],
+    },
+    badge: {
+      type: String,
+      trim: true,
+      enum: ['HOT', 'NEW', 'BESTSELLER', 'CLASSIC', 'PREMIUM', ''],
+      default: '',
+    },
+    badgeType: {
+      type: String,
+      enum: ['neon', 'pink', ''],
+      default: '',
+    },
+    rating: {
+      type: Number,
+      default: 0,
+      min: [0, 'Rating cannot be less than 0'],
+      max: [5, 'Rating cannot exceed 5'],
+    },
+    reviews: {
+      type: Number,
+      default: 0,
+      min: [0, 'Reviews count cannot be negative'],
+    },
+    img: {
+      type: String,
+      required: [true, 'Product image URL is required'],
+      trim: true,
+    },
+    resolution: {
+      type: String,
+      trim: true,
+      default: '4K Ultra HD',
+    },
+    availableResolutions: [
+      {
+        type: String,
+        enum: ['4k', '2k', '1080p'],
+      },
+    ],
+    assets: {
+      original: {
+        key: {
+          type: String,
+          trim: true,
+        },
+        contentType: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: Number,
+          min: 0,
+        },
+      },
+      '4k': {
+        key: {
+          type: String,
+          trim: true,
+        },
+        contentType: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: Number,
+          min: 0,
+        },
+      },
+      '2k': {
+        key: {
+          type: String,
+          trim: true,
+        },
+        contentType: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: Number,
+          min: 0,
+        },
+      },
+      '1080p': {
+        key: {
+          type: String,
+          trim: true,
+        },
+        contentType: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: Number,
+          min: 0,
+        },
+      },
+      preview: {
+        key: {
+          type: String,
+          trim: true,
+        },
+        url: {
+          type: String,
+          trim: true,
+        },
+        contentType: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: Number,
+          min: 0,
+        },
+      },
+      thumbnail: {
+        key: {
+          type: String,
+          trim: true,
+        },
+        url: {
+          type: String,
+          trim: true,
+        },
+        contentType: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: Number,
+          min: 0,
+        },
+      },
+      status: {
+        type: String,
+        enum: ['pending', 'processing', 'ready', 'failed'],
+        default: 'pending',
+      },
+    },
+    tags: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+    status: {
+      type: String,
+      trim: true,
+      enum: ['pending', 'active', 'rejected', 'removed'],
+      default: 'active',
+    },
+    rightsConfirmed: {
+      type: Boolean,
+      required: true,
+    },
+    termsAcceptedAt: {
+      type: Date,
+      required: true,
+    },
+    licenseType: {
+      type: String,
+      enum: ['original', 'ai_generated', 'licensed', 'fan_art_with_permission'],
+      required: true,
+    },
+    authorName: {
+      type: String,
+      trim: true,
+    },
+    sourceLink: {
+      type: String,
+      trim: true,
+    },
+    copyrightOwner: {
+      type: String,
+      trim: true,
+    },
+    fileHash: {
+      type: String,
+      trim: true,
+      index: true,
+      unique: true,
+      sparse: true,
+    },
+  },
+  {
+    timestamps: true,
+    // Transform output to map _id to id and remove __v
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      },
+    },
+  }
+);
+
+// Index frequently queried fields
+productSchema.index({ status: 1 });
+productSchema.index({ anime: 1 });
+productSchema.index({ tags: 1 });
+productSchema.index({ price: 1 });
+productSchema.index({ createdAt: -1 });
+
+/**
+ * Static method to get distinct series for filtering
+ * @returns {Promise<Array>} - Array of unique series names
+ */
+productSchema.statics.getDistinctSeries = async function () {
+  return await this.distinct('series', { status: 'active' });
+};
+
+/**
+ * Instance method to soft delete product
+ */
+productSchema.methods.softDelete = async function () {
+  this.status = 'removed';
+  return await this.save();
+};
+
+/**
+ * Instance method to restore soft deleted product
+ */
+productSchema.methods.restore = async function () {
+  this.status = 'active';
+  return await this.save();
+};
+
+const Product = mongoose.model('Product', productSchema);
+
+module.exports = Product;
+
+
+--------------------------------------------------------------------------------
+FILE: models/Review.js
+--------------------------------------------------------------------------------
+
+/**
+ * Review Model
+ *
+ * Stores product-level user reviews and ratings.
+ */
+
+const mongoose = require('mongoose');
+
+const reviewSchema = new mongoose.Schema(
+  {
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      required: [true, 'Product reference is required'],
+    },
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'User reference is required'],
+    },
+    rating: {
+      type: Number,
+      required: [true, 'Rating is required'],
+      min: [1, 'Rating must be at least 1'],
+      max: [5, 'Rating cannot exceed 5'],
+    },
+    comment: {
+      type: String,
+      trim: true,
+      maxlength: [1000, 'Comment cannot exceed 1000 characters'],
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+reviewSchema.index({ productId: 1 });
+
+const Review = mongoose.model('Review', reviewSchema);
+
+module.exports = Review;
+
+
+--------------------------------------------------------------------------------
+FILE: models/User.js
+--------------------------------------------------------------------------------
+
+/**
+ * User Model
+ * 
+ * Defines the schema for user accounts including authentication,
+ * profile information, gamification features (points, streaks),
+ * and library of purchased wallpapers.
+ */
+
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+
+const creatorRequestSchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: ['none', 'pending', 'approved', 'rejected'],
+      default: 'none',
+    },
+    displayName: {
+      type: String,
+      trim: true,
+    },
+    portfolioLink: {
+      type: String,
+      trim: true,
+    },
+    paymentEmail: {
+      type: String,
+      trim: true,
+    },
+    requestedAt: Date,
+    reviewedAt: Date,
+  },
+  { _id: false }
+);
+
+const creatorStatsSchema = new mongoose.Schema(
+  {
+    uploadsThisMonth: {
+      type: Number,
+      default: 0,
+    },
+    salesCount: {
+      type: Number,
+      default: 0,
+    },
+    creatorLevel: {
+      type: String,
+      enum: ['new', 'growing', 'pro'],
+      default: 'new',
+    },
+    uploadLimit: {
+      type: Number,
+      default: 5,
+    },
+  },
+  { _id: false }
+);
+
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Name is required'],
+      trim: true,
+      minlength: [2, 'Name must be at least 2 characters long'],
+      maxlength: [50, 'Name cannot exceed 50 characters'],
+    },
+    email: {
+      type: String,
+      required: [true, 'Email is required'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [
+        /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+        'Please enter a valid email address',
+      ],
+    },
+    password: {
+      type: String,
+      required: [true, 'Password is required'],
+      minlength: [6, 'Password must be at least 6 characters long'],
+      select: false, // Never return password in queries by default
+    },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationToken: {
+      type: String,
+      select: false,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      select: false,
+    },
+    passwordResetToken: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
+    },
+    passwordChangedAt: {
+      type: Date,
+      default: null,
+    },
+    loginAttempts: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    lockUntil: {
+      type: Date,
+      default: null,
+    },
+    avatar: {
+      type: String,
+      default: function () {
+        // Default avatar is the first letter of name in uppercase
+        return this.name ? this.name.charAt(0).toUpperCase() : 'U';
+      },
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin', 'creator'],
+      default: 'user',
+    },
+    creatorRequest: {
+      type: creatorRequestSchema,
+      default: () => ({}),
+    },
+    creatorStats: {
+      type: creatorStatsSchema,
+      default: () => ({}),
+    },
+    points: {
+      type: Number,
+      default: 150,
+      min: 0,
+    },
+    streakDays: {
+      type: Number,
+      default: 1,
+      min: 0,
+    },
+    purchasesCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    library: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Product',
+      },
+    ],
+  },
+  {
+    timestamps: true,
+    // Transform output to map _id to id and remove __v
+    toJSON: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        delete ret.password; // Ensure password is never returned
+        return ret;
+      },
+    },
+    toObject: {
+      virtuals: true,
+      transform: function (doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        delete ret.password;
+        return ret;
+      },
+    },
+  }
+);
+
+/**
+ * Pre-save middleware to hash password before saving
+ */
+userSchema.pre('save', async function (next) {
+  // Only hash the password if it has been modified (or is new)
+  if (!this.isModified('password')) return next();
+
+  try {
+    // Hash password with bcrypt
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12;
+    this.password = await bcrypt.hash(this.password, saltRounds);
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * Instance method to compare password
+ * @param {string} candidatePassword - The password to compare
+ * @returns {Promise<boolean>} - True if passwords match
+ */
+userSchema.methods.comparePassword = async function (candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+/**
+ * Instance method to update avatar based on name
+ */
+userSchema.methods.updateAvatar = function () {
+  this.avatar = this.name ? this.name.charAt(0).toUpperCase() : 'U';
+};
+
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;
+
+
+--------------------------------------------------------------------------------
+FILE: package.json
+--------------------------------------------------------------------------------
+
+{
+  "name": "anicartai-server",
+  "version": "1.0.0",
+  "description": "AniCartAi - Express.js backend for anime-themed e-commerce wallpaper store",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "dev:worker": "nodemon worker.js",
+    "dev:all": "concurrently \"npm run dev\" \"npm run dev:worker\"",
+    "worker": "node --max-old-space-size=4096 worker.js",
+    "seed": "node seed/seedProducts.js"
+  },
+  "keywords": [
+    "anime",
+    "e-commerce",
+    "wallpaper",
+    "express",
+    "mongodb"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1019.0",
+    "@aws-sdk/s3-request-presigner": "^3.1019.0",
+    "@bull-board/api": "^6.20.6",
+    "@bull-board/express": "^6.20.6",
+    "@sentry/node": "^7.120.4",
+    "@sentry/tracing": "^7.120.4",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
+    "bcrypt": "^5.1.1",
+    "bullmq": "^5.71.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "crypto": "^1.0.1",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.1",
+    "express-async-errors": "^3.1.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^7.5.1",
+    "express-timeout-handler": "^2.2.2",
+    "express-validator": "^7.3.1",
+    "file-type": "^22.0.0",
+    "helmet": "^7.2.0",
+    "hpp": "^0.2.3",
+    "http-status-codes": "^2.3.0",
+    "ioredis": "^5.10.1",
+    "jsonwebtoken": "^9.0.3",
+    "meilisearch": "^0.56.0",
+    "mime-types": "^3.0.2",
+    "mongoose": "^8.23.0",
+    "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
+    "nodemailer": "^8.0.4",
+    "p-limit": "^7.3.0",
+    "sharp": "^0.34.5",
+    "socket.io": "^4.8.3",
+    "stripe": "^21.0.1",
+    "uuid": "^13.0.0",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "nodemon": "^3.1.14"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "type": "commonjs"
+}
+
+
+--------------------------------------------------------------------------------
+FILE: routers/authRoutes.js
+--------------------------------------------------------------------------------
+
+/**
+ * Auth Routes
+ * 
+ * Defines routes for authentication endpoints including registration,
+ * login, logout, token refresh, and current user retrieval.
+ */
+
+const express = require('express');
+const router = express.Router();
+
+// Import controller functions
+const {
+  register,
+  verifyEmail,
+  resendVerification,
+  forgotPassword,
+  resetPassword,
+  login,
+  logout,
+  getMe,
+  refreshToken,
+} = require('../controllers/authController');
+
+// Import middleware
+const { protect } = require('../middleware/authMiddleware');
+const { authLimiter } = require('../middleware/rateLimiter');
+const {
+  registerValidation,
+  loginValidation,
+  resendVerificationValidation,
+  forgotPasswordValidation,
+  verifyEmailTokenValidation,
+  resetPasswordValidation,
+} = require('../middleware/validateRequest');
+
+/**
+ * @route   POST /api/auth/register
+ * @desc    Register a new user
+ * @access  Public
+ */
+router.post('/register', authLimiter, registerValidation, register);
+
+/**
+ * @route   POST /api/auth/login
+ * @desc    Login user
+ * @access  Public
+ */
+router.post('/login', authLimiter, loginValidation, login);
+
+/**
+ * @route   POST /api/auth/resend-verification
+ * @desc    Resend account verification email
+ * @access  Public
+ */
+router.post('/resend-verification', authLimiter, resendVerificationValidation, resendVerification);
+
+/**
+ * @route   GET /api/auth/verify-email/:token
+ * @desc    Verify account email
+ * @access  Public
+ */
+router.get('/verify-email/:token', verifyEmailTokenValidation, verifyEmail);
+
+/**
+ * @route   POST /api/auth/forgot-password
+ * @desc    Send password reset email
+ * @access  Public
+ */
+router.post('/forgot-password', authLimiter, forgotPasswordValidation, forgotPassword);
+
+/**
+ * @route   POST /api/auth/reset-password/:token
+ * @desc    Reset password with token
+ * @access  Public
+ */
+router.post('/reset-password/:token', resetPasswordValidation, resetPassword);
+
+/**
+ * @route   POST /api/auth/logout
+ * @desc    Logout user and clear refresh token
+ * @access  Private
+ */
+router.post('/logout', protect, logout);
+
+/**
+ * @route   GET /api/auth/me
+ * @desc    Get current logged-in user
+ * @access  Private
+ */
+router.get('/me', protect, getMe);
+
+/**
+ * @route   POST /api/auth/refresh
+ * @desc    Refresh access token
+ * @access  Public (requires valid refresh token cookie)
+ */
+router.post('/refresh', refreshToken);
+
+module.exports = router;
+
+
+--------------------------------------------------------------------------------
+FILE: routers/cartRoutes.js
+--------------------------------------------------------------------------------
+
+/**
+ * Cart Routes
+ * 
+ * Defines routes for cart operations including retrieving cart,
+ * adding items, updating quantities, removing items, and clearing cart.
+ */
+
+const express = require('express');
+const router = express.Router();
+
+// Import controller functions
+const {
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeFromCart,
+  clearCart,
+  syncCart,
+} = require('../controllers/cartController');
+
+// Import middleware
+const { protect } = require('../middleware/authMiddleware');
+const { apiLimiter } = require('../middleware/rateLimiter');
+const {
+  addToCartValidation,
+  updateCartValidation,
+  removeFromCartValidation,
+} = require('../middleware/validateRequest');
+
+/**
+ * @route   GET /api/cart
+ * @desc    Get user's cart with populated product details
+ * @access  Private
+ */
+router.get('/', protect, getCart);
+
+/**
+ * @route   POST /api/cart/add
+ * @desc    Add product to cart
+ * @access  Private
+ */
+router.post('/add', protect, apiLimiter, addToCartValidation, addToCart);
+
+/**
+ * @route   PUT /api/cart/update
+ * @desc    Update item quantity in cart
+ * @access  Private
+ */
+router.put('/update', protect, apiLimiter, updateCartValidation, updateCartItem);
+
+/**
+ * @route   DELETE /api/cart/remove/:productId
+ * @desc    Remove item from cart
+ * @access  Private
+ */
+router.delete('/remove/:productId', protect, apiLimiter, removeFromCartValidation, removeFromCart);
+
+/**
+ * @route   DELETE /api/cart/clear
+ * @desc    Clear entire cart
+ * @access  Private
+ */
+router.delete('/clear', protect, clearCart);
+
+/**
+ * @route   POST /api/cart/sync
+ * @desc    Sync cart with client-side cart
+ * @access  Private
+ */
+router.post('/sync', protect, syncCart);
+
+module.exports = router;
+
+
+--------------------------------------------------------------------------------
+FILE: routers/creatorRoutes.js
+--------------------------------------------------------------------------------
+
+/**
+ * Creator routes
+ * Includes user creator-apply endpoint and admin review endpoints.
+ */
+
+const express = require('express');
+const {
+  applyCreator,
+  getPendingCreatorRequests,
+  approveCreator,
+  rejectCreator,
+} = require('../controllers/creatorController');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
+const {
+  creatorApplyValidation,
+  creatorReviewValidation,
+} = require('../middleware/validateRequest');
+
+const router = express.Router();
+
+router.post('/creator/apply', protect, creatorApplyValidation, applyCreator);
+
+router.get('/admin/creator-requests', protect, adminOnly, getPendingCreatorRequests);
+router.put(
+  '/admin/creator-requests/:userId/approve',
+  protect,
+  adminOnly,
+  creatorReviewValidation,
+  approveCreator
+);
+router.put(
+  '/admin/creator-requests/:userId/reject',
+  protect,
+  adminOnly,
+  creatorReviewValidation,
+  rejectCreator
+);
+
+module.exports = router;
+
+
+--------------------------------------------------------------------------------
+FILE: routers/orderRoutes.js
+--------------------------------------------------------------------------------
+
+/**
+ * Order Routes
+ * 
+ * Defines routes for order operations including checkout,
+ * retrieving order history, and getting order details.
+ */
+
+const express = require('express');
+const router = express.Router();
+
+// Import controller functions
+const {
+  checkout,
+  getOrders,
+  getOrder,
+  cancelOrder,
+  getOrderStats,
+} = require('../controllers/orderController');
+
+// Import middleware
+const { protect } = require('../middleware/authMiddleware');
+const { apiLimiter } = require('../middleware/rateLimiter');
+const {
+  orderIdValidation,
+  paginationValidation,
+} = require('../middleware/validateRequest');
+
+/**
+ * @route   POST /api/orders/checkout
+ * @desc    Create order from cart (checkout)
+ * @access  Private
+ */
+router.post('/checkout', protect, apiLimiter, checkout);
+
+/**
+ * @route   GET /api/orders
+ * @desc    Get user's order history
+ * @access  Private
+ */
+router.get('/', protect, paginationValidation, getOrders);
+
+/**
+ * @route   GET /api/orders/stats/summary
+ * @desc    Get order statistics for user
+ * @access  Private
+ */
+router.get('/stats/summary', protect, getOrderStats);
+
+/**
+ * @route   GET /api/orders/:id
+ * @desc    Get single order detail
+ * @access  Private
+ */
+router.get('/:id', protect, orderIdValidation, getOrder);
+
+/**
+ * @route   PUT /api/orders/:id/cancel
+ * @desc    Cancel an order
+ * @access  Private
+ */
+router.put('/:id/cancel', protect, orderIdValidation, cancelOrder);
+
+module.exports = router;
+
+
+--------------------------------------------------------------------------------
+FILE: routers/productRoutes.js
+--------------------------------------------------------------------------------
+
+/**
+ * Product Routes
+ * 
+ * Defines routes for product operations including listing, retrieving,
+ * creating, updating, and soft-deleting products.
+ */
+
+const express = require('express');
+const router = express.Router();
+
+// Import controller functions
+const {
+  getProducts,
+  getProduct,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getSeries,
+  restoreProduct,
+} = require('../controllers/productController');
+
+// Import middleware
+const { protect, adminOnly } = require('../middleware/authMiddleware');
+const { apiLimiter } = require('../middleware/rateLimiter');
+const {
+  createProductValidation,
+  updateProductValidation,
+  productIdValidation,
+  paginationValidation,
+} = require('../middleware/validateRequest');
+
+/**
+ * @route   GET /api/products
+ * @desc    Get all products with optional filtering and pagination
+ * @access  Public
+ */
+router.get('/', apiLimiter, paginationValidation, getProducts);
+
+/**
+ * @route   GET /api/products/series/list
+ * @desc    Get all product series for filters
+ * @access  Public
+ */
+router.get('/series/list', getSeries);
+
+/**
+ * @route   POST /api/products
+ * @desc    Create new product
+ * @access  Private/Admin
+ */
+router.post('/', protect, adminOnly, createProductValidation, createProduct);
+
+/**
+ * @route   GET /api/products/:id
+ * @desc    Get single product by ID
+ * @access  Public
+ */
+router.get('/:id', apiLimiter, productIdValidation, getProduct);
+
+/**
+ * @route   PUT /api/products/:id
+ * @desc    Update product
+ * @access  Private/Admin
+ */
+router.put('/:id', protect, adminOnly, updateProductValidation, updateProduct);
+
+/**
+ * @route   DELETE /api/products/:id
+ * @desc    Soft delete product
+ * @access  Private/Admin
+ */
+router.delete('/:id', protect, adminOnly, productIdValidation, deleteProduct);
+
+/**
+ * @route   PUT /api/products/:id/restore
+ * @desc    Restore soft-deleted product
+ * @access  Private/Admin
+ */
+router.put('/:id/restore', protect, adminOnly, productIdValidation, restoreProduct);
+
+module.exports = router;
+
+
+--------------------------------------------------------------------------------
+FILE: routers/uploadRoutes.js
+--------------------------------------------------------------------------------
+
+const express = require('express');
+const timeout = require('express-timeout-handler');
+const { protect, adminOrCreator } = require('../middleware/authMiddleware');
+const checkUploadLimit = require('../middleware/checkUploadLimit');
+const multerUpload = require('../middleware/multerUpload');
+const uploadController = require('../controllers/uploadController');
+
+const router = express.Router();
+
+const uploadTimeout = timeout.handler({
+  timeout: 30000,
+  onTimeout: (req, res) => {
+    res.status(408).json({
+      success: false,
+      message: 'Upload timeout. File too large or connection too slow.',
+    });
+  },
+});
+
+router.post(
+  '/wallpaper',
+  protect,
+  adminOrCreator,
+  checkUploadLimit,
+  uploadTimeout,
+  multerUpload,
+  uploadController.uploadWallpaper
+);
+
+router.get(
+  '/status/:productId',
+  protect,
+  uploadController.getUploadStatus
+);
+
+module.exports = router;
+
+--------------------------------------------------------------------------------
+FILE: routers/userRoutes.js
+--------------------------------------------------------------------------------
+
+/**
+ * User Routes
+ * 
+ * Defines routes for user profile operations including retrieving
+ * profile, updating profile, and changing passwords.
+ */
+
+const express = require('express');
+const router = express.Router();
+
+// Import controller functions
+const {
+  getProfile,
+  updateProfile,
+  changePassword,
+  getLibrary,
+} = require('../controllers/userController');
+
+// Import middleware
+const { protect } = require('../middleware/authMiddleware');
+const { strictLimiter } = require('../middleware/rateLimiter');
+const {
+  updateProfileValidation,
+  changePasswordValidation,
+} = require('../middleware/validateRequest');
+
+/**
+ * @route   GET /api/users/profile
+ * @desc    Get user profile
+ * @access  Private
+ */
+router.get('/profile', protect, getProfile);
+
+/**
+ * @route   PUT /api/users/profile
+ * @desc    Update user profile
+ * @access  Private
+ */
+router.put('/profile', protect, updateProfileValidation, updateProfile);
+
+/**
+ * @route   PUT /api/users/password
+ * @desc    Change user password
+ * @access  Private
+ */
+router.put('/password', protect, strictLimiter, changePasswordValidation, changePassword);
+
+/**
+ * @route   GET /api/users/library
+ * @desc    Get user's purchased wallpapers library
+ * @access  Private
+ */
+router.get('/library', protect, getLibrary);
+
+module.exports = router;
+
+
+--------------------------------------------------------------------------------
+FILE: routers/workerRoutes.js
+--------------------------------------------------------------------------------
+
+/**
+ * Worker Routes
+ *
+ * - Health check endpoint for worker status
+ * - Bull Board dashboard for BullMQ queue monitoring
+ */
+
+const express = require('express');
+const { createBullBoard } = require('@bull-board/api');
+const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
+const { ExpressAdapter } = require('@bull-board/express');
+const { imageProcessingQueue } = require('../jobs/queues');
+const { redisConnection } = require('../config/redis');
+const mongoose = require('mongoose');
+
+const router = express.Router();
+
+/**
+ * Worker Health Check
+ * GET /api/v1/worker/health
+ */
+router.get('/health', async (req, res) => {
+  // Check Redis connection
+  let redisStatus = 'disconnected';
+  try {
+    await redisConnection.ping();
+    redisStatus = 'connected';
+  } catch (err) {
+    redisStatus = 'error';
+  }
+
+  // Check MongoDB connection
+  let mongoStatus = 'disconnected';
+  try {
+    if (mongoose.connection.readyState === 1) {
+      mongoStatus = 'connected';
+    }
+  } catch (err) {
+    mongoStatus = 'error';
+  }
+
+  // Overall status
+  const status = redisStatus === 'connected' && mongoStatus === 'connected' ? 'ok' : 'degraded';
+
+  res.status(200).json({
+    status,
+    worker: 'running',
+    redis: redisStatus,
+    mongodb: mongoStatus,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * Bull Board Dashboard Setup
+ * Mounted at /admin/queues
+ */
+const serverAdapter = new ExpressAdapter();
+serverAdapter.setBasePath('/admin/queues');
+
+createBullBoard({
+  queues: [new BullMQAdapter(imageProcessingQueue)],
+  serverAdapter,
+});
+
+module.exports = { router, serverAdapter };
+
+
+--------------------------------------------------------------------------------
+FILE: routes/debugRoutes.js
+--------------------------------------------------------------------------------
+
+const express = require('express');
+const router = express.Router();
+
+router.get('/crash', (req, res) => {
+  throw new Error('Sentry manual crash test');
+});
+
+router.get('/async-crash', async (req, res) => {
+  await Promise.reject(new Error('Sentry async crash test'));
+});
+
+module.exports = router;
+
+
+--------------------------------------------------------------------------------
+FILE: routes/index.js
+--------------------------------------------------------------------------------
+
+/**
+ * API v1 — aggregates domain routers (relative paths unchanged).
+ */
+
+const express = require('express');
+const router = express.Router();
+
+const authRoutes = require('../routers/authRoutes');
+const userRoutes = require('../routers/userRoutes');
+const productRoutes = require('../routers/productRoutes');
+const cartRoutes = require('../routers/cartRoutes');
+const orderRoutes = require('../routers/orderRoutes');
+const creatorRoutes = require('../routers/creatorRoutes');
+const testRoutes = require('./testRoutes');
+const debugRoutes = require('./debugRoutes');
+const uploadRoutes = require('../routers/uploadRoutes');
+
+router.use('/auth', authRoutes);
+router.use('/users', userRoutes);
+router.use('/products', productRoutes);
+router.use('/cart', cartRoutes);
+router.use('/orders', orderRoutes);
+router.use('/', creatorRoutes);
+router.use('/test', testRoutes);
+router.use('/debug', debugRoutes);
+router.use('/upload', uploadRoutes);
+
+module.exports = router;
+
+
+--------------------------------------------------------------------------------
+FILE: routes/testRoutes.js
+--------------------------------------------------------------------------------
+
+const express = require('express');
+const router = express.Router();
+
+router.get('/sentry-test', (req, res) => {
+  throw new Error('Sentry test crash');
+});
+
+module.exports = router;
+
+
+--------------------------------------------------------------------------------
+FILE: seed/seedProducts.js
+--------------------------------------------------------------------------------
+
+/**
+ * Seed Script
+ * 
+ * Seeds the database with initial products and a default admin user.
+ * Run with: npm run seed
+ */
+
+require('dotenv').config();
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const logger = require('../utils/logger');
+
+// Import models
+const Product = require('../models/Product');
+const User = require('../models/User');
+
+// MongoDB connection string
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/AniCartAi';
+
+// Sample products data matching the frontend
+const productsData = [
+  {
+    name: 'Itadori Yuji — Cursed Pulse',
+    series: 'Jujutsu Kaisen',
+    price: 4.99,
+    badge: 'HOT',
+    badgeType: 'neon',
+    rating: 4.9,
+    reviews: 234,
+    img: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD',
+    tags: ['Action', 'Dark Fantasy'],
+  },
+  {
+    name: "Mikasa Ackerman — Titan's Edge",
+    series: 'Attack on Titan',
+    price: 3.99,
+    badge: 'NEW',
+    badgeType: 'pink',
+    rating: 4.8,
+    reviews: 189,
+    img: 'https://images.unsplash.com/photo-1547036967-23d11aacaee0?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD',
+    tags: ['Action', 'Post-Apocalyptic'],
+  },
+  {
+    name: 'Nezuko — Bamboo Blossom',
+    series: 'Demon Slayer',
+    price: 5.99,
+    badge: 'BESTSELLER',
+    badgeType: 'neon',
+    rating: 5.0,
+    reviews: 412,
+    img: 'https://images.unsplash.com/photo-1492576540313-31ad3a64ba5e?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD',
+    tags: ['Fantasy', 'Adventure'],
+  },
+  {
+    name: 'Naruto — Nine-Tails Awakening',
+    series: 'Naruto Shippuden',
+    price: 3.49,
+    badge: 'CLASSIC',
+    badgeType: 'neon',
+    rating: 4.7,
+    reviews: 567,
+    img: 'https://images.unsplash.com/photo-1553979459-d2229ba7433b?w=400&h=300&fit=crop',
+    resolution: '2K HD',
+    tags: ['Action', 'Ninja'],
+  },
+  {
+    name: 'Gojo Satoru — Infinity Veil',
+    series: 'Jujutsu Kaisen',
+    price: 6.99,
+    badge: 'PREMIUM',
+    badgeType: 'pink',
+    rating: 4.9,
+    reviews: 321,
+    img: 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD',
+    tags: ['Action', 'Supernatural'],
+  },
+  {
+    name: 'Levi Ackerman — Thunder Spear',
+    series: 'Attack on Titan',
+    price: 4.49,
+    badge: 'NEW',
+    badgeType: 'neon',
+    rating: 4.8,
+    reviews: 276,
+    img: 'https://images.unsplash.com/photo-1547636780-9b865e394b50?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD',
+    tags: ['Action', 'Drama'],
+  },
+  {
+    name: 'Luffy — Gear Fifth',
+    series: 'One Piece',
+    price: 5.49,
+    badge: 'HOT',
+    badgeType: 'pink',
+    rating: 4.9,
+    reviews: 398,
+    img: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&h=300&fit=crop',
+    resolution: '4K Ultra HD',
+    tags: ['Adventure', 'Comedy'],
+  },
+  {
+    name: 'Zoro — Asura Phantom',
+    series: 'One Piece',
+    price: 4.99,
+    badge: 'CLASSIC',
+    badgeType: 'neon',
+    rating: 4.7,
+    reviews: 245,
+    img: 'https://images.unsplash.com/photo-1580130732478-4e339fb33746?w=400&h=300&fit=crop',
+    resolution: '2K HD',
+    tags: ['Action', 'Adventure'],
+  },
+];
+
+// Default admin user
+const adminUser = {
+  name: 'Admin',
+  email: 'admin@anicart.com',
+  password: 'Admin@1234',
+  role: 'admin',
+};
+
+/**
+ * Connect to MongoDB
+ */
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(MONGODB_URI, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    logger.info('MongoDB connected', { host: conn.connection.host });
+    logger.info('Database selected', { name: conn.connection.name });
+  } catch (error) {
+    logger.error('Error connecting to MongoDB', { error: error.message });
+    process.exit(1);
+  }
+};
+
+/**
+ * Seed products to database
+ */
+const seedProducts = async () => {
+  try {
+    logger.info('Seeding products started');
+    
+    // Delete existing products
+    await Product.deleteMany({});
+    logger.info('Cleared existing products');
+
+    // Insert new products
+    const createdProducts = await Product.insertMany(productsData);
+    logger.info('Created products', { count: createdProducts.length });
+
+    // Log created products
+    createdProducts.forEach((product) => {
+      logger.info('Created product', {
+        name: product.name,
+        series: product.series,
+        price: product.price,
+      });
+    });
+
+    return createdProducts;
+  } catch (error) {
+    logger.error('Error seeding products', { error: error.message });
+    throw error;
+  }
+};
+
+/**
+ * Seed admin user to database
+ */
+const seedAdminUser = async () => {
+  try {
+    logger.info('Seeding admin user started');
+
+    // Check if admin already exists
+    const existingAdmin = await User.findOne({ email: adminUser.email });
+    if (existingAdmin) {
+      logger.info('Admin user already exists, skipping');
+      return existingAdmin;
+    }
+
+    // Hash password
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS, 10) || 12;
+    const hashedPassword = await bcrypt.hash(adminUser.password, saltRounds);
+
+    // Create admin user
+    const createdAdmin = await User.create({
+      ...adminUser,
+      password: hashedPassword,
+      avatar: adminUser.name.charAt(0).toUpperCase(),
+    });
+
+    logger.info('Admin user created successfully', {
+      name: createdAdmin.name,
+      email: createdAdmin.email,
+      role: createdAdmin.role,
+    });
+
+    return createdAdmin;
+  } catch (error) {
+    logger.error('Error seeding admin user', { error: error.message });
+    throw error;
+  }
+};
+
+/**
+ * Main seed function
+ */
+const seedDatabase = async () => {
+  try {
+    logger.info('AniCart database seeder started');
+
+    // Connect to database
+    await connectDB();
+
+    // Seed products
+    await seedProducts();
+
+    // Seed admin user
+    await seedAdminUser();
+
+    logger.info('Seeding completed successfully');
+
+    // Close connection
+    await mongoose.connection.close();
+    logger.info('Database connection closed');
+    process.exit(0);
+  } catch (error) {
+    logger.error('Seeding failed', { error: error.message });
+
+    // Close connection if open
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.connection.close();
+    }
+    process.exit(1);
+  }
+};
+
+// Run seeder
+seedDatabase();
+
+
+--------------------------------------------------------------------------------
+FILE: server.js
+--------------------------------------------------------------------------------
+
+/**
+ * AniCart Server Entry Point
+ * Crash-safe + Sentry + Auto restart via nodemon
+ */
+
+// Suppress url.parse warning BEFORE anything loads
+const originalEmitWarning = process.emitWarning;
+process.emitWarning = (warning, ...args) => {
+  const msg = typeof warning === 'string' ? warning : warning?.message || '';
+  const code = typeof warning === 'object' ? warning?.code : args[1];
+
+  if (code === 'DEP0169' || msg.includes('url.parse()')) return;
+  return originalEmitWarning.call(process, warning, ...args);
+};
+
+require('dotenv').config();
+
+const config = require('./config');
+const connectDB = require('./db/database');
+const { startCreatorMonthlyResetJob } = require('./jobs/creatorMonthlyResetJob');
+const logger = require('./utils/logger');
+
+let Sentry;
+if (config.SENTRY_DSN) {
+  Sentry = require('@sentry/node');
+  Sentry.init({
+    dsn: config.SENTRY_DSN,
+    environment: config.NODE_ENV || 'development',
+    tracesSampleRate: 1.0,
+  });
+}
+
+const app = require('./app');
+
+let server;
+
+// GLOBAL ERROR HANDLERS (VERY IMPORTANT)
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION:', err);
+  if (Sentry) Sentry.captureException(err);
+  shutdown();
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION:', err);
+  if (Sentry) Sentry.captureException(err);
+  shutdown();
+});
+
+function shutdown() {
+  console.log('Shutting down gracefully...');
+
+  if (server) {
+    server.close(() => {
+      console.log('Process terminated');
+      process.exit(1);
+    });
+
+    // Force close after 10s
+    setTimeout(() => {
+      process.exit(1);
+    }, 10000);
+  } else {
+    process.exit(1);
+  }
+}
+
+// Connect DB
+connectDB();
+startCreatorMonthlyResetJob();
+
+// Start server
+const PORT = config.PORT || 5000;
+
+server = app.listen(PORT, () => {
+  logger.info(`[API] Server running on port ${PORT}`);
+  logger.info(`[API] Environment: ${config.NODE_ENV}`);
+  logger.info(`[API] URL: http://localhost:${PORT}/api/v1`);
+});
+
+
+--------------------------------------------------------------------------------
+FILE: services/authService.js
+--------------------------------------------------------------------------------
+
+/**
+ * Auth service — registration, login, token refresh, verification, and password reset.
+ */
+
+const User = require('../models/User');
+const ApiError = require('../utils/apiError');
+const { generateTokens, verifyRefreshToken } = require('../utils/generateToken');
+const { createSecureToken, hashToken } = require('../utils/secureToken');
+const {
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+} = require('../services/emailService');
+const {
+  isLoginLocked,
+  recordFailedLogin,
+  clearLoginProtection,
+} = require('../services/loginProtectionService');
+
+const EMAIL_VERIFICATION_EXPIRES_MS = 24 * 60 * 60 * 1000;
+const PASSWORD_RESET_EXPIRES_MS = 15 * 60 * 1000;
+
+const normalizeEmail = (email) => String(email).trim().toLowerCase();
+
+async function register({ name, email, password }) {
+  const normalizedEmail = normalizeEmail(email);
+  const existingUser = await User.findOne({ email: normalizedEmail });
+  if (existingUser) {
+    throw ApiError.conflict('Email already registered');
+  }
+
+  const user = await User.create({
+    name: String(name).trim(),
+    email: normalizedEmail,
+    password,
+  });
+
+  const verificationTokenData = createSecureToken(EMAIL_VERIFICATION_EXPIRES_MS);
+  user.emailVerificationToken = verificationTokenData.hashedToken;
+  user.emailVerificationExpires = verificationTokenData.expiresAt;
+  await user.save({ validateBeforeSave: false });
+
+  await sendVerificationEmail(user, verificationTokenData.rawToken);
+
+  const userResponse = await User.findById(user._id);
+  return { user: userResponse };
+}
+
+async function verifyEmail(token) {
+  const hashedToken = hashToken(token);
+
+  const user = await User.findOne({
+    emailVerificationToken: hashedToken,
+    emailVerificationExpires: { $gt: new Date() },
+  }).select('+emailVerificationToken +emailVerificationExpires');
+
+  if (!user) {
+    throw ApiError.badRequest(
+      'Verification link is invalid or expired. Please request a new verification email.'
+    );
+  }
+
+  user.isVerified = true;
+  user.emailVerificationToken = undefined;
+  user.emailVerificationExpires = undefined;
+  await user.save({ validateBeforeSave: false });
+
+  return user;
+}
+
+async function resendVerification(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const user = await User.findOne({ email: normalizedEmail }).select(
+    '+emailVerificationToken +emailVerificationExpires'
+  );
+
+  if (!user) {
+    return { sent: false, reason: 'not_found' };
+  }
+
+  if (user.isVerified) {
+    return { sent: false, reason: 'already_verified' };
+  }
+
+  const verificationTokenData = createSecureToken(EMAIL_VERIFICATION_EXPIRES_MS);
+  user.emailVerificationToken = verificationTokenData.hashedToken;
+  user.emailVerificationExpires = verificationTokenData.expiresAt;
+  await user.save({ validateBeforeSave: false });
+
+  await sendVerificationEmail(user, verificationTokenData.rawToken);
+  return { sent: true };
+}
+
+async function forgotPassword(email) {
+  const normalizedEmail = normalizeEmail(email);
+  const user = await User.findOne({ email: normalizedEmail }).select(
+    '+passwordResetToken +passwordResetExpires'
+  );
+
+  if (!user) {
+    // Do not leak account existence.
+    return;
+  }
+
+  const resetTokenData = createSecureToken(PASSWORD_RESET_EXPIRES_MS);
+  user.passwordResetToken = resetTokenData.hashedToken;
+  user.passwordResetExpires = resetTokenData.expiresAt;
+  await user.save({ validateBeforeSave: false });
+
+  await sendPasswordResetEmail(user, resetTokenData.rawToken);
+}
+
+async function resetPassword(token, newPassword) {
+  const hashedToken = hashToken(token);
+
+  const user = await User.findOne({
+    passwordResetToken: hashedToken,
+    passwordResetExpires: { $gt: new Date() },
+  }).select('+passwordResetToken +passwordResetExpires +password');
+
+  if (!user) {
+    throw ApiError.badRequest(
+      'Reset link is invalid or expired. Please request a new password reset link.'
+    );
+  }
+
+  user.password = newPassword;
+  user.passwordResetToken = undefined;
+  user.passwordResetExpires = undefined;
+  await user.save();
+
+  await clearLoginProtection(user.email);
+
+  return user;
+}
+
+async function login({ email, password }) {
+  const normalizedEmail = normalizeEmail(email);
+  const user = await User.findOne({ email: normalizedEmail }).select('+password');
+
+  if (!user) {
+    throw ApiError.unauthorized('Invalid email or password');
+  }
+
+  if (await isLoginLocked(normalizedEmail)) {
+    throw new ApiError(429, 'Too many login attempts. Try again in 10 minutes.');
+  }
+
+  if (!user.isVerified) {
+    throw ApiError.forbidden('Please verify your email before logging in.');
+  }
+
+  const isPasswordValid = await user.comparePassword(password);
+  if (!isPasswordValid) {
+    const { locked } = await recordFailedLogin(normalizedEmail);
+    if (locked) {
+      throw new ApiError(429, 'Too many login attempts. Try again in 10 minutes.');
+    }
+
+    throw ApiError.unauthorized('Invalid email or password');
+  }
+
+  await clearLoginProtection(normalizedEmail);
+
+  const { accessToken, refreshToken } = generateTokens(user);
+  const userResponse = await User.findById(user._id);
+
+  return { user: userResponse, accessToken, refreshToken };
+}
+
+async function refreshToken(refreshTokenString) {
+  if (!refreshTokenString) {
+    throw ApiError.unauthorized('Refresh token not found');
+  }
+
+  try {
+    const decoded = verifyRefreshToken(refreshTokenString);
+    const user = await User.findById(decoded.id);
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return generateTokens(user);
+  } catch {
+    throw ApiError.unauthorized('Invalid refresh token');
+  }
+}
+
+async function getMe(userId) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+  return user;
+}
+
+module.exports = {
+  register,
+  verifyEmail,
+  resendVerification,
+  forgotPassword,
+  resetPassword,
+  login,
+  refreshToken,
+  getMe,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: services/cartService.js
+--------------------------------------------------------------------------------
+
+/**
+ * Cart service — business logic for shopping carts.
+ */
+
+const Cart = require('../models/Cart');
+const Product = require('../models/Product');
+const ApiError = require('../utils/apiError');
+
+const POPULATE_PRODUCT = {
+  path: 'items.product',
+  select: '-__v',
+};
+
+function buildSummary(cart) {
+  const itemCount = cart.items.length;
+  const totalPrice = cart.items.reduce((total, item) => {
+    const price = item.product?.price || 0;
+    return total + price;
+  }, 0);
+  return {
+    itemCount,
+    totalPrice: parseFloat(totalPrice.toFixed(2)),
+  };
+}
+
+async function getPopulatedCartById(cartId) {
+  return Cart.findById(cartId).populate(POPULATE_PRODUCT);
+}
+
+async function getCart(userId) {
+  let cart = await Cart.findOne({ user: userId }).populate(POPULATE_PRODUCT);
+  if (!cart) {
+    cart = await Cart.create({ user: userId, items: [] });
+    cart = await getPopulatedCartById(cart._id);
+  }
+  return { cart, summary: buildSummary(cart) };
+}
+
+async function addToCart(userId, productId) {
+  const product = await Product.findOne({ _id: productId, status: 'active' });
+  if (!product) {
+    throw ApiError.notFound('Product not found');
+  }
+
+  let cart = await Cart.findOne({ user: userId });
+  if (!cart) {
+    cart = await Cart.create({ user: userId, items: [] });
+  }
+
+  await cart.addItem(productId);
+
+  const updatedCart = await getPopulatedCartById(cart._id);
+  return { cart: updatedCart, summary: buildSummary(updatedCart) };
+}
+
+/** PUT /api/cart/update — ensures product is in cart (unique items; quantity not stored). */
+async function updateCartItem(userId, productId) {
+  return addToCart(userId, productId);
+}
+
+async function removeFromCart(userId, productId) {
+  const cart = await Cart.findOne({ user: userId });
+  if (!cart) {
+    throw ApiError.notFound('Cart not found');
+  }
+
+  await cart.removeItem(productId);
+
+  const updatedCart = await getPopulatedCartById(cart._id);
+  return { cart: updatedCart, summary: buildSummary(updatedCart) };
+}
+
+async function clearCart(userId) {
+  const cart = await Cart.findOne({ user: userId });
+  if (cart) {
+    await cart.clearCart();
+  }
+  return {
+    cart: {
+      items: [],
+      itemCount: 0,
+      totalPrice: 0,
+    },
+  };
+}
+
+async function syncCart(userId, items) {
+  let cart = await Cart.findOne({ user: userId });
+  if (!cart) {
+    cart = await Cart.create({ user: userId, items: [] });
+  }
+
+  if (items && Array.isArray(items) && items.length > 0) {
+    const uniqueIds = [
+      ...new Set(
+        items.map((item) => item.productId).filter(Boolean)
+      ),
+    ];
+
+    const validProducts = await Product.find({
+      _id: { $in: uniqueIds },
+      status: 'active',
+    }).select('_id');
+
+    const validSet = new Set(validProducts.map((p) => p._id.toString()));
+
+    cart.items = [];
+    for (const id of uniqueIds) {
+      if (validSet.has(id.toString())) {
+        cart.items.push({ product: id });
+      }
+    }
+
+    await cart.save();
+  }
+
+  const updatedCart = await getPopulatedCartById(cart._id);
+  return { cart: updatedCart, summary: buildSummary(updatedCart) };
+}
+
+module.exports = {
+  getCart,
+  addToCart,
+  updateCartItem,
+  removeFromCart,
+  clearCart,
+  syncCart,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: services/emailService.js
+--------------------------------------------------------------------------------
+
+/**
+ * Email service using Nodemailer + Gmail SMTP.
+ * Email failures are logged and swallowed to avoid breaking user flows.
+ */
+
+const nodemailer = require('nodemailer');
+const config = require('../config');
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+const sentEmailStore = new Map();
+
+const getStoreKey = (email, type) => `${String(email).toLowerCase()}:${type}`;
+
+const storeSentToken = (email, type, token) => {
+  sentEmailStore.set(getStoreKey(email, type), {
+    token,
+    sentAt: new Date(),
+  });
+};
+
+const getLatestTokenForTesting = (email, type) => {
+  const entry = sentEmailStore.get(getStoreKey(email, type));
+  return entry ? entry.token : null;
+};
+
+const cardTemplate = ({ title, subtitle, buttonText, buttonUrl, footerText }) => `
+  <div style="font-family:Segoe UI,Arial,sans-serif;background:#f6f8fb;padding:24px;">
+    <div style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e8ecf4;border-radius:12px;padding:28px;">
+      <h1 style="margin:0 0 8px;font-size:22px;color:#111827;">${title}</h1>
+      <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#4b5563;">${subtitle}</p>
+      ${
+        buttonUrl
+          ? `<a href="${buttonUrl}" style="display:inline-block;padding:12px 18px;background:#111827;color:#fff;text-decoration:none;border-radius:10px;font-weight:600;">${buttonText}</a>`
+          : ''
+      }
+      <p style="margin:22px 0 0;font-size:13px;line-height:1.6;color:#6b7280;">${footerText || ''}</p>
+    </div>
+  </div>
+`;
+
+const sendEmail = async ({ to, subject, html }) => {
+  const info = await transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to,
+    subject,
+    html,
+  });
+
+  return info;
+};
+
+const sendVerificationEmail = async (user, verificationToken) => {
+  const verifyUrl = `${config.CLIENT_URL}/verify-email?token=${verificationToken}`;
+
+  const result = await sendEmail({
+    to: user.email,
+    subject: 'Verify your AniCart account',
+    html: cardTemplate({
+      title: 'Verify your AniCart account',
+      subtitle: `Hi ${user.name || 'there'}, please confirm your email to activate your account.`,
+      buttonText: 'Verify Email',
+      buttonUrl: verifyUrl,
+      footerText: 'If you did not sign up, you can ignore this email.',
+    }),
+  });
+
+  storeSentToken(user.email, 'verification', verificationToken);
+  return result;
+};
+
+const sendPasswordResetEmail = async (user, resetToken) => {
+  const resetUrl = `${config.CLIENT_URL}/reset-password?token=${resetToken}`;
+
+  const result = await sendEmail({
+    to: user.email,
+    subject: 'Reset your AniCart password',
+    html: cardTemplate({
+      title: 'Reset your AniCart password',
+      subtitle: 'We received a password reset request for your account.',
+      buttonText: 'Reset Password',
+      buttonUrl: resetUrl,
+      footerText: 'This link expires in 15 minutes.',
+    }),
+  });
+
+  storeSentToken(user.email, 'reset', resetToken);
+  return result;
+};
+
+const sendOrderReceiptEmail = async (user, order) => {
+  const total = order?.totalAmount ?? order?.total ?? 0;
+  const orderId = order?._id || order?.id || 'N/A';
+
+  return sendEmail({
+    to: user.email,
+    subject: 'Your AniCart Order Receipt',
+    html: cardTemplate({
+      title: 'Your AniCart Order Receipt',
+      subtitle: `Thanks for your purchase, ${user.name || 'there'}! Your order ${orderId} has been received.`,
+      buttonText: 'View Orders',
+      buttonUrl: `${config.CLIENT_URL}/orders`,
+      footerText: `Order total: $${Number(total).toFixed(2)}`,
+    }),
+  });
+};
+
+const sendReportNotificationEmail = async (adminEmail, report) => {
+  const reportId = report?._id || report?.id || 'N/A';
+  const reason = report?.reason || report?.type || 'Wallpaper flagged by user';
+
+  return sendEmail({
+    to: adminEmail,
+    subject: 'Wallpaper Reported',
+    html: cardTemplate({
+      title: 'Wallpaper Reported',
+      subtitle: `A wallpaper report (${reportId}) requires review.`,
+      buttonText: 'Open Admin Panel',
+      buttonUrl: `${config.CLIENT_URL}/admin/reports`,
+      footerText: `Reason: ${reason}`,
+    }),
+  });
+};
+
+module.exports = {
+  sendEmail,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendOrderReceiptEmail,
+  sendReportNotificationEmail,
+  getLatestTokenForTesting,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: services/loginProtectionService.js
+--------------------------------------------------------------------------------
+
+/**
+ * Login protection service backed by Upstash Redis.
+ * Tracks failed login attempts per email and applies a temporary lock.
+ */
+
+const { Redis } = require('@upstash/redis');
+const config = require('../config');
+
+const LOCK_SECONDS = 10 * 60;
+const MAX_FAILED_ATTEMPTS = 5;
+
+let redisClient;
+const fallbackAttempts = new Map();
+const fallbackLocks = new Map();
+
+const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
+const hasRedisConfig = () =>
+  Boolean(config.UPSTASH_REDIS_REST_URL && config.UPSTASH_REDIS_REST_TOKEN);
+
+const nowInSeconds = () => Math.floor(Date.now() / 1000);
+
+const getRedisClient = () => {
+  if (!hasRedisConfig()) {
+    return null;
+  }
+
+  if (!redisClient) {
+    redisClient = new Redis({
+      url: config.UPSTASH_REDIS_REST_URL,
+      token: config.UPSTASH_REDIS_REST_TOKEN,
+    });
+  }
+
+  return redisClient;
+};
+
+const attemptsKey = (email) => `login:attempts:${normalizeEmail(email)}`;
+const lockKey = (email) => `login:lock:${normalizeEmail(email)}`;
+
+const cleanupFallback = (email) => {
+  const normalized = normalizeEmail(email);
+  const lockExpires = fallbackLocks.get(normalized);
+  if (lockExpires && lockExpires <= nowInSeconds()) {
+    fallbackLocks.delete(normalized);
+    fallbackAttempts.delete(normalized);
+  }
+
+  const attemptsEntry = fallbackAttempts.get(normalized);
+  if (attemptsEntry && attemptsEntry.expiresAt <= nowInSeconds()) {
+    fallbackAttempts.delete(normalized);
+  }
+};
+
+const isLoginLocked = async (email) => {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return false;
+
+  const client = getRedisClient();
+  if (!client) {
+    cleanupFallback(normalized);
+    return fallbackLocks.has(normalized);
+  }
+
+  const lockValue = await client.get(lockKey(normalized));
+  return Boolean(lockValue);
+};
+
+const recordFailedLogin = async (email) => {
+  const normalized = normalizeEmail(email);
+  if (!normalized) {
+    return { locked: false, attempts: 0 };
+  }
+
+  const client = getRedisClient();
+  if (!client) {
+    cleanupFallback(normalized);
+
+    const existing = fallbackAttempts.get(normalized);
+    const nextAttempts = (existing?.count || 0) + 1;
+    fallbackAttempts.set(normalized, {
+      count: nextAttempts,
+      expiresAt: nowInSeconds() + LOCK_SECONDS,
+    });
+
+    const locked = nextAttempts >= MAX_FAILED_ATTEMPTS;
+    if (locked) {
+      fallbackLocks.set(normalized, nowInSeconds() + LOCK_SECONDS);
+    }
+
+    return { locked, attempts: nextAttempts, backend: 'memory' };
+  }
+
+  const key = attemptsKey(normalized);
+  const count = await client.incr(key);
+  if (count === 1) {
+    await client.expire(key, LOCK_SECONDS);
+  }
+
+  const locked = count >= MAX_FAILED_ATTEMPTS;
+  if (locked) {
+    await client.set(lockKey(normalized), true, { ex: LOCK_SECONDS });
+  }
+
+  return { locked, attempts: count, backend: 'redis' };
+};
+
+const clearLoginProtection = async (email) => {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return;
+
+  const client = getRedisClient();
+  if (!client) {
+    fallbackAttempts.delete(normalized);
+    fallbackLocks.delete(normalized);
+    return;
+  }
+
+  await client.del(attemptsKey(normalized));
+  await client.del(lockKey(normalized));
+};
+
+const getLoginProtectionStateForTesting = async (email) => {
+  const normalized = normalizeEmail(email);
+  if (!normalized) {
+    return { attempts: 0, locked: false, backend: 'none' };
+  }
+
+  const client = getRedisClient();
+  if (!client) {
+    cleanupFallback(normalized);
+    return {
+      attempts: fallbackAttempts.get(normalized)?.count || 0,
+      locked: fallbackLocks.has(normalized),
+      backend: 'memory',
+    };
+  }
+
+  const [attemptsRaw, lockedRaw] = await Promise.all([
+    client.get(attemptsKey(normalized)),
+    client.get(lockKey(normalized)),
+  ]);
+
+  return {
+    attempts: Number(attemptsRaw || 0),
+    locked: Boolean(lockedRaw),
+    backend: 'redis',
+  };
+};
+
+module.exports = {
+  LOCK_SECONDS,
+  MAX_FAILED_ATTEMPTS,
+  isLoginLocked,
+  recordFailedLogin,
+  clearLoginProtection,
+  getLoginProtectionStateForTesting,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: services/orderService.js
+--------------------------------------------------------------------------------
+
+/**
+ * Order service — checkout, listing, detail, cancel, stats.
+ */
+
+const mongoose = require('mongoose');
+const Order = require('../models/Order');
+const Cart = require('../models/Cart');
+const User = require('../models/User');
+const ApiError = require('../utils/apiError');
+const CONSTANTS = require('../utils/constants');
+
+async function checkout(userId) {
+  const cart = await Cart.findOne({ user: userId }).populate({
+    path: 'items.product',
+    select: '-__v',
+  });
+
+  if (!cart || cart.items.length === 0) {
+    throw ApiError.badRequest('Cart is empty');
+  }
+
+  const inactiveItems = cart.items.filter((item) => item.product?.status !== 'active');
+  if (inactiveItems.length > 0) {
+    const productNames = inactiveItems.map((item) => item.product?.name || 'Unknown');
+    throw ApiError.badRequest(
+      `Some items are no longer available: ${productNames.join(', ')}`
+    );
+  }
+
+  const order = await Order.createFromCart(userId, cart.items);
+
+  const purchasedProductIds = cart.items.map((item) => item.product._id);
+  await User.findByIdAndUpdate(userId, {
+    $addToSet: { library: { $each: purchasedProductIds } },
+    $inc: {
+      purchasesCount: cart.items.length,
+      points: Math.floor(order.total * 10),
+    },
+  });
+
+  await cart.clearCart();
+
+  const populatedOrder = await Order.findById(order._id).populate({
+    path: 'items.product',
+    select: '-__v',
+  });
+
+  return populatedOrder;
+}
+
+/**
+ * @param {string} userId
+ * @param {{ page?: string|number, limit?: string|number, status?: string }} query
+ */
+async function getOrders(userId, query) {
+  const { page = 1, limit = CONSTANTS.DEFAULTS.PAGE_LIMIT, status } = query;
+
+  const filter = { user: userId };
+  if (status) {
+    filter.status = status;
+  }
+
+  const pageNum = Math.max(1, parseInt(page, 10));
+  const limitNum = Math.min(
+    CONSTANTS.LIMITS.MAX_PAGE_SIZE,
+    Math.max(1, parseInt(limit, 10))
+  );
+  const skip = (pageNum - 1) * limitNum;
+
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .populate({
+        path: 'items.product',
+        select: '-__v',
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum),
+    Order.countDocuments(filter),
+  ]);
+
+  return { orders, page: pageNum, limit: limitNum, total };
+}
+
+async function getOrder(userId, id) {
+  const order = await Order.findOne({
+    _id: id,
+    user: userId,
+  }).populate({
+    path: 'items.product',
+    select: '-__v',
+  });
+
+  if (!order) {
+    throw ApiError.notFound('Order not found');
+  }
+
+  return order;
+}
+
+async function cancelOrder(userId, id) {
+  const order = await Order.findOne({
+    _id: id,
+    user: userId,
+  });
+
+  if (!order) {
+    throw ApiError.notFound('Order not found');
+  }
+
+  await order.cancel();
+  return order;
+}
+
+async function getOrderStats(userId) {
+  const stats = await Order.aggregate([
+    { $match: { user: new mongoose.Types.ObjectId(userId) } },
+    {
+      $group: {
+        _id: null,
+        totalOrders: { $sum: 1 },
+        totalSpent: { $sum: '$total' },
+        completedOrders: {
+          $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] },
+        },
+        cancelledOrders: {
+          $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] },
+        },
+      },
+    },
+  ]);
+
+  return (
+    stats[0] || {
+      totalOrders: 0,
+      totalSpent: 0,
+      completedOrders: 0,
+      cancelledOrders: 0,
+    }
+  );
+}
+
+module.exports = {
+  checkout,
+  getOrders,
+  getOrder,
+  cancelOrder,
+  getOrderStats,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: services/productService.js
+--------------------------------------------------------------------------------
+
+/**
+ * Product service — catalog CRUD and series listing.
+ */
+
+const Product = require('../models/Product');
+const ApiError = require('../utils/apiError');
+const CONSTANTS = require('../utils/constants');
+
+const PUBLIC_PRODUCT_SELECT =
+  '-fileHash -rightsConfirmed -termsAcceptedAt -licenseType -authorName -sourceLink -copyrightOwner -assets.original -assets.4k -assets.2k -assets.1080p';
+
+/**
+ * @param {{ series?: string, page?: string|number, limit?: string|number, search?: string }} query
+ */
+async function getProducts(query) {
+  const { series, page = 1, limit = CONSTANTS.DEFAULTS.PAGE_LIMIT, search } = query;
+
+  const filter = { status: 'active' };
+
+  if (series) {
+    filter.series = series;
+  }
+
+  if (search) {
+    filter.name = { $regex: search, $options: 'i' };
+  }
+
+  const pageNum = Math.max(1, parseInt(page, 10));
+  const limitNum = Math.min(
+    CONSTANTS.LIMITS.MAX_PAGE_SIZE,
+    Math.max(1, parseInt(limit, 10))
+  );
+  const skip = (pageNum - 1) * limitNum;
+
+  const [products, total, distinctSeries] = await Promise.all([
+    Product.find(filter)
+      .select(PUBLIC_PRODUCT_SELECT)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum),
+    Product.countDocuments(filter),
+    Product.getDistinctSeries(),
+  ]);
+
+  return {
+    products,
+    page: pageNum,
+    limit: limitNum,
+    total,
+    meta: {
+      filters: {
+        series: distinctSeries,
+      },
+    },
+  };
+}
+
+async function getProduct(id) {
+  const product = await Product.findOne({ _id: id, status: 'active' }).select(
+    PUBLIC_PRODUCT_SELECT
+  );
+  if (!product) {
+    throw ApiError.notFound('Product not found');
+  }
+  return product;
+}
+
+async function createProduct(body) {
+  const {
+    name,
+    series,
+    price,
+    img,
+    badge,
+    badgeType,
+    rating,
+    reviews,
+    resolution,
+    tags,
+  } = body;
+
+  return Product.create({
+    name: name.trim(),
+    series: series.trim(),
+    price,
+    img: img.trim(),
+    badge: badge || '',
+    badgeType: badgeType || '',
+    rating: rating || 0,
+    reviews: reviews || 0,
+    resolution: resolution || '4K Ultra HD',
+    tags: tags || [],
+  });
+}
+
+async function updateProduct(id, body) {
+  const {
+    name,
+    series,
+    price,
+    img,
+    badge,
+    badgeType,
+    rating,
+    reviews,
+    resolution,
+    tags,
+    status,
+  } = body;
+
+  const product = await Product.findById(id);
+  if (!product) {
+    throw ApiError.notFound('Product not found');
+  }
+
+  if (name !== undefined) product.name = name.trim();
+  if (series !== undefined) product.series = series.trim();
+  if (price !== undefined) product.price = price;
+  if (img !== undefined) product.img = img.trim();
+  if (badge !== undefined) product.badge = badge;
+  if (badgeType !== undefined) product.badgeType = badgeType;
+  if (rating !== undefined) product.rating = rating;
+  if (reviews !== undefined) product.reviews = reviews;
+  if (resolution !== undefined) product.resolution = resolution;
+  if (tags !== undefined) product.tags = tags;
+  if (status !== undefined) product.status = status;
+
+  await product.save();
+  return product;
+}
+
+async function deleteProduct(id) {
+  const product = await Product.findById(id);
+  if (!product) {
+    throw ApiError.notFound('Product not found');
+  }
+  await product.softDelete();
+}
+
+async function restoreProduct(id) {
+  const product = await Product.findById(id);
+  if (!product) {
+    throw ApiError.notFound('Product not found');
+  }
+  await product.restore();
+  return product;
+}
+
+async function getSeries() {
+  return Product.getDistinctSeries();
+}
+
+module.exports = {
+  getProducts,
+  getProduct,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  restoreProduct,
+  getSeries,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: services/tokenBlacklistService.js
+--------------------------------------------------------------------------------
+
+/**
+ * Token blacklist service backed by Upstash Redis.
+ */
+
+const { Redis } = require('@upstash/redis');
+const config = require('../config');
+
+let redisClient;
+const fallbackBlacklist = new Map();
+
+const nowInSeconds = () => Math.floor(Date.now() / 1000);
+
+const hasUpstashConfig = () =>
+  Boolean(config.UPSTASH_REDIS_REST_URL && config.UPSTASH_REDIS_REST_TOKEN);
+
+const getRedisClient = () => {
+  if (!hasUpstashConfig()) {
+    return null;
+  }
+
+  if (!redisClient) {
+    redisClient = new Redis({
+      url: config.UPSTASH_REDIS_REST_URL,
+      token: config.UPSTASH_REDIS_REST_TOKEN,
+    });
+  }
+
+  return redisClient;
+};
+
+const getBlacklistKey = (jti) => 'blacklist:' + jti;
+
+const setFallbackBlacklist = (jti, expiresInSeconds) => {
+  fallbackBlacklist.set(jti, nowInSeconds() + Math.floor(expiresInSeconds));
+};
+
+const isFallbackBlacklisted = (jti) => {
+  const expiresAt = fallbackBlacklist.get(jti);
+  if (!expiresAt) {
+    return false;
+  }
+
+  if (expiresAt <= nowInSeconds()) {
+    fallbackBlacklist.delete(jti);
+    return false;
+  }
+
+  return true;
+};
+
+const blacklistToken = async (jti, expiresInSeconds) => {
+  if (!jti || !Number.isFinite(expiresInSeconds) || expiresInSeconds <= 0) {
+    return;
+  }
+
+  const client = getRedisClient();
+  if (!client) {
+    setFallbackBlacklist(jti, expiresInSeconds);
+    return;
+  }
+
+  await client.set(getBlacklistKey(jti), true, { ex: Math.floor(expiresInSeconds) });
+};
+
+const isBlacklisted = async (jti) => {
+  if (!jti) {
+    return false;
+  }
+
+  const client = getRedisClient();
+  if (!client) {
+    return isFallbackBlacklisted(jti);
+  }
+
+  const value = await client.get(getBlacklistKey(jti));
+  return Boolean(value);
+};
+
+module.exports = {
+  blacklistToken,
+  isBlacklisted,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: services/uploadService.js
+--------------------------------------------------------------------------------
+
+const crypto = require('crypto');
+const path = require('path');
+const { PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { s3Client, bucketName, publicUrl } = require('../config/r2');
+
+function buildPublicUrl(key) {
+  const base = (publicUrl || '').replace(/\/$/, '');
+  return `${base}/${key}`;
+}
+
+function generateKey(productId, originalName) {
+  const uuid = crypto.randomUUID();
+  const extension = path.extname(originalName || '').replace(/^\./, '').toLowerCase() || 'bin';
+
+  return `originals/${productId}/${uuid}.${extension}`;
+}
+
+function generateAssetKey(productId, assetName, extension, visibility = 'private') {
+  const normalizedAssetName = String(assetName || 'asset').replace(/[^a-zA-Z0-9_-]/g, '_');
+  const normalizedExtension = String(extension || 'bin').replace(/^\./, '').toLowerCase() || 'bin';
+  const normalizedProductId = String(productId).trim();
+
+  if (normalizedAssetName === 'original') {
+    return `originals/${normalizedProductId}/original.${normalizedExtension}`;
+  }
+
+  if (normalizedAssetName === 'preview') {
+    return `previews/${normalizedProductId}/preview.jpg`;
+  }
+
+  if (normalizedAssetName === 'thumbnail') {
+    return `thumbnails/${normalizedProductId}/thumb.webp`;
+  }
+
+  if (['4k', '2k', '1080p'].includes(normalizedAssetName)) {
+    return `variants/${normalizedProductId}/${normalizedAssetName}.webp`;
+  }
+
+  return `variants/${normalizedProductId}/${normalizedAssetName}.${normalizedExtension}`;
+}
+
+async function uploadToR2(buffer, key, contentType, options = {}) {
+  const { isPublic = true } = options;
+
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+      Body: buffer,
+      ContentType: contentType,
+    })
+  );
+
+  if (isPublic) {
+    return {
+      url: buildPublicUrl(key),
+      key,
+    };
+  }
+
+  return { key };
+}
+
+async function uploadPublicToR2(buffer, key, contentType) {
+  return uploadToR2(buffer, key, contentType, { isPublic: true });
+}
+
+async function uploadPrivateToR2(buffer, key, contentType) {
+  return uploadToR2(buffer, key, contentType, { isPublic: false });
+}
+
+async function deleteFromR2(key) {
+  await s3Client.send(
+    new DeleteObjectCommand({
+      Bucket: bucketName,
+      Key: key,
+    })
+  );
+}
+
+function getPublicUrl(key) {
+  return buildPublicUrl(key);
+}
+
+module.exports = {
+  generateKey,
+  generateAssetKey,
+  uploadToR2,
+  uploadPublicToR2,
+  uploadPrivateToR2,
+  deleteFromR2,
+  getPublicUrl,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: services/userService.js
+--------------------------------------------------------------------------------
+
+/**
+ * User service — profile, password, library.
+ */
+
+const User = require('../models/User');
+const License = require('../models/License');
+const ApiError = require('../utils/apiError');
+
+/**
+ * @param {string} userId
+ */
+async function getProfile(userId) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+
+  const library = await License.find({ user: userId, isActive: true }).populate('product');
+  const profile = user.toObject();
+  profile.library = library;
+
+  return profile;
+}
+
+/**
+ * @param {string} userId
+ * @param {{ name?: string }} input
+ */
+async function updateProfile(userId, { name }) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+
+  if (name) {
+    user.name = name.trim();
+    user.avatar = user.name.charAt(0).toUpperCase();
+  }
+
+  await user.save();
+  return user;
+}
+
+/**
+ * @param {string} userId
+ * @param {{ currentPassword: string, newPassword: string }} input
+ */
+async function changePassword(userId, { currentPassword, newPassword }) {
+  const user = await User.findById(userId).select('+password');
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+
+  const isPasswordValid = await user.comparePassword(currentPassword);
+  if (!isPasswordValid) {
+    throw ApiError.badRequest('Current password is incorrect');
+  }
+
+  user.password = newPassword;
+  user.passwordChangedAt = new Date();
+  await user.save();
+}
+
+/**
+ * @param {string} userId
+ * @returns {Promise<Array>}
+ */
+async function getLibrary(userId) {
+  const user = await User.findById(userId).select('_id');
+
+  if (!user) {
+    throw ApiError.notFound('User not found');
+  }
+
+  return await License.find({ user: userId, isActive: true }).populate('product');
+}
+
+module.exports = {
+  getProfile,
+  updateProfile,
+  changePassword,
+  getLibrary,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: utils/apiError.js
+--------------------------------------------------------------------------------
+
+/**
+ * API Error Class
+ * 
+ * Custom error class for API errors that includes HTTP status code
+ * and optional array of field-specific error details.
+ * Extends the native Error class for seamless integration with Express.
+ */
+
+class ApiError extends Error {
+  /**
+   * Create an API error
+   * @param {number} statusCode - HTTP status code
+   * @param {string} message - Error message
+   * @param {Array} errors - Array of field-specific errors [{ field, message }]
+   * @param {boolean} isOperational - Whether error is operational (expected) or programming error
+   */
+  constructor(statusCode, message, errors = [], isOperational = true) {
+    super(message);
+    
+    this.statusCode = statusCode;
+    this.errors = errors;
+    this.isOperational = isOperational;
+    
+    // Maintain proper stack trace for where error was thrown
+    Error.captureStackTrace(this, this.constructor);
+  }
+
+  /**
+   * Create a 400 Bad Request error
+   * @param {string} message - Error message
+   * @param {Array} errors - Field-specific errors
+   * @returns {ApiError}
+   */
+  static badRequest(message = 'Bad Request', errors = []) {
+    return new ApiError(400, message, errors);
+  }
+
+  /**
+   * Create a 401 Unauthorized error
+   * @param {string} message - Error message
+   * @returns {ApiError}
+   */
+  static unauthorized(message = 'Unauthorized') {
+    return new ApiError(401, message);
+  }
+
+  /**
+   * Create a 403 Forbidden error
+   * @param {string} message - Error message
+   * @returns {ApiError}
+   */
+  static forbidden(message = 'Forbidden') {
+    return new ApiError(403, message);
+  }
+
+  /**
+   * Create a 404 Not Found error
+   * @param {string} message - Error message
+   * @returns {ApiError}
+   */
+  static notFound(message = 'Resource not found') {
+    return new ApiError(404, message);
+  }
+
+  /**
+   * Create a 409 Conflict error
+   * @param {string} message - Error message
+   * @returns {ApiError}
+   */
+  static conflict(message = 'Conflict') {
+    return new ApiError(409, message);
+  }
+
+  /**
+   * Create a 422 Unprocessable Entity error
+   * @param {string} message - Error message
+   * @param {Array} errors - Field-specific validation errors
+   * @returns {ApiError}
+   */
+  static validationError(message = 'Validation failed', errors = []) {
+    return new ApiError(422, message, errors);
+  }
+
+  /**
+   * Create a 500 Internal Server Error
+   * @param {string} message - Error message
+   * @returns {ApiError}
+   */
+  static internal(message = 'Internal server error') {
+    return new ApiError(500, message, [], false);
+  }
+}
+
+module.exports = ApiError;
+
+
+--------------------------------------------------------------------------------
+FILE: utils/apiResponse.js
+--------------------------------------------------------------------------------
+
+/**
+ * API Response Utility
+ * 
+ * Provides standardized success response formatting for all API endpoints.
+ * Ensures consistent response structure across the application.
+ */
+
+/**
+ * Create a standardized success response
+ * @param {Object} options - Response options
+ * @param {string} options.message - Success message
+ * @param {*} options.data - Response data payload
+ * @param {Object} options.meta - Additional metadata (pagination, etc.)
+ * @returns {Object} - Formatted success response object
+ */
+const successResponse = ({ message = 'Success', data = null, meta = null }) => {
+  const response = {
+    success: true,
+    message,
+  };
+
+  if (data !== null) {
+    response.data = data;
+  }
+
+  if (meta !== null) {
+    response.meta = meta;
+  }
+
+  return response;
+};
+
+/**
+ * Create a success response with pagination metadata
+ * @param {Object} options - Response options
+ * @param {string} options.message - Success message
+ * @param {Array} options.data - Array of items
+ * @param {number} options.page - Current page number
+ * @param {number} options.limit - Items per page
+ * @param {number} options.total - Total number of items
+ * @returns {Object} - Formatted paginated response
+ */
+const paginatedResponse = ({ 
+  message = 'Success', 
+  data = [], 
+  page = 1, 
+  limit = 10, 
+  total = 0 
+}) => {
+  const totalPages = Math.ceil(total / limit);
+  
+  return {
+    success: true,
+    message,
+    data,
+    meta: {
+      pagination: {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    },
+  };
+};
+
+module.exports = {
+  successResponse,
+  paginatedResponse,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: utils/catchAsync.js
+--------------------------------------------------------------------------------
+
+/**
+ * Catch Async Utility
+ * 
+ * Higher-order function that wraps async route handlers to catch errors
+ * and pass them to Express error handling middleware.
+ * Eliminates the need for try/catch blocks in every controller function.
+ */
+
+/**
+ * Wraps an async function to catch errors and forward to error handler
+ * @param {Function} fn - Async function to wrap
+ * @returns {Function} - Express middleware function
+ */
+const catchAsync = (fn) => {
+  return (req, res, next) => {
+    // Execute the async function and catch any errors
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+};
+
+module.exports = catchAsync;
+
+
+--------------------------------------------------------------------------------
+FILE: utils/commonPasswords.js
+--------------------------------------------------------------------------------
+
+/**
+ * Common password blocklist.
+ */
+
+const commonPasswords = new Set([
+  '123456',
+  '12345678',
+  'password',
+  'password123',
+  'qwerty',
+  'qwerty123',
+  '111111',
+  '000000',
+  'abc123',
+  'iloveyou',
+  'admin',
+  'admin123',
+]);
+
+const isCommonPassword = (password = '') => commonPasswords.has(String(password).toLowerCase());
+
+module.exports = {
+  commonPasswords,
+  isCommonPassword,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: utils/constants.js
+--------------------------------------------------------------------------------
+
+/**
+ * Constants Module
+ * 
+ * Centralizes all application constants for easy maintenance and consistency.
+ */
+
+const CONSTANTS = {
+  // User roles
+  ROLES: {
+    USER: 'user',
+    ADMIN: 'admin',
+    CREATOR: 'creator',
+  },
+
+  // Order statuses
+  ORDER_STATUS: {
+    PENDING: 'pending',
+    PROCESSING: 'processing',
+    COMPLETED: 'completed',
+    CANCELLED: 'cancelled',
+  },
+
+  // Product badges
+  BADGES: {
+    HOT: 'HOT',
+    NEW: 'NEW',
+    BESTSELLER: 'BESTSELLER',
+    CLASSIC: 'CLASSIC',
+    PREMIUM: 'PREMIUM',
+  },
+
+  // Badge types
+  BADGE_TYPES: {
+    NEON: 'neon',
+    PINK: 'pink',
+  },
+
+  // Default values
+  DEFAULTS: {
+    USER_POINTS: 150,
+    USER_STREAK_DAYS: 1,
+    USER_PURCHASES_COUNT: 0,
+    PRODUCT_RATING: 0,
+    PRODUCT_REVIEWS: 0,
+    TAX_RATE: 0.08,
+    PAGE_LIMIT: 10,
+    MAX_PAGE_LIMIT: 100,
+  },
+
+  // Validation limits
+  LIMITS: {
+    NAME_MIN_LENGTH: 2,
+    NAME_MAX_LENGTH: 50,
+    PRODUCT_NAME_MAX_LENGTH: 100,
+    PASSWORD_MIN_LENGTH: 8,
+    MAX_PAGE_SIZE: 100,
+  },
+
+  // Rate limiting
+  RATE_LIMIT: {
+    AUTH_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+    AUTH_MAX_REQUESTS: 10,
+    API_WINDOW_MS: 15 * 60 * 1000, // 15 minutes
+    API_MAX_REQUESTS: 100,
+  },
+
+  // Cookie settings
+  COOKIE: {
+    REFRESH_TOKEN_NAME: 'refreshToken',
+    MAX_AGE_MS: 7 * 24 * 60 * 60 * 1000, // 7 days
+  },
+
+  // HTTP Status codes (for reference)
+  HTTP_STATUS: {
+    OK: 200,
+    CREATED: 201,
+    BAD_REQUEST: 400,
+    UNAUTHORIZED: 401,
+    FORBIDDEN: 403,
+    NOT_FOUND: 404,
+    CONFLICT: 409,
+    UNPROCESSABLE_ENTITY: 422,
+    INTERNAL_SERVER_ERROR: 500,
+  },
+};
+
+module.exports = CONSTANTS;
+
+
+--------------------------------------------------------------------------------
+FILE: utils/generateToken.js
+--------------------------------------------------------------------------------
+
+/**
+ * Token Generation Utility
+ * 
+ * Handles JWT access and refresh token generation using jsonwebtoken.
+ * Uses configuration from environment variables for secrets and expiry.
+ */
+
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const config = require('../config');
+
+/**
+ * Generate JWT access token
+ * @param {Object} payload - Token payload containing user info
+ * @param {string} payload.id - User ID
+ * @param {string} payload.email - User email
+ * @param {string} payload.role - User role
+ * @param {string} payload.jti - Unique JWT ID
+ * @returns {string} - Signed JWT access token
+ */
+const generateAccessToken = (payload) => {
+  return jwt.sign(
+    {
+      id: payload.id,
+      email: payload.email,
+      role: payload.role,
+      jti: payload.jti,
+    },
+    config.JWT_ACCESS_SECRET,
+    {
+      expiresIn: config.JWT_ACCESS_EXPIRY,
+    }
+  );
+};
+
+/**
+ * Generate JWT refresh token
+ * @param {Object} payload - Token payload containing user info
+ * @param {string} payload.id - User ID
+ * @returns {string} - Signed JWT refresh token
+ */
+const generateRefreshToken = (payload) => {
+  return jwt.sign(
+    {
+      id: payload.id,
+    },
+    config.JWT_REFRESH_SECRET,
+    {
+      expiresIn: config.JWT_REFRESH_EXPIRY,
+    }
+  );
+};
+
+/**
+ * Verify JWT access token
+ * @param {string} token - The token to verify
+ * @returns {Object} - Decoded token payload
+ * @throws {Error} - If token is invalid or expired
+ */
+const verifyAccessToken = (token) => {
+  return jwt.verify(token, config.JWT_ACCESS_SECRET);
+};
+
+/**
+ * Verify JWT refresh token
+ * @param {string} token - The token to verify
+ * @returns {Object} - Decoded token payload
+ * @throws {Error} - If token is invalid or expired
+ */
+const verifyRefreshToken = (token) => {
+  return jwt.verify(token, config.JWT_REFRESH_SECRET);
+};
+
+/**
+ * Generate both access and refresh tokens
+ * @param {Object} user - User object
+ * @param {string} user._id - User ID
+ * @param {string} user.email - User email
+ * @param {string} user.role - User role
+ * @returns {Object} - Object containing both tokens
+ */
+const generateTokens = (user) => {
+  const generatedTokenId = crypto.randomUUID();
+
+  const payload = {
+    id: user._id.toString(),
+    email: user.email,
+    role: user.role,
+    jti: generatedTokenId,
+  };
+
+  return {
+    accessToken: generateAccessToken(payload),
+    refreshToken: generateRefreshToken({ id: payload.id }),
+  };
+};
+
+module.exports = {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyAccessToken,
+  verifyRefreshToken,
+  generateTokens,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: utils/logger.js
+--------------------------------------------------------------------------------
+
+/**
+ * Winston logger for structured server logs.
+ */
+
+const { createLogger, format, transports } = require('winston');
+
+const logger = createLogger({
+  level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  format: format.combine(
+    format.timestamp(),
+    format.errors({ stack: true }),
+    format.json()
+  ),
+  transports: [new transports.Console()],
+});
+
+module.exports = logger;
+
+
+--------------------------------------------------------------------------------
+FILE: utils/passwordStrength.js
+--------------------------------------------------------------------------------
+
+/**
+ * Password strength scoring utility.
+ */
+
+const getStrengthFromScore = (score, length) => {
+  if (score <= 2) {
+    return 'very_weak';
+  }
+  if (score === 3) {
+    return 'weak';
+  }
+  if (score === 4) {
+    // 6-char passwords are still too short in practice even when mixed.
+    if (length <= 6) {
+      return 'weak';
+    }
+    return 'good';
+  }
+  if (score === 5) {
+    return 'strong';
+  }
+  // Very strong requires full complexity and enough length headroom.
+  if (length < 9) {
+    return 'strong';
+  }
+  return 'very_strong';
+};
+
+const checkPasswordStrength = (password = '') => {
+  const value = String(password);
+
+  let score = 0;
+
+  if (value.length >= 6) score += 1;
+  if (value.length >= 8) score += 1;
+  if (/[a-z]/.test(value)) score += 1;
+  if (/[A-Z]/.test(value)) score += 1;
+  if (/\d/.test(value)) score += 1;
+  if (/[^A-Za-z0-9]/.test(value)) score += 1;
+
+  return {
+    score,
+    strength: getStrengthFromScore(score, value.length),
+  };
+};
+
+module.exports = {
+  checkPasswordStrength,
+};
+
+
+--------------------------------------------------------------------------------
+FILE: utils/secureToken.js
+--------------------------------------------------------------------------------
+
+/**
+ * Secure token helpers for email verification and password reset flows.
+ */
+
+const crypto = require('crypto');
+
+const hashToken = (token) =>
+  crypto.createHash('sha256').update(String(token)).digest('hex');
+
+const createSecureToken = (expiresInMs) => {
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const hashedToken = hashToken(rawToken);
+  const expiresAt = new Date(Date.now() + expiresInMs);
+
+  return {
+    rawToken,
+    hashedToken,
+    expiresAt,
+  };
+};
+
+module.exports = {
+  hashToken,
+  createSecureToken,
+};
+
+

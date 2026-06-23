@@ -1,0 +1,15 @@
+{
+  "watch": ["."],
+  "ext": "js,json",
+  "ignore": ["node_modules"],
+  "restartable": "rs",
+  "delay": "500",
+  "legacyWatch": true,
+  "env": {
+    "NODE_ENV": "development"
+  },
+  "events": {
+    "crash": "echo Server crashed! Waiting for restart...",
+    "restart": "echo Server restarted successfully"
+  }
+}

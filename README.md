@@ -24,22 +24,18 @@ AniCart is designed as a real-world full-stack project featuring authentication,
 ## 🧰 Tech Stack
 
 ### Frontend
-
 * React.js
 * CSS / Glassmorphism UI
 * Framer Motion (Animations)
 
 ### Backend
-
 * Node.js
 * Express.js
 
 ### Database
-
 * MongoDB / Supabase (Planned)
 
 ### Deployment
-
 * Vercel (Frontend)
 * Render / Railway (Backend)
 * GitHub (Version Control)
@@ -59,57 +55,52 @@ AniCart/
 │   │   │   ├── SignupPage.jsx
 │   │   │   └── Dashboard.jsx
 │   │   │
-│   │   ├── components/
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── Footer.jsx
-│   │   │   ├── ProductCard.jsx
-│   │   │   └── Toast.jsx
-│   │   │
-│   │   ├── context/
-│   │   │   ├── AuthContext.js
-│   │   │   └── CartContext.js
-│   │   │
 │   │   ├── App.js
 │   │   └── App.css
 │   │
 │   └── package.json
 │
 ├── server/                 # Node Backend
-│   ├── routes/
-│   ├── controllers/
-│   ├── models/
-│   ├── server.js
+│   ├── routes/             # App Router aggregations
+│   ├── controllers/        # Route Handlers
+│   ├── models/             # Database Schemas
+│   ├── services/           # Business Logic Layer
+│   ├── utils/              # Common Utilities
+│   ├── jobs/               # BullMQ Background Workers
+│   ├── testUpload.http     # REST client endpoints test
+│   ├── server.js           # Server entry point
 │   └── package.json
 │
-└── README.md
+├── docs/                   # Authoritative Documentation
+│   ├── BACKEND_MASTER_PLAN.md
+│   └── PRODUCTION_HARDENING.md
+│
+├── README.md               # Main project documentation
+├── LICENSE                 # Project License (MIT)
+├── export.py               # Deterministic code bundle exporter
+└── package.json            # Monorepo workspaces configuration
 ```
 
 ---
 
 ## 🚀 Installation & Setup
 
-### 1️⃣ Clone Repository
-
-```
-git clone https://github.com/yourusername/anicart.git
-cd anicart
-```
-
-### 2️⃣ Install Frontend
-
-```
-cd client
-npm install
-npm start
+### 1️⃣ Install all dependencies
+From the project root:
+```bash
+npm run install:all
 ```
 
-### 3️⃣ Install Backend
-
-```
-cd server
-npm install
+### 2️⃣ Run development server (Client, Server & Worker concurrently)
+From the project root:
+```bash
 npm run dev
 ```
+
+### Alternatively, run components separately:
+* Run frontend: `npm run start:client`
+* Run backend API: `npm run start:server`
+* Run background worker: `npm run start:worker`
 
 ---
 
@@ -119,15 +110,14 @@ AniCart uses a **Premium Sci-Fi Theme**:
 
 | Element        | Color                 |
 | -------------- | --------------------- |
-| Background     | #020617               |
-| Glass Panel    | rgba(15, 23, 42, 0.6) |
-| Neon Accent    | #00f3ff               |
-| Text           | #94a3b8               |
-| Cards Radius   | 16px                  |
-| Buttons Radius | 12px                  |
+| Background     | `#020617`             |
+| Glass Panel    | `rgba(15, 23, 42, 0.6)` |
+| Neon Accent    | `#00f3ff`             |
+| Text           | `#94a3b8`             |
+| Cards Radius   | `16px`                |
+| Buttons Radius | `12px`                |
 
-Design Style:
-
+### Design Style:
 * Glassmorphism UI
 * Neon Glow Buttons
 * Smooth Page Transitions
@@ -136,49 +126,17 @@ Design Style:
 
 ---
 
-## 🔮 Future Features
-
-* 💳 Online Payments
-* ❤️ Wishlist
-* ⭐ Product Reviews
-* 🔎 Search & Filters
-* 👤 User Profile
-* 📦 Order Tracking
-* 🛍️ Full Anime Merchandise Store
-* 📱 Mobile App Version
-
----
-
-## 🎯 Project Goal
-
-AniCart is built as a **portfolio-level full-stack project** to demonstrate:
-
-* Frontend Development
-* Backend Development
-* Database Integration
-* Authentication Systems
-* UI/UX Design Systems
-* Full Project Architecture
-* Deployment Workflow
-
----
-
 ## 👨‍💻 Author
 
-**Ashwin**
-B.Tech IT Student
+**Ashwin**  
+B.Tech IT Student  
 Full-Stack Developer (Learning & Building Real Projects)
 
 ---
 
 ## 📜 License
 
-
----
-
-## ⭐ Support
-
-If you like this project, give it a **star ⭐ on GitHub**.
+This project is licensed under the [MIT License](file:///c:/Users/Superduash/Desktop/Projects/AniCart/LICENSE).
 
 ---
 
