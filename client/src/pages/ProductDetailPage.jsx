@@ -7,6 +7,7 @@ import { useCart } from '../contexts/CartContext';
 import { useUI } from '../contexts/UIContext';
 import apiClient from '../api/client';
 import { ProductCardSkeleton } from '../components/ui/Skeleton';
+import ProductCard from '../components/product/ProductCard';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import Footer from '../components/layout/Footer';
 
