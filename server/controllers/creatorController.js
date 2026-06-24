@@ -199,6 +199,32 @@ const getCreatorStats = catchAsync(async (req, res) => {
   );
 });
 
+const createCreatorProduct = catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user || user.role !== CONSTANTS.ROLES.CREATOR) {
+    throw ApiError.forbidden('Only creators can create products');
+  }
+
+  const { name, series, price, description } = req.body;
+
+  const product = await require('../models/Product').create({
+    name,
+    series,
+    price,
+    description,
+    creator: req.user.id,
+    status: 'draft', // Or pending as per blueprint
+    assets: { status: 'pending' },
+  });
+
+  res.status(201).json(
+    successResponse({
+      message: 'Product draft created',
+      data: { product },
+    })
+  );
+});
+
 module.exports = {
   applyCreator,
   getPendingCreatorRequests,
@@ -206,4 +232,5 @@ module.exports = {
   rejectCreator,
   getCreatorProducts,
   getCreatorStats,
+  createCreatorProduct,
 };

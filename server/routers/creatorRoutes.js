@@ -11,6 +11,7 @@ const {
   rejectCreator,
   getCreatorProducts,
   getCreatorStats,
+  createCreatorProduct,
 } = require('../controllers/creatorController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const {
@@ -22,6 +23,7 @@ const router = express.Router();
 
 router.post('/creator/apply', protect, creatorApplyValidation, applyCreator);
 
+router.post('/creator/products', protect, createCreatorProduct);
 router.get('/creator/products', protect, getCreatorProducts);
 router.get('/creator/stats', protect, getCreatorStats);
 

@@ -17,6 +17,8 @@ server/.env.*
 AniCart_Server_Code.txt
 AniCart_Website_Code.txt
 export.py
+Frontend_Finish.md
+Backend_Finish.md
 
 # General
 node_modules/
