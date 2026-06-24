@@ -81,7 +81,7 @@ export default function CreatorUploadsPage() {
     try {
       // 1. Create product record
       const prodRes = await apiClient.post('/creator/products', form);
-      const productId = prodRes.data?.data?.product?._id;
+      const productId = prodRes.data?.data?.product?._id || prodRes.data?.data?.product?.id;
 
       if (!productId) throw new Error('Failed to create product record.');
 
