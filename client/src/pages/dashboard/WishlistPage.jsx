@@ -39,12 +39,12 @@ export default function WishlistPage() {
         {loading ? '...' : `${products.length} saved`}
       </div>
 
+      {/* M8 Fix: updated to reference the heart button on product cards which already exists */}
       {loading ? (
         <div className="products-grid" role="list">
           {Array(6).fill(0).map((_, i) => <ProductCardSkeleton key={i} />)}
         </div>
       ) : products.length === 0 ? (
-        {/* M8 Fix: updated to reference the heart button on product cards which already exists */}
         <EmptyState icon="♡" title="Nothing saved yet" body="Click the ♡ heart icon on any wallpaper card or product page to save it here." ctaLabel="Explore Marketplace" ctaTo="/marketplace" />
       ) : (
         <div className="products-grid" role="list">
