@@ -195,8 +195,8 @@ const getCreatorStats = catchAsync(async (req, res) => {
     Order.find({ status: 'completed' }),
   ]);
 
-  if (!user || user.role !== CONSTANTS.ROLES.CREATOR) {
-    throw ApiError.forbidden('Only creators can access this');
+  if (!user || (user.role !== CONSTANTS.ROLES.CREATOR && user.role !== CONSTANTS.ROLES.ADMIN)) {
+    throw ApiError.forbidden('Only creators and admins can access this');
   }
 
   const creatorProductIds = new Set(products.map(p => p._id.toString()));
@@ -239,8 +239,8 @@ const getCreatorStats = catchAsync(async (req, res) => {
 
 const createCreatorProduct = catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id);
-  if (!user || user.role !== CONSTANTS.ROLES.CREATOR) {
-    throw ApiError.forbidden('Only creators can create products');
+  if (!user || (user.role !== CONSTANTS.ROLES.CREATOR && user.role !== CONSTANTS.ROLES.ADMIN)) {
+    throw ApiError.forbidden('Only creators and admins can create products');
   }
 
   const { name, series, price, description } = req.body;
