@@ -64,7 +64,7 @@ export default function ProductDetailPage() {
           apiClient.get(`/reviews/${id}`),
         ]);
         if (prodRes.status === 'fulfilled') {
-          const prod = prodRes.value.data?.data || prodRes.value.data;
+          const prod = prodRes.value.data?.data?.product || prodRes.value.data?.data || prodRes.value.data;
           setProduct(prod);
           setWishlisted(prod.isWishlisted || false);
           // M3 Fix: set productName state so useTitle hook gets the correct value

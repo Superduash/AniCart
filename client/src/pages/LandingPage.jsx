@@ -51,37 +51,7 @@ function HeroSlider({ products, loading, user }) {
   }
 
   if (!products || products.length === 0) {
-    return (
-      <section className="hero-section" style={{ position: 'relative' }}>
-        <div className="hero-content">
-          <div className="hero-badge">
-            <div className="hero-badge-dot" />
-            ✦ PREMIUM ANIME WALLPAPERS
-          </div>
-
-          <h1 className="hero-title">
-            <span className="hero-title-line1">Discover Anime Art</span>
-            <span className="hero-title-line2">Worth Collecting</span>
-          </h1>
-
-          <p className="hero-desc">
-            Browse high-resolution wallpapers from your favorite series. Every piece, real art.
-            Set your own price. Instant download delivery.
-          </p>
-
-          <div className="hero-cta">
-            <Link to="/marketplace" className="btn btn-primary btn-lg">
-              Browse Wallpapers →
-            </Link>
-            {!user && (
-              <Link to="/auth/signup" className="btn btn-secondary btn-lg">
-                Sell Your Art
-              </Link>
-            )}
-          </div>
-        </div>
-      </section>
-    );
+    return null;
   }
 
   return (
@@ -184,8 +154,43 @@ export default function LandingPage() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* ─── HERO ─── */}
+      {/* ─── HERO SLIDER ─── */}
       <HeroSlider products={heroProducts} loading={productsLoading} user={user} />
+
+      {/* ─── DISCOVER HERO ─── */}
+      <section className="hero-section" style={{ position: 'relative' }}>
+        <div className="hero-content">
+          <div className="hero-badge">
+            <div className="hero-badge-dot" />
+            ✦ PREMIUM ANIME WALLPAPERS
+          </div>
+
+          <h1 className="hero-title">
+            <span className="hero-title-line1">Discover Anime Art</span>
+            <span className="hero-title-line2">Worth Collecting</span>
+          </h1>
+
+          <p className="hero-desc">
+            Browse high-resolution wallpapers from your favorite series. Every piece, real art.
+            Set your own price. Instant download delivery.
+          </p>
+
+          <div className="hero-cta">
+            <Link to="/marketplace" className="btn btn-primary btn-lg">
+              Browse Wallpapers →
+            </Link>
+            {!user && (
+              <Link to="/auth/signup" className="btn btn-secondary btn-lg">
+                Sell Your Art
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Decorative orbs */}
+        <div style={{ position: 'absolute', top: '20%', right: '8%', width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,243,255,0.05) 0%, transparent 70%)', animation: 'drift 12s ease-in-out infinite', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', bottom: '15%', left: '5%', width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,45,120,0.05) 0%, transparent 70%)', animation: 'drift 8s ease-in-out infinite 4s', pointerEvents: 'none' }} />
+      </section>
 
       {/* ─── SERIES MARQUEE ─── */}
       <SeriesMarquee series={series} />
