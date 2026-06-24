@@ -1,2 +1,8 @@
 @echo off
-powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0start_all.ps1"
+echo Starting backend...
+start cmd /k "cd server && npm run dev:all"
+timeout /t 8 >nul
+echo Backend ready.
+echo Starting frontend...
+start cmd /k "cd client && npm start"
+echo AniCart running.
