@@ -9,6 +9,11 @@ const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema(
   {
+    creatorId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: false,
+    },
     name: {
       type: String,
       required: [true, 'Product name is required'],
@@ -242,6 +247,8 @@ productSchema.index({ anime: 1 });
 productSchema.index({ tags: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ createdAt: -1 });
+productSchema.index({ creatorId: 1, status: 1, createdAt: -1 });
+productSchema.index({ status: 1, series: 1, price: 1 });
 
 /**
  * Static method to get distinct series for filtering

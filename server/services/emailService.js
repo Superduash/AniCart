@@ -128,11 +128,38 @@ const sendReportNotificationEmail = async (adminEmail, report) => {
   });
 };
 
+const sendProductApprovalEmail = async (creator, product) => {
+  return sendEmail({
+    to: creator.email,
+    subject: 'Your wallpaper is live! ✦',
+    html: cardTemplate({
+      title: 'Your wallpaper is live!',
+      subtitle: `Great news, ${creator.name}! Your wallpaper "${product.name}" has been approved and is now live on AniCart.`,
+      buttonText: 'View Dashboard',
+      buttonUrl: `${config.CLIENT_URL}/dashboard`,
+    }),
+  });
+};
+
+const sendProductRejectionEmail = async (creator, product, reason) => {
+  return sendEmail({
+    to: creator.email,
+    subject: 'Update on your wallpaper submission',
+    html: cardTemplate({
+      title: 'Update on your submission',
+      subtitle: `Hi ${creator.name}, unfortunately your wallpaper "${product.name}" could not be approved.`,
+      footerText: `Reason: ${reason || 'Does not meet community guidelines.'}`,
+    }),
+  });
+};
+
 module.exports = {
   sendEmail,
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendOrderReceiptEmail,
   sendReportNotificationEmail,
+  sendProductApprovalEmail,
+  sendProductRejectionEmail,
   getLatestTokenForTesting,
 };

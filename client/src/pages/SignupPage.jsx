@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth, useToast, useNavigation } from '../App';
+import apiClient, { setAccessToken } from '../api/client';
 
 function getPasswordStrength(pwd) {
   let score = 0;
@@ -88,19 +89,23 @@ export default function SignupPage() {
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1600));
+    try {
+      const res = await apiClient.post('/auth/register', {
+        name: form.name.trim(),
+        email: form.email.toLowerCase(),
+        password: form.password,
+      });
 
-    const avatar = form.name.trim()[0].toUpperCase();
-    const newUser = {
-      name: form.name.trim(),
-      email: form.email.toLowerCase(),
-      avatar,
-      joinedAt: new Date().toISOString(),
-    };
+      const { user: newUser, accessToken } = res.data.data;
+      setAccessToken(accessToken);
 
-    login(newUser);
-    addToast(`Welcome to AniCart, ${newUser.name}! Your account has been created. ✦`, 'success');
-    navigate(PAGES.DASHBOARD);
+      login(newUser);
+      addToast(`Welcome to AniCart, ${newUser.name}! Your account has been created. ✦`, 'success');
+      navigate(PAGES.DASHBOARD);
+    } catch (error) {
+      const msg = error.response?.data?.message || 'Registration failed. Please try again.';
+      addToast(msg, 'error');
+    }
     setLoading(false);
   };
 

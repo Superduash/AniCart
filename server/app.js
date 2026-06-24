@@ -25,6 +25,7 @@ const cookieParser = require('cookie-parser');
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 const routes = require('./routes');
 const { router: workerRoutes, serverAdapter: bullBoardAdapter } = require('./routers/workerRoutes');
+const { protect, adminOnly } = require('./middleware/authMiddleware');
 
 const app = express();
 
@@ -37,6 +38,12 @@ if (Sentry) {
 }
 
 app.use(helmet());
+
+// API Versioning header
+app.use((req, res, next) => {
+  res.setHeader('X-API-Version', '1.0');
+  next();
+});
 
 const allowedOrigins = [
   'http://localhost:3000',
@@ -62,6 +69,9 @@ app.use(
 
 app.use(morgan(config.isDevelopment ? 'dev' : 'combined'));
 
+// Stripe webhook must use raw body before express.json()
+app.use('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(mongoSanitize());
 app.use(hpp());
@@ -72,21 +82,7 @@ app.use(cookieParser());
 app.get('/', (req, res) => {
   res.send('AniCart API is running...');
 });
-// TEST ROUTES — REMOVE LATER
-app.get('/test/crash', (req, res) => {
-  throw new Error('Crash test - synchronous');
-});
 
-app.get('/test/rejection', async (req, res) => {
-  return Promise.reject(new Error('Crash test - unhandled rejection'));
-});
-
-app.get('/test/async-crash', async (req, res) => {
-  setTimeout(() => {
-    throw new Error('Crash test - async');
-  }, 100);
-  res.send('Async crash incoming...');
-});
 
 app.get('/api/health', (req, res) => {
   res.status(200).json({
@@ -103,7 +99,7 @@ app.use('/api/v1', routes);
 app.use('/api/v1/worker', workerRoutes);
 
 // Bull Board dashboard for BullMQ
-app.use('/admin/queues', bullBoardAdapter.getRouter());
+app.use('/admin/queues', protect, adminOnly, bullBoardAdapter.getRouter());
 
 app.use(notFound);
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth, useToast, useNavigation } from '../App';
+import apiClient, { setAccessToken } from '../api/client';
 
 const DEMO_USERS = [
   { email: 'ashwin@anicart.com', password: 'Anime@123', name: 'Ashwin', avatar: 'A' },
@@ -53,24 +54,26 @@ export default function LoginPage() {
 
     setLoading(true);
 
-    // Simulated API delay
-    await new Promise((r) => setTimeout(r, 1400));
+    try {
+      const res = await apiClient.post('/auth/login', {
+        email: form.email,
+        password: form.password,
+      });
 
-    // Check against demo users
-    const matched = DEMO_USERS.find(
-      (u) => u.email.toLowerCase() === form.email.toLowerCase() && u.password === form.password
-    );
+      const { user: loggedInUser, accessToken } = res.data.data;
+      setAccessToken(accessToken);
 
-    if (matched) {
       if (rememberMe) localStorage.setItem('anicart_remember_email', form.email);
       else localStorage.removeItem('anicart_remember_email');
-      login({ name: matched.name, email: matched.email, avatar: matched.avatar });
-      addToast(`Welcome back, ${matched.name}! ⚡`, 'success');
+
+      login(loggedInUser);
+      addToast(`Welcome back, ${loggedInUser.name}! ⚡`, 'success');
       navigate(PAGES.DASHBOARD);
-    } else {
+    } catch (error) {
       setLoginAttempts((p) => p + 1);
-      setErrors({ password: 'Invalid email or password. Try demo@anicart.com / Demo@1234' });
-      addToast('Authentication failed. Check your credentials.', 'error');
+      const msg = error.response?.data?.message || 'Authentication failed. Check your credentials.';
+      setErrors({ password: msg });
+      addToast(msg, 'error');
     }
 
     setLoading(false);
@@ -79,10 +82,19 @@ export default function LoginPage() {
   const handleDemoLogin = async () => {
     setLoading(true);
     setForm({ email: 'demo@anicart.com', password: 'Demo@1234' });
-    await new Promise((r) => setTimeout(r, 900));
-    login({ name: 'Demo User', email: 'demo@anicart.com', avatar: 'D' });
-    addToast('Logged in as Demo User! Explore freely. ✦', 'success');
-    navigate(PAGES.DASHBOARD);
+    try {
+      const res = await apiClient.post('/auth/login', {
+        email: 'demo@anicart.com',
+        password: 'Demo@1234',
+      });
+      const { user: loggedInUser, accessToken } = res.data.data;
+      setAccessToken(accessToken);
+      login(loggedInUser);
+      addToast('Logged in as Demo User! Explore freely. ✦', 'success');
+      navigate(PAGES.DASHBOARD);
+    } catch (error) {
+      addToast('Demo login failed. Is the server running?', 'error');
+    }
     setLoading(false);
   };
 

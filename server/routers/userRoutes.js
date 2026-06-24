@@ -14,6 +14,9 @@ const {
   updateProfile,
   changePassword,
   getLibrary,
+  getWishlist,
+  addToWishlist,
+  removeFromWishlist,
 } = require('../controllers/userController');
 
 // Import middleware
@@ -51,5 +54,26 @@ router.put('/password', protect, strictLimiter, changePasswordValidation, change
  * @access  Private
  */
 router.get('/library', protect, getLibrary);
+
+/**
+ * @route   GET /api/users/wishlist
+ * @desc    Get user wishlist
+ * @access  Private
+ */
+router.get('/wishlist', protect, getWishlist);
+
+/**
+ * @route   POST /api/users/wishlist/:productId
+ * @desc    Add product to wishlist
+ * @access  Private
+ */
+router.post('/wishlist/:productId', protect, addToWishlist);
+
+/**
+ * @route   DELETE /api/users/wishlist/:productId
+ * @desc    Remove product from wishlist
+ * @access  Private
+ */
+router.delete('/wishlist/:productId', protect, removeFromWishlist);
 
 module.exports = router;

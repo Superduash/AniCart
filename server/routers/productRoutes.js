@@ -17,6 +17,10 @@ const {
   deleteProduct,
   getSeries,
   restoreProduct,
+  downloadProduct,
+  getPendingProducts,
+  approveProduct,
+  rejectProduct,
 } = require('../controllers/productController');
 
 // Import middleware
@@ -77,5 +81,33 @@ router.delete('/:id', protect, adminOnly, productIdValidation, deleteProduct);
  * @access  Private/Admin
  */
 router.put('/:id/restore', protect, adminOnly, productIdValidation, restoreProduct);
+
+/**
+ * @route   GET /api/products/:id/download
+ * @desc    Get presigned download URL
+ * @access  Private
+ */
+router.get('/:id/download', protect, productIdValidation, downloadProduct);
+
+/**
+ * @route   GET /api/products/admin/pending
+ * @desc    Get all pending products
+ * @access  Private/Admin
+ */
+router.get('/admin/pending', protect, adminOnly, paginationValidation, getPendingProducts);
+
+/**
+ * @route   PUT /api/products/:id/approve
+ * @desc    Approve pending product
+ * @access  Private/Admin
+ */
+router.put('/:id/approve', protect, adminOnly, productIdValidation, approveProduct);
+
+/**
+ * @route   PUT /api/products/:id/reject
+ * @desc    Reject pending product
+ * @access  Private/Admin
+ */
+router.put('/:id/reject', protect, adminOnly, productIdValidation, rejectProduct);
 
 module.exports = router;

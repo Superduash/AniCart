@@ -170,9 +170,40 @@ const rejectCreator = catchAsync(async (req, res) => {
   );
 });
 
+const getCreatorProducts = catchAsync(async (req, res) => {
+  const { products, page, limit, total } = await require('../services/productService').getProducts({
+    ...req.query,
+    creatorId: req.user.id,
+    status: req.query.status || { $in: ['active', 'pending', 'rejected'] }, // Show all their products unless filtered
+  });
+
+  res.status(200).json(
+    successResponse({
+      message: 'Creator products retrieved successfully',
+      data: { products, page, limit, total },
+    })
+  );
+});
+
+const getCreatorStats = catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id).select('creatorStats role');
+  if (!user || user.role !== CONSTANTS.ROLES.CREATOR) {
+    throw ApiError.forbidden('Only creators can access this');
+  }
+
+  res.status(200).json(
+    successResponse({
+      message: 'Creator stats retrieved successfully',
+      data: { stats: user.creatorStats },
+    })
+  );
+});
+
 module.exports = {
   applyCreator,
   getPendingCreatorRequests,
   approveCreator,
   rejectCreator,
+  getCreatorProducts,
+  getCreatorStats,
 };

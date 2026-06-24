@@ -141,7 +141,7 @@ orderSchema.statics.createFromCart = async function (userId, cartItems) {
     subtotal,
     tax,
     total,
-    status: 'completed', // Auto-complete for digital products
+    status: 'pending', // Wait for payment confirmation
   });
 
   return order;

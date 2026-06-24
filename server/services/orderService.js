@@ -3,13 +3,15 @@
  */
 
 const mongoose = require('mongoose');
+const stripe = require('stripe')(require('../config').STRIPE_SECRET_KEY);
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const User = require('../models/User');
+const License = require('../models/License');
 const ApiError = require('../utils/apiError');
 const CONSTANTS = require('../utils/constants');
 
-async function checkout(userId) {
+async function createPaymentIntent(userId) {
   const cart = await Cart.findOne({ user: userId }).populate({
     path: 'items.product',
     select: '-__v',
@@ -29,23 +31,74 @@ async function checkout(userId) {
 
   const order = await Order.createFromCart(userId, cart.items);
 
-  const purchasedProductIds = cart.items.map((item) => item.product._id);
-  await User.findByIdAndUpdate(userId, {
+  if (!require('../config').STRIPE_SECRET_KEY) {
+    // If Stripe isn't configured, we cannot proceed with real payments.
+    throw ApiError.internal('Payments are currently disabled');
+  }
+
+  const amount = Math.round(order.total * 100);
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount,
+    currency: 'usd',
+    metadata: {
+      orderId: order._id.toString(),
+      userId: userId.toString(),
+    },
+  });
+
+  order.stripePaymentIntentId = paymentIntent.id;
+  await order.save();
+
+  return {
+    clientSecret: paymentIntent.client_secret,
+    orderId: order._id,
+  };
+}
+
+async function completeOrder(paymentIntentId) {
+  const order = await Order.findOne({ stripePaymentIntentId: paymentIntentId });
+  if (!order || order.status === 'completed') return;
+
+  order.status = 'completed';
+  await order.save();
+
+  const purchasedProductIds = order.items.map((item) => item.product);
+
+  const licenseOps = purchasedProductIds.map((productId) => ({
+    updateOne: {
+      filter: { user: order.user, product: productId },
+      update: { $setOnInsert: { user: order.user, product: productId, isActive: true, downloadCount: 0, maxDownloads: 10 } },
+      upsert: true,
+    },
+  }));
+  
+  if (licenseOps.length > 0) {
+    await License.bulkWrite(licenseOps);
+  }
+
+  await User.findByIdAndUpdate(order.user, {
     $addToSet: { library: { $each: purchasedProductIds } },
     $inc: {
-      purchasesCount: cart.items.length,
+      purchasesCount: order.items.length,
       points: Math.floor(order.total * 10),
     },
   });
 
-  await cart.clearCart();
+  const cart = await Cart.findOne({ user: order.user });
+  if (cart) {
+    await cart.clearCart();
+  }
 
+  // send order receipt email
+  const user = await User.findById(order.user).select('name email');
   const populatedOrder = await Order.findById(order._id).populate({
     path: 'items.product',
     select: '-__v',
   });
-
-  return populatedOrder;
+  
+  const { sendOrderReceiptEmail } = require('./emailService');
+  await sendOrderReceiptEmail(user, populatedOrder).catch((err) => require('../utils/logger').error('Receipt email failed', err));
 }
 
 /**
@@ -141,7 +194,8 @@ async function getOrderStats(userId) {
 }
 
 module.exports = {
-  checkout,
+  createPaymentIntent,
+  completeOrder,
   getOrders,
   getOrder,
   cancelOrder,

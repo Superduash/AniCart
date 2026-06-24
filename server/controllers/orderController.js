@@ -9,17 +9,17 @@ const catchAsync = require('../utils/catchAsync');
 const orderService = require('../services/orderService');
 
 /**
- * @desc    Create order from cart (checkout)
- * @route   POST /api/v1/orders/checkout
+ * @desc    Create Stripe PaymentIntent
+ * @route   POST /api/v1/orders/create-payment-intent
  * @access  Private
  */
-const checkout = catchAsync(async (req, res) => {
-  const populatedOrder = await orderService.checkout(req.user.id);
+const createPaymentIntent = catchAsync(async (req, res) => {
+  const result = await orderService.createPaymentIntent(req.user.id);
 
-  res.status(201).json(
+  res.status(200).json(
     successResponse({
-      message: 'Order placed successfully',
-      data: { order: populatedOrder },
+      message: 'Payment intent created successfully',
+      data: result,
     })
   );
 });
@@ -94,10 +94,22 @@ const getOrderStats = catchAsync(async (req, res) => {
   );
 });
 
+const getStripeConfig = catchAsync(async (req, res) => {
+  res.status(200).json(
+    successResponse({
+      message: 'Stripe config retrieved',
+      data: {
+        publishableKey: process.env.STRIPE_PUBLIC_KEY,
+      },
+    })
+  );
+});
+
 module.exports = {
-  checkout,
+  createPaymentIntent,
   getOrders,
   getOrder,
   cancelOrder,
   getOrderStats,
+  getStripeConfig,
 };

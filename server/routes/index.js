@@ -14,6 +14,9 @@ const creatorRoutes = require('../routers/creatorRoutes');
 const testRoutes = require('./testRoutes');
 const debugRoutes = require('./debugRoutes');
 const uploadRoutes = require('../routers/uploadRoutes');
+const webhookRoutes = require('../routers/webhookRoutes');
+const reviewRoutes = require('../routers/reviewRoutes');
+const adminRoutes = require('../routers/adminRoutes');
 
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
@@ -21,8 +24,13 @@ router.use('/products', productRoutes);
 router.use('/cart', cartRoutes);
 router.use('/orders', orderRoutes);
 router.use('/', creatorRoutes);
-router.use('/test', testRoutes);
-router.use('/debug', debugRoutes);
+if (process.env.NODE_ENV !== 'production') {
+  router.use('/test', testRoutes);
+  router.use('/debug', debugRoutes);
+}
 router.use('/upload', uploadRoutes);
+router.use('/webhooks', webhookRoutes);
+router.use('/reviews', reviewRoutes);
+router.use('/admin', adminRoutes);
 
 module.exports = router;

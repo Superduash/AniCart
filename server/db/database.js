@@ -8,9 +8,9 @@ const connectDB = async () => {
       maxPoolSize: 5,
       minPoolSize: 1,
     });
-    logger.info('MongoDB connected', { host: conn.connection.host });
+    logger.info('✓ MongoDB Connected');
   } catch (error) {
-    logger.error('MongoDB connection error', { error: error.message });
+    logger.error(`✗ MongoDB Connection Failed: ${error.message}`);
     process.exit(1);
   }
 };

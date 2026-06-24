@@ -202,7 +202,7 @@ function scheduleCleanupJob() {
 
   const delay = next3AM - now;
 
-  logger.info(`[Cleanup] Scheduled next cleanup at ${next3AM.toISOString()}`);
+  logger.silly(`[Cleanup] Scheduled next cleanup at ${next3AM.toISOString()}`);
 
   // Initial delay to reach 3 AM, then run every 24 hours
   const timeoutId = setTimeout(() => {

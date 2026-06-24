@@ -30,7 +30,7 @@ const startCreatorMonthlyResetJob = () => {
   const nextRun = getNextMonthStart();
   const delay = Math.max(1000, nextRun.getTime() - Date.now());
 
-  logger.info('Next creator monthly reset scheduled', { nextRun: nextRun.toISOString() });
+  logger.silly('Next creator monthly reset scheduled', { nextRun: nextRun.toISOString() });
 
   setTimeout(async () => {
     await resetCreatorMonthlyUploads();

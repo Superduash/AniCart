@@ -10,11 +10,12 @@ const router = express.Router();
 
 // Import controller functions
 const {
-  checkout,
+  createPaymentIntent,
   getOrders,
   getOrder,
   cancelOrder,
   getOrderStats,
+  getStripeConfig,
 } = require('../controllers/orderController');
 
 // Import middleware
@@ -26,11 +27,18 @@ const {
 } = require('../middleware/validateRequest');
 
 /**
- * @route   POST /api/orders/checkout
- * @desc    Create order from cart (checkout)
+ * @route   GET /api/orders/config
+ * @desc    Get Stripe Config
+ * @access  Public
+ */
+router.get('/config', getStripeConfig);
+
+/**
+ * @route   POST /api/orders/create-payment-intent
+ * @desc    Create Stripe PaymentIntent
  * @access  Private
  */
-router.post('/checkout', protect, apiLimiter, checkout);
+router.post('/create-payment-intent', protect, apiLimiter, createPaymentIntent);
 
 /**
  * @route   GET /api/orders

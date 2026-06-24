@@ -13,6 +13,14 @@ process.emitWarning = (warning, ...args) => {
   return originalEmitWarning.call(process, warning, ...args);
 };
 
+// Suppress BullMQ Eviction policy warning
+const originalConsoleWarn = console.warn;
+console.warn = (...args) => {
+  const msg = args.join(' ');
+  if (msg.includes('Eviction policy') && msg.includes('noeviction')) return;
+  return originalConsoleWarn.apply(console, args);
+};
+
 require('dotenv').config();
 
 const config = require('./config');
@@ -69,11 +77,10 @@ function shutdown() {
 connectDB();
 startCreatorMonthlyResetJob();
 
-// Start server
 const PORT = config.PORT || 5000;
 
 server = app.listen(PORT, () => {
-  logger.info(`[API] Server running on port ${PORT}`);
-  logger.info(`[API] Environment: ${config.NODE_ENV}`);
-  logger.info(`[API] URL: http://localhost:${PORT}/api/v1`);
+  logger.info(`✓ Server Running on Port ${PORT}`);
+  logger.info(`✓ Environment: ${config.NODE_ENV.charAt(0).toUpperCase() + config.NODE_ENV.slice(1)}`);
+  logger.info(`→ API: http://localhost:${PORT}/api/v1`);
 });

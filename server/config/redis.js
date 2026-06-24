@@ -9,6 +9,7 @@
 const IORedis = require('ioredis');
 const { Redis } = require('@upstash/redis');
 const config = require('./index');
+const logger = require('../utils/logger');
 
 if (!config.REDIS_URL) {
   throw new Error('REDIS_URL is missing. Check your .env file');
@@ -20,12 +21,20 @@ const redisConnection = new IORedis(config.REDIS_URL, {
   retryStrategy: (times) => Math.min(times * 50, 2000),
 });
 
+let redisConnectedLogged = false;
 redisConnection.on('connect', () => {
-  console.log('[REDIS] BullMQ Redis connected');
+  if (!redisConnectedLogged) {
+    logger.info('✓ Redis Connected');
+    redisConnectedLogged = true;
+  }
 });
 
+let redisWarningLogged = false;
 redisConnection.on('error', (err) => {
-  console.error('[REDIS] Error:', err.message);
+  if (!redisWarningLogged) {
+    logger.warn(`⚠ Redis Connection Failed — using Memory/Map fallback: ${err.message}`);
+    redisWarningLogged = true;
+  }
 });
 
 const upstashRedis = new Redis({

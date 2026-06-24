@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth, useCart, useToast, useNavigation } from '../App';
+import Checkout from '../components/Checkout';
 
 // ═══ STAT CARD ═══
 function StatCard({ icon, label, value, color = 'neon', sub }) {
@@ -224,11 +225,11 @@ function CartTab() {
   const { cart, removeFromCart, updateQty, cartTotal, clearCart } = useCart();
   const { addToast } = useToast();
   const { navigate, PAGES } = useNavigation();
+  const [showCheckout, setShowCheckout] = useState(false);
 
-  const handleCheckout = () => {
+  const handleCheckoutClick = () => {
     if (cart.length === 0) { addToast('Cart is empty!', 'warning'); return; }
-    addToast(`Order placed! $${cartTotal.toFixed(2)} — Thank you! 🎉 (Demo Mode)`, 'success');
-    clearCart();
+    setShowCheckout(true);
   };
 
   if (cart.length === 0) {
@@ -348,9 +349,14 @@ function CartTab() {
               </div>
             </div>
 
-            <button className="btn-primary btn-full" onClick={handleCheckout}>
-              ◈ Place Order
-            </button>
+            {showCheckout ? (
+              <Checkout />
+            ) : (
+              <button className="btn-primary btn-full" onClick={handleCheckoutClick}>
+                ◈ Proceed to Checkout
+              </button>
+            )}
+            
             <button onClick={clearCart} style={{
               width: '100%', marginTop: 10, background: 'none',
               border: '1px solid rgba(255,45,120,0.2)', borderRadius: 10,
@@ -370,20 +376,83 @@ function CartTab() {
 // ═══ LIBRARY TAB ═══
 function LibraryTab() {
   const { navigate, PAGES } = useNavigation();
+  const [library, setLibrary] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const { addToast } = useToast();
+
+  React.useEffect(() => {
+    const fetchLibrary = async () => {
+      try {
+        const apiClient = require('../api/client').default;
+        const res = await apiClient.get('/users/library');
+        setLibrary(res.data.data.library);
+      } catch (err) {
+        addToast('Failed to load library', 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLibrary();
+  }, [addToast]);
+
+  const handleDownload = async (productId) => {
+    try {
+      const apiClient = require('../api/client').default;
+      const res = await apiClient.get(`/products/${productId}/download`);
+      window.open(res.data.data.downloadUrl, '_blank');
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to get download link', 'error');
+    }
+  };
+
+  if (loading) {
+    return <div style={{ padding: 40, textAlign: 'center' }}>Loading databank...</div>;
+  }
+
+  if (library.length === 0) {
+    return (
+      <div className="glass-card" style={{ padding: 80, textAlign: 'center' }}>
+        <div style={{ fontSize: '4rem', marginBottom: 24 }}>🌌</div>
+        <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '1.1rem',
+          color: 'var(--text-primary)', marginBottom: 12 }}>Library Empty</div>
+        <div style={{ color: 'var(--text-muted)', marginBottom: 8, fontSize: '0.95rem' }}>
+          Your purchased wallpapers will appear here.
+        </div>
+        <div style={{ color: 'var(--text-muted)', marginBottom: 32, fontSize: '0.88rem' }}>
+          Complete a purchase to unlock instant downloads.
+        </div>
+        <button className="btn-primary" onClick={() => navigate(PAGES.LANDING)}>
+          ✦ Start Your Collection
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="glass-card" style={{ padding: 80, textAlign: 'center' }}>
-      <div style={{ fontSize: '4rem', marginBottom: 24 }}>🌌</div>
-      <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '1.1rem',
-        color: 'var(--text-primary)', marginBottom: 12 }}>Library Empty</div>
-      <div style={{ color: 'var(--text-muted)', marginBottom: 8, fontSize: '0.95rem' }}>
-        Your purchased wallpapers will appear here.
-      </div>
-      <div style={{ color: 'var(--text-muted)', marginBottom: 32, fontSize: '0.88rem' }}>
-        Complete a purchase to unlock instant downloads.
-      </div>
-      <button className="btn-primary" onClick={() => navigate(PAGES.LANDING)}>
-        ✦ Start Your Collection
-      </button>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 20 }}>
+      {library.map((item) => {
+        const p = item.product || item; // Fallback in case population fails or uses older schema
+        return (
+          <div key={p.id || p._id} className="glass-card" style={{ overflow: 'hidden', borderRadius: 12 }}>
+            <img src={p.img} alt={p.name} style={{ width: '100%', height: 140, objectFit: 'cover' }} />
+            <div style={{ padding: 16 }}>
+              <div style={{ fontFamily: 'Rajdhani', fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)', marginBottom: 4 }}>
+                {p.name}
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: 16 }}>
+                {p.series} · {p.resolution}
+              </div>
+              <button 
+                className="btn-primary btn-full"
+                onClick={() => handleDownload(p.id || p._id)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '10px' }}
+              >
+                <span>⬇</span> Download
+              </button>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }

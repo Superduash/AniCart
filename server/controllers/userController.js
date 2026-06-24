@@ -78,9 +78,42 @@ const getLibrary = catchAsync(async (req, res) => {
   );
 });
 
+const getWishlist = catchAsync(async (req, res) => {
+  const wishlist = await userService.getWishlist(req.user.id);
+  res.status(200).json(
+    successResponse({
+      message: 'Wishlist retrieved successfully',
+      data: { wishlist },
+    })
+  );
+});
+
+const addToWishlist = catchAsync(async (req, res) => {
+  const wishlist = await userService.addToWishlist(req.user.id, req.params.productId);
+  res.status(200).json(
+    successResponse({
+      message: 'Added to wishlist',
+      data: { wishlist },
+    })
+  );
+});
+
+const removeFromWishlist = catchAsync(async (req, res) => {
+  const wishlist = await userService.removeFromWishlist(req.user.id, req.params.productId);
+  res.status(200).json(
+    successResponse({
+      message: 'Removed from wishlist',
+      data: { wishlist },
+    })
+  );
+});
+
 module.exports = {
   getProfile,
   updateProfile,
   changePassword,
   getLibrary,
+  getWishlist,
+  addToWishlist,
+  removeFromWishlist,
 };

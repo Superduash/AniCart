@@ -3,6 +3,14 @@
  * Runs background jobs (image processing, cleanup jobs) separately from the main API.
  */
 
+// Suppress BullMQ Eviction policy warning
+const originalConsoleWarn = console.warn;
+console.warn = (...args) => {
+  const msg = args.join(' ');
+  if (msg.includes('Eviction policy') && msg.includes('noeviction')) return;
+  return originalConsoleWarn.apply(console, args);
+};
+
 require('dotenv').config();
 const connectDB = require('./db/database');
 const logger = require('./utils/logger');
@@ -25,10 +33,9 @@ process.on('unhandledRejection', (err) => {
 const startWorker = async () => {
   try {
     await connectDB();
-    logger.info('[MONGO] Connected');
-    logger.info('[WORKER] BullMQ Worker listening for jobs...');
+    logger.info(`✓ Environment: ${process.env.NODE_ENV ? process.env.NODE_ENV.charAt(0).toUpperCase() + process.env.NODE_ENV.slice(1) : 'Development'}`);
   } catch (error) {
-    logger.error('[WORKER] Failed to start:', error);
+    logger.error(`✗ Worker Failed to Start: ${error.message}`);
     process.exit(1);
   }
 };

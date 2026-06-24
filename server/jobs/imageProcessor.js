@@ -20,6 +20,7 @@ const { redisConnection } = require('../config/redis');
 const { s3Client, bucketName, publicUrl } = require('../config/r2');
 const Product = require('../models/Product');
 const uploadService = require('../services/uploadService');
+const logger = require('../utils/logger');
 
 // Sharp Memory Protection
 sharp.concurrency(1);
@@ -373,25 +374,25 @@ const imageProcessorWorker = new Worker(
 
 // Worker event handlers with enhanced monitoring
 imageProcessorWorker.on('active', (job) => {
-  console.log(`[QUEUE] Job ${job.id} started`);
+  logger.info(`[QUEUE] Job ${job.id} started`);
 });
 
 imageProcessorWorker.on('progress', (job, progress) => {
-  console.log(`[QUEUE] Job ${job.id} progress: ${progress}%`);
+  logger.info(`[QUEUE] Job ${job.id} progress: ${progress}%`);
 });
 
 imageProcessorWorker.on('completed', (job, result) => {
-  console.log(`[QUEUE] Job ${job.id} completed`);
+  logger.info(`[QUEUE] Job ${job.id} completed`);
 });
 
 imageProcessorWorker.on('failed', (job, err) => {
-  console.log(`[QUEUE] Job ${job.id} failed: ${err.message}`);
+  logger.error(`[QUEUE] Job ${job.id} failed: ${err.message}`);
 });
 
 imageProcessorWorker.on('error', (error) => {
-  console.error('[WORKER] Error:', error.message);
+  logger.error(`[WORKER] Error: ${error.message}`);
 });
 
-console.log('[WORKER] Image processor worker registered (concurrency=1, cache=disabled)');
+logger.info('✓ BullMQ Worker Ready');
 
 module.exports = imageProcessorWorker;

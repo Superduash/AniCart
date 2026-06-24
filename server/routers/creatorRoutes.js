@@ -9,6 +9,8 @@ const {
   getPendingCreatorRequests,
   approveCreator,
   rejectCreator,
+  getCreatorProducts,
+  getCreatorStats,
 } = require('../controllers/creatorController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const {
@@ -19,6 +21,9 @@ const {
 const router = express.Router();
 
 router.post('/creator/apply', protect, creatorApplyValidation, applyCreator);
+
+router.get('/creator/products', protect, getCreatorProducts);
+router.get('/creator/stats', protect, getCreatorStats);
 
 router.get('/admin/creator-requests', protect, adminOnly, getPendingCreatorRequests);
 router.put(
