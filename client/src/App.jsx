@@ -19,21 +19,23 @@ import Navbar from './components/layout/Navbar';
 import ToastContainer from './components/ui/ToastContainer';
 import SearchOverlay from './components/search/SearchOverlay';
 
-// Page routes (Lazy loaded for code-splitting)
-const LandingPage         = React.lazy(() => import('./pages/LandingPage'));
-const MarketplacePage     = React.lazy(() => import('./pages/MarketplacePage'));
-const ProductDetailPage   = React.lazy(() => import('./pages/ProductDetailPage'));
-const CartPage            = React.lazy(() => import('./pages/CartPage'));
+// Core Pages (Synchronous for instant navigation)
+import LandingPage         from './pages/LandingPage';
+import MarketplacePage     from './pages/MarketplacePage';
+import ProductDetailPage   from './pages/ProductDetailPage';
+import CartPage            from './pages/CartPage';
+
+// Lazy Loaded Pages (for code-splitting heavy routes)
 const CheckoutPage        = React.lazy(() => import('./pages/CheckoutPage'));
 
-const LoginPage           = React.lazy(() => import('./pages/auth/LoginPage'));
-const SignupPage          = React.lazy(() => import('./pages/auth/SignupPage'));
+import LoginPage           from './pages/auth/LoginPage';
+import SignupPage          from './pages/auth/SignupPage';
 const VerifyEmailPage     = React.lazy(() => import('./pages/auth/VerifyEmailPage'));
 const ForgotPasswordPage  = React.lazy(() => import('./pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage   = React.lazy(() => import('./pages/auth/ResetPasswordPage'));
 
 import DashboardShell     from './components/layout/DashboardShell';
-const LibraryPage         = React.lazy(() => import('./pages/dashboard/LibraryPage'));
+import LibraryPage        from './pages/dashboard/LibraryPage';
 const OrdersPage          = React.lazy(() => import('./pages/dashboard/OrdersPage'));
 const WishlistPage        = React.lazy(() => import('./pages/dashboard/WishlistPage'));
 const SettingsPage        = React.lazy(() => import('./pages/dashboard/SettingsPage'));

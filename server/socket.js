@@ -26,19 +26,14 @@ const initSocket = (server) => {
   });
 
   io.on('connection', (socket) => {
-    console.log(`[Socket.io] Client connected: ${socket.id}`);
-
     // Allow clients to join a room specific to their user ID to receive targeted events
     socket.on('join_user_room', (userId) => {
       if (userId) {
         socket.join(`user_${userId}`);
-        console.log(`[Socket.io] Socket ${socket.id} joined room user_${userId}`);
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log(`[Socket.io] Client disconnected: ${socket.id}`);
-    });
+    socket.on('disconnect', () => {});
   });
 
   return io;

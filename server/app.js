@@ -19,7 +19,6 @@ const cors = require('cors');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
-const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const compression = require('compression');
 
@@ -72,8 +71,6 @@ app.use(
     allowedHeaders: ['Content-Type', 'Authorization'],
   })
 );
-
-app.use(morgan(config.isDevelopment ? 'dev' : 'combined'));
 
 // Stripe webhook must use raw body before express.json()
 app.use('/api/v1/webhooks/stripe', express.raw({ type: 'application/json' }));
