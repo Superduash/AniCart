@@ -161,7 +161,6 @@ export default function SearchOverlay() {
                       textAlign: 'center', transition: 'background 0.15s',
                       letterSpacing: 1,
                     }}
-                    onClick={() => { setSearchOpen(false); navigate(`/marketplace?search=${encodeURIComponent(query)}`); }}
                     onMouseEnter={e => e.currentTarget.style.background = 'var(--color-accent-dim)'}
                     onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
