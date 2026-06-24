@@ -17,7 +17,7 @@ const logger = require('./utils/logger');
 
 // Import BullMQ workers (they start automatically on import)
 const imageProcessorWorker = require('./jobs/imageProcessor');
-require('./jobs/cleanupOrphanedFiles');
+const { scheduleCleanupJob } = require('./jobs/cleanupOrphanedFiles');
 
 // Global crash handlers
 process.on('uncaughtException', (err) => {
@@ -34,6 +34,9 @@ const startWorker = async () => {
   try {
     await connectDB();
     logger.info(`✓ Environment: ${process.env.NODE_ENV ? process.env.NODE_ENV.charAt(0).toUpperCase() + process.env.NODE_ENV.slice(1) : 'Development'}`);
+    
+    // Start scheduling cleanup jobs
+    scheduleCleanupJob();
   } catch (error) {
     logger.error(`✗ Worker Failed to Start: ${error.message}`);
     process.exit(1);
@@ -46,7 +49,11 @@ startWorker();
 const shutdown = async () => {
   logger.info('[Worker] Shutting down gracefully...');
   if (imageProcessorWorker) {
-    await imageProcessorWorker.close();
+    try {
+      await imageProcessorWorker.close();
+    } catch (err) {
+      logger.error('[Worker] Error closing worker:', err.message);
+    }
   }
   process.exit(0);
 };

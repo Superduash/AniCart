@@ -1,34 +1,72 @@
-# Frontend
-client/node_modules/
-client/dist/
-client/build/
-client/.next/
-client/.env
-client/.env.local
-
-# Backend
-server/node_modules/
-server/uploads/
-server/logs/
-server/.env
-server/.env.*
-
-# Local Exports & Scripts
-AniCart_Server_Code.txt
-AniCart_Website_Code.txt
-export.py
-Frontend_Finish.md
-Backend_Finish.md
-
-# General
+# Dependencies
 node_modules/
+**/node_modules/
+
+# Environments and Secrets
+.env*
+**/.env*
+!.env.example
+**/!.env.example
+
+# Build outputs
+dist/
+**/dist/
+build/
+**/build/
+.next/
+**/.next/
+out/
+
+# Logs
+logs/
+**/logs/
+*.log
+
+# Caches
+.cache/
+**/.cache/
+.turbo/
+.eslintcache
+
+# Temporary folders & files
+temp/
+**/temp/
+tmp/
+**/tmp/
+*.tmp
+temp_upload_*
+
+# Media Uploads
+uploads/
+**/uploads/
+
+# Coverage
+coverage/
+**/coverage/
+
+# IDEs and Editors
 .vscode/
 .idea/
 .qoder/
-*.log
-*.tmp
-coverage/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# System and OS Files
 .DS_Store
+.DS_Store?
+ehthumbs.db
 Thumbs.db
+
+# Python remnants
 __pycache__/
+*.pyc
 .venv/
+venv/
+
+# Backups
+*.bak
+*.swp
+*.orig

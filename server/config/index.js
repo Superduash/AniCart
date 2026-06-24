@@ -57,28 +57,34 @@ const config = {
 };
 
 // Validate required configurations
-// NOTE: SENTRY_DSN is optional - app will run without Sentry if not set
-const requiredConfigs = [
-  'MONGODB_URI',
-  'JWT_SECRET',
-  'R2_ACCOUNT_ID',
-  'R2_ACCESS_KEY_ID',
-  'R2_SECRET_ACCESS_KEY',
-];
+if (!config.MONGODB_URI) {
+  logger.error('FATAL ERROR: MONGODB_URI is not defined in environment variables');
+  throw new Error('Missing required environment variable: MONGODB_URI');
+}
 
-requiredConfigs.forEach((key) => {
-  if (!config[key]) {
-    logger.error(`FATAL ERROR: ${key} is not defined in environment variables`);
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-});
+if (!config.JWT_SECRET && !config.JWT_ACCESS_SECRET) {
+  logger.error('FATAL ERROR: JWT_SECRET or JWT_ACCESS_SECRET must be defined in environment variables');
+  throw new Error('Missing required environment variable: JWT_SECRET or JWT_ACCESS_SECRET');
+}
+
+// Soft-warn for R2 configurations so the app can start without them
+const r2ConfigKeys = ['R2_ACCOUNT_ID', 'R2_ACCESS_KEY_ID', 'R2_SECRET_ACCESS_KEY', 'R2_BUCKET_NAME'];
+const missingR2Keys = r2ConfigKeys.filter((key) => !config[key]);
+if (missingR2Keys.length > 0) {
+  logger.warn(`⚠ Cloudflare R2 is partially or fully unconfigured (missing: ${missingR2Keys.join(', ')}). Image uploads will be disabled.`);
+}
+
+// Soft-warn for Redis configuration
+if (!config.REDIS_URL) {
+  logger.warn('⚠ REDIS_URL is not defined in environment variables. BullMQ and Redis background operations will run in local/in-memory fallback mode.');
+}
 
 // Soft-warn for Stripe config so app can start without it
 if (!config.STRIPE_SECRET_KEY) {
-  logger.warn('STRIPE_SECRET_KEY not set — payments disabled');
+  logger.warn('⚠ STRIPE_SECRET_KEY not set — payments disabled');
 }
 if (!config.STRIPE_WEBHOOK_SECRET) {
-  logger.warn('STRIPE_WEBHOOK_SECRET not set — webhook verification disabled');
+  logger.warn('⚠ STRIPE_WEBHOOK_SECRET not set — webhook verification disabled');
 }
 
 module.exports = config;

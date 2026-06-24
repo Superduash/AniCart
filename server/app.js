@@ -84,10 +84,58 @@ app.get('/', (req, res) => {
 });
 
 
-app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'Server is running',
+app.get('/api/health', async (req, res) => {
+  const mongoose = require('mongoose');
+  const { redisConnection } = require('./config/redis');
+  const { s3Client } = require('./config/r2');
+  const { ListObjectsV2Command } = require('@aws-sdk/client-s3');
+
+  let mongoStatus = 'disconnected';
+  try {
+    if (mongoose.connection.readyState === 1) {
+      mongoStatus = 'connected';
+    }
+  } catch (err) {
+    mongoStatus = 'error';
+  }
+
+  let redisStatus = 'disconnected';
+  if (config.REDIS_URL) {
+    try {
+      if (redisConnection) {
+        await redisConnection.ping();
+        redisStatus = 'connected';
+      } else {
+        redisStatus = 'warning';
+      }
+    } catch (err) {
+      redisStatus = 'error';
+    }
+  } else {
+    redisStatus = 'warning';
+  }
+
+  let r2Status = 'disconnected';
+  if (config.R2_ACCOUNT_ID && config.R2_ACCESS_KEY_ID && config.R2_SECRET_ACCESS_KEY && config.R2_BUCKET_NAME) {
+    try {
+      await s3Client.send(new ListObjectsV2Command({ Bucket: config.R2_BUCKET_NAME, MaxKeys: 1 }));
+      r2Status = 'connected';
+    } catch (err) {
+      r2Status = 'error';
+    }
+  } else {
+    r2Status = 'warning';
+  }
+
+  const isHealthy = mongoStatus === 'connected';
+
+  res.status(isHealthy ? 200 : 500).json({
+    success: isHealthy,
+    services: {
+      mongodb: mongoStatus,
+      redis: redisStatus,
+      r2: r2Status,
+    },
     timestamp: new Date().toISOString(),
     environment: config.NODE_ENV,
   });

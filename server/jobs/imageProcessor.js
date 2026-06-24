@@ -349,50 +349,76 @@ async function handleJobFailure(job, error) {
 }
 
 /**
+ * Helper to process image directly (fallback logic for when Redis is disabled)
+ */
+async function processImageDirectly({ productId, r2OriginalKey, creatorId }) {
+  const dummyJob = {
+    id: `sync-${productId}`,
+    data: { productId, r2OriginalKey, creatorId },
+    updateProgress: async (progress) => {
+      logger.info(`[Fallback Processing] Product ${productId} progress: ${progress}%`);
+    },
+  };
+  try {
+    return await processImageJob(dummyJob);
+  } catch (error) {
+    await handleJobFailure(dummyJob, error);
+    throw error;
+  }
+}
+
+/**
  * Create and export the BullMQ Worker
  * Concurrency MUST be 1
  */
-const imageProcessorWorker = new Worker(
-  'image-processing',
-  async (job) => {
-    try {
-      return await processImageJob(job);
-    } catch (error) {
-      await handleJobFailure(job, error);
-      throw error;
-    }
-  },
-  {
-    connection: redisConnection,
-    concurrency: 1, // MUST be 1 as per requirements
-    limiter: {
-      max: 10,
-      duration: 60000, // 10 jobs per minute
+let imageProcessorWorker = null;
+
+if (redisConnection) {
+  imageProcessorWorker = new Worker(
+    'image-processing',
+    async (job) => {
+      try {
+        return await processImageJob(job);
+      } catch (error) {
+        await handleJobFailure(job, error);
+        throw error;
+      }
     },
-  }
-);
+    {
+      connection: redisConnection,
+      concurrency: 1, // MUST be 1 as per requirements
+      limiter: {
+        max: 10,
+        duration: 60000, // 10 jobs per minute
+      },
+    }
+  );
 
-// Worker event handlers with enhanced monitoring
-imageProcessorWorker.on('active', (job) => {
-  logger.info(`[QUEUE] Job ${job.id} started`);
-});
+  // Worker event handlers with enhanced monitoring
+  imageProcessorWorker.on('active', (job) => {
+    logger.info(`[QUEUE] Job ${job.id} started`);
+  });
 
-imageProcessorWorker.on('progress', (job, progress) => {
-  logger.info(`[QUEUE] Job ${job.id} progress: ${progress}%`);
-});
+  imageProcessorWorker.on('progress', (job, progress) => {
+    logger.info(`[QUEUE] Job ${job.id} progress: ${progress}%`);
+  });
 
-imageProcessorWorker.on('completed', (job, result) => {
-  logger.info(`[QUEUE] Job ${job.id} completed`);
-});
+  imageProcessorWorker.on('completed', (job, result) => {
+    logger.info(`[QUEUE] Job ${job.id} completed`);
+  });
 
-imageProcessorWorker.on('failed', (job, err) => {
-  logger.error(`[QUEUE] Job ${job.id} failed: ${err.message}`);
-});
+  imageProcessorWorker.on('failed', (job, err) => {
+    logger.error(`[QUEUE] Job ${job.id} failed: ${err.message}`);
+  });
 
-imageProcessorWorker.on('error', (error) => {
-  logger.error(`[WORKER] Error: ${error.message}`);
-});
+  imageProcessorWorker.on('error', (error) => {
+    logger.error(`[WORKER] Error: ${error.message}`);
+  });
 
-logger.info('✓ BullMQ Worker Ready');
+  logger.info('✓ BullMQ Worker Ready');
+} else {
+  logger.warn('⚠ BullMQ Worker is disabled: Redis connection not available.');
+}
 
 module.exports = imageProcessorWorker;
+module.exports.processImageDirectly = processImageDirectly;
