@@ -139,6 +139,9 @@ async function getProducts(query) {
     Product.getDistinctSeries(),
   ]);
 
+  products = mongoProducts;
+  total = mongoTotal;
+
   const result = {
     products,
     page: pageNum,
