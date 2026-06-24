@@ -15,14 +15,14 @@ const { blacklistToken } = require('../services/tokenBlacklistService');
 const refreshCookieOptions = {
   httpOnly: true,
   secure: config.isProduction,
-  sameSite: 'strict',
+  sameSite: config.isProduction ? 'none' : 'strict',
   maxAge: CONSTANTS.COOKIE.MAX_AGE_MS,
 };
 
 const clearCookieOptions = {
   httpOnly: true,
   secure: config.isProduction,
-  sameSite: 'strict',
+  sameSite: config.isProduction ? 'none' : 'strict',
   expires: new Date(0),
 };
 

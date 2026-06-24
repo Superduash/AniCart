@@ -3,6 +3,7 @@ import { useTitle } from '../../hooks/useTitle';
 import { useUI } from '../../contexts/UIContext';
 import apiClient from '../../api/client';
 import Modal from '../../components/ui/Modal';
+import { useSocket } from '../../contexts/SocketContext';
 
 function FileUploadBox({ label, accept, onFile, file, subtext }) {
   const [drag, setDrag] = useState(false);
@@ -57,8 +58,31 @@ export default function CreatorUploadsPage() {
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({ name: '', description: '', price: 5, series: '', resolution: '4K', format: 'WebP' });
   const [sourceFile, setSourceFile] = useState(null);
+  const { socket } = useSocket();
 
   useEffect(() => { loadProducts(); }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+    
+    const handleStatusUpdate = (data) => {
+      setProducts(prev => prev.map(p => {
+        if (p._id === data.productId || p.id === data.productId) {
+          return { ...p, status: data.status, assets: data.product?.assets || p.assets };
+        }
+        return p;
+      }));
+      
+      if (data.status === 'active') {
+        addToast(`Your product is now live!`, 'success');
+      } else if (data.status === 'flagged') {
+        addToast(`Product upload failed: ${data.error || 'Unknown error'}`, 'error');
+      }
+    };
+
+    socket.on('product_status_updated', handleStatusUpdate);
+    return () => socket.off('product_status_updated', handleStatusUpdate);
+  }, [socket, addToast]);
 
   const loadProducts = async () => {
     setLoading(true);

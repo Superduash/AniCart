@@ -319,6 +319,18 @@ async function processImageJob(job) {
   const processingTime = Date.now() - startTime;
   console.log(`[Worker] Image processing completed in ${processingTime}ms`);
 
+  // Emit real-time socket event if possible
+  try {
+    const { getIo } = require('../socket');
+    getIo().to(`user_${creatorId}`).emit('product_status_updated', {
+      productId,
+      status: product.assets.status,
+      product: product.toJSON(),
+    });
+  } catch (err) {
+    console.error(`[Worker] Failed to emit socket event:`, err.message);
+  }
+
   return {
     status: product.assets.status,
     processingTime,
@@ -342,6 +354,16 @@ async function handleJobFailure(job, error) {
       product.status = 'review';
       await product.save();
       console.log(`[Worker] Product ${productId} flagged due to processing error`);
+
+      // Emit socket event on failure
+      try {
+        const { getIo } = require('../socket');
+        getIo().to(`user_${job.data.creatorId}`).emit('product_status_updated', {
+          productId,
+          status: 'flagged',
+          error: error.message,
+        });
+      } catch (err) {}
     }
   } catch (saveError) {
     console.error(`[Worker] Failed to update product status:`, saveError.message);

@@ -39,6 +39,7 @@ if (config.SENTRY_DSN) {
 }
 
 const app = require('./app');
+const { initSocket } = require('./socket');
 
 let server;
 
@@ -83,4 +84,10 @@ server = app.listen(PORT, () => {
   logger.info(`✓ Server Running on Port ${PORT}`);
   logger.info(`✓ Environment: ${config.NODE_ENV.charAt(0).toUpperCase() + config.NODE_ENV.slice(1)}`);
   logger.info(`→ API: http://localhost:${PORT}/api/v1`);
+  
+  // Initialize Socket.io
+  initSocket(server);
+  
+  // Start the background worker within the same process
+  require('./worker');
 });

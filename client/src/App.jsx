@@ -9,6 +9,7 @@ import './styles/animations.css';
 
 // Contexts
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { SocketProvider } from './contexts/SocketContext';
 import { CartProvider } from './contexts/CartContext';
 import { UIProvider, useUI } from './contexts/UIContext';
 
@@ -244,11 +245,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <UIProvider>
-          <CartProvider>
-            <AppShell />
-          </CartProvider>
-        </UIProvider>
+        <SocketProvider>
+          <UIProvider>
+            <CartProvider>
+              <AppShell />
+            </CartProvider>
+          </UIProvider>
+        </SocketProvider>
       </AuthProvider>
     </BrowserRouter>
   );
