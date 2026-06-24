@@ -191,7 +191,7 @@ const getCreatorStats = catchAsync(async (req, res) => {
   // C4 Fix: compute actual stats from orders and products, not just creatorStats subdoc
   const [user, products, orders] = await Promise.all([
     User.findById(req.user.id).select('creatorStats role'),
-    Product.find({ creator: req.user.id, status: 'active' }).select('name series price assets salesCount'),
+    Product.find({ creatorId: req.user.id, status: 'active' }).select('name series price assets salesCount'),
     Order.find({ status: 'completed' }),
   ]);
 
@@ -250,8 +250,9 @@ const createCreatorProduct = catchAsync(async (req, res) => {
     series,
     price,
     description,
-    creator: req.user.id,
-    status: 'draft',
+    creatorId: req.user.id,
+    status: 'pending',
+    img: 'pending_upload',
     assets: { status: 'pending' },
     // C6 Fix: these required fields were missing, causing Mongoose validation errors
     rightsConfirmed: true,       // creator explicitly agreed during application

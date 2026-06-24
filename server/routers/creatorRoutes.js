@@ -34,7 +34,7 @@ router.get('/creator/stats', protect, getCreatorStats);
 // C5 Fix: add missing DELETE route for creator product deletion
 router.delete('/creator/products/:id', protect, async (req, res, next) => {
   try {
-    const product = await Product.findOne({ _id: req.params.id, creator: req.user.id });
+    const product = await Product.findOne({ _id: req.params.id, creatorId: req.user.id });
     if (!product) throw ApiError.notFound('Product not found or you do not own it');
     if (product.status === 'active') throw ApiError.badRequest('Cannot delete a live product — contact admin to deactivate it first');
     await product.deleteOne();
