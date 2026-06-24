@@ -20,27 +20,60 @@ export const setAccessToken = (token) => {
 
 export const getAccessToken = () => accessToken;
 
-// Request interceptor to add token
+// In-memory GET cache (TTL: 30s)
+const cache = new Map();
+const CACHE_TTL = 30000;
+
+// Request interceptor to add token and handle cache
 apiClient.interceptors.request.use((config) => {
   if (accessToken) {
     config.headers.Authorization = `Bearer ${accessToken}`;
   }
+
+  if (config.method === 'get') {
+    const key = `${config.url}?${JSON.stringify(config.params || {})}`;
+    const cachedEntry = cache.get(key);
+    
+    // Only return cached response if it's within TTL and we don't have forceRefresh set
+    if (cachedEntry && Date.now() - cachedEntry.timestamp < CACHE_TTL && !config.forceRefresh) {
+      config.adapter = () => Promise.resolve({
+        data: cachedEntry.data,
+        status: 200,
+        statusText: 'OK',
+        headers: cachedEntry.headers,
+        config,
+        request: {}
+      });
+    }
+  }
+
   return config;
 });
 
-// Response interceptor to handle 401s and token refresh
+// Response interceptor to handle 401s, cache storage, and global error toasts
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Cache successful GET requests
+    if (response.config.method === 'get') {
+      const key = `${response.config.url}?${JSON.stringify(response.config.params || {})}`;
+      cache.set(key, {
+        data: response.data,
+        headers: response.headers,
+        timestamp: Date.now()
+      });
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
     
     // Do not intercept or retry if the original request itself was the refresh endpoint
-    if (originalRequest.url?.includes('/auth/refresh')) {
+    if (originalRequest?.url?.includes('/auth/refresh')) {
       return Promise.reject(error);
     }
 
     // If error is 401 and we haven't retried yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
       originalRequest._retry = true;
       
       try {
@@ -58,6 +91,10 @@ apiClient.interceptors.response.use(
         // Dispatch event to clear React state globally
         window.dispatchEvent(new Event('auth:unauthorized'));
       }
+    } else if (error.response && error.response.status >= 400 && !originalRequest?.hideErrorToast) {
+      // Global error handler for all non-401 errors, emits event so UIContext can display a toast
+      const message = error.response.data?.message || 'An unexpected network error occurred.';
+      window.dispatchEvent(new CustomEvent('api:error', { detail: message }));
     }
     
     return Promise.reject(error);

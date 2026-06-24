@@ -21,6 +21,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
+const compression = require('compression');
 
 const { errorHandler, notFound } = require('./middleware/errorHandler');
 const routes = require('./routes');
@@ -36,6 +37,9 @@ app.set('trust proxy', 1);
 if (Sentry) {
   app.use(Sentry.Handlers.requestHandler());
 }
+
+// Compress all responses
+app.use(compression());
 
 app.use(helmet());
 

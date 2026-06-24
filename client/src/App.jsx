@@ -19,35 +19,35 @@ import Navbar from './components/layout/Navbar';
 import ToastContainer from './components/ui/ToastContainer';
 import SearchOverlay from './components/search/SearchOverlay';
 
-// Page routes (standard imports to avoid Suspense layout shifts)
-import LandingPage         from './pages/LandingPage';
-import MarketplacePage     from './pages/MarketplacePage';
-import ProductDetailPage   from './pages/ProductDetailPage';
-import CartPage            from './pages/CartPage';
-import CheckoutPage        from './pages/CheckoutPage';
+// Page routes (Lazy loaded for code-splitting)
+const LandingPage         = React.lazy(() => import('./pages/LandingPage'));
+const MarketplacePage     = React.lazy(() => import('./pages/MarketplacePage'));
+const ProductDetailPage   = React.lazy(() => import('./pages/ProductDetailPage'));
+const CartPage            = React.lazy(() => import('./pages/CartPage'));
+const CheckoutPage        = React.lazy(() => import('./pages/CheckoutPage'));
 
-import LoginPage           from './pages/auth/LoginPage';
-import SignupPage          from './pages/auth/SignupPage';
-import VerifyEmailPage     from './pages/auth/VerifyEmailPage';
-import ForgotPasswordPage  from './pages/auth/ForgotPasswordPage';
-import ResetPasswordPage   from './pages/auth/ResetPasswordPage';
+const LoginPage           = React.lazy(() => import('./pages/auth/LoginPage'));
+const SignupPage          = React.lazy(() => import('./pages/auth/SignupPage'));
+const VerifyEmailPage     = React.lazy(() => import('./pages/auth/VerifyEmailPage'));
+const ForgotPasswordPage  = React.lazy(() => import('./pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage   = React.lazy(() => import('./pages/auth/ResetPasswordPage'));
 
-import DashboardShell      from './components/layout/DashboardShell';
-import LibraryPage         from './pages/dashboard/LibraryPage';
-import OrdersPage          from './pages/dashboard/OrdersPage';
-import WishlistPage        from './pages/dashboard/WishlistPage';
-import SettingsPage        from './pages/dashboard/SettingsPage';
+import DashboardShell     from './components/layout/DashboardShell';
+const LibraryPage         = React.lazy(() => import('./pages/dashboard/LibraryPage'));
+const OrdersPage          = React.lazy(() => import('./pages/dashboard/OrdersPage'));
+const WishlistPage        = React.lazy(() => import('./pages/dashboard/WishlistPage'));
+const SettingsPage        = React.lazy(() => import('./pages/dashboard/SettingsPage'));
 
-import CreatorShell        from './components/layout/CreatorShell';
-import CreatorUploadsPage  from './pages/creator/CreatorUploadsPage';
-import CreatorStatsPage    from './pages/creator/CreatorStatsPage';
+import CreatorShell       from './components/layout/CreatorShell';
+const CreatorUploadsPage  = React.lazy(() => import('./pages/creator/CreatorUploadsPage'));
+const CreatorStatsPage    = React.lazy(() => import('./pages/creator/CreatorStatsPage'));
 
-import AdminShell          from './components/layout/AdminShell';
-import AdminProductsPage   from './pages/admin/AdminProductsPage';
-import AdminCreatorsPage   from './pages/admin/AdminCreatorsPage';
+import AdminShell         from './components/layout/AdminShell';
+const AdminProductsPage   = React.lazy(() => import('./pages/admin/AdminProductsPage'));
+const AdminCreatorsPage   = React.lazy(() => import('./pages/admin/AdminCreatorsPage'));
 
 // H6 Fix: creator apply page accessible to any logged-in user
-import CreatorApplyPage    from './pages/creator/CreatorApplyPage';
+const CreatorApplyPage    = React.lazy(() => import('./pages/creator/CreatorApplyPage'));
 
 // H7 Fix: Error boundary to prevent white-screen crashes
 class ErrorBoundary extends React.Component {
@@ -231,7 +231,9 @@ function AppShell() {
       <main id="main" className="page-wrapper" style={{ paddingBottom: isMobile ? 80 : 0 }}>
         {/* H7 Fix: wrap routes in ErrorBoundary to catch render-time crashes */}
         <ErrorBoundary>
-          <AnimatedRoutes />
+          <React.Suspense fallback={<PageLoader />}>
+            <AnimatedRoutes />
+          </React.Suspense>
         </ErrorBoundary>
       </main>
       {isMobile && <BottomNav />}

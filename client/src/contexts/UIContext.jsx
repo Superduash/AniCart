@@ -39,6 +39,15 @@ export function UIProvider({ children }) {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Global API error listener
+  useEffect(() => {
+    const handleApiError = (event) => {
+      addToast(event.detail || 'An unexpected error occurred.', 'error');
+    };
+    window.addEventListener('api:error', handleApiError);
+    return () => window.removeEventListener('api:error', handleApiError);
+  }, [addToast]);
+
   const openModal = useCallback((modal) => {
     setModalStack(prev => [...prev, modal]);
   }, []);
