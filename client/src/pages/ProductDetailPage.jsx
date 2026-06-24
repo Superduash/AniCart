@@ -7,6 +7,7 @@ import { useCart } from '../contexts/CartContext';
 import { useUI } from '../contexts/UIContext';
 import apiClient from '../api/client';
 import { ProductCardSkeleton } from '../components/ui/Skeleton';
+import Breadcrumbs from '../components/ui/Breadcrumbs';
 import Footer from '../components/layout/Footer';
 
 function StarPicker({ value, onChange }) {
@@ -159,13 +160,11 @@ export default function ProductDetailPage() {
     <div style={{ minHeight: '100vh', paddingTop: 80 }}>
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 40px 80px' }}>
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 32, fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
-          <Link to="/" style={{ color: 'var(--color-text-3)', textDecoration: 'none', hover: 'color: var(--color-accent)' }}>Home</Link>
-          <span>›</span>
-          <Link to="/marketplace" style={{ color: 'var(--color-text-3)', textDecoration: 'none' }}>Marketplace</Link>
-          <span>›</span>
-          <span style={{ color: 'var(--color-text-2)' }}>{product.name}</span>
-        </div>
+        <Breadcrumbs items={[
+          { label: 'Home', path: '/' },
+          { label: 'Marketplace', path: '/marketplace' },
+          { label: product.name }
+        ]} />
 
         {/* Main 2-col */}
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,55%) minmax(0,45%)', gap: 48, alignItems: 'start' }}>

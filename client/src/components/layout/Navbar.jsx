@@ -152,22 +152,67 @@ export default function Navbar() {
 
       {/* Desktop nav */}
       {!isMobile && (
-        <ul className="nav-links" style={{ flex: 1, justifyContent: 'center' }}>
-          <li><Link to="/marketplace" className="nav-link">Browse</Link></li>
+        <ul className="nav-links" style={{ flex: 1, justifyContent: 'center', gap: '32px' }}>
+          <li>
+            <Link to="/marketplace" className="nav-link" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
+              Browse
+            </Link>
+          </li>
+          <li>
+            <Link to="/marketplace" className="nav-link" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
+              Series
+            </Link>
+          </li>
+          <li>
+            <Link to="/auth/signup" className="nav-link" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
+              Creators
+            </Link>
+          </li>
         </ul>
       )}
 
       {/* Right side */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         {/* Search */}
-        <button
-          className="nav-link"
-          onClick={() => setSearchOpen(true)}
-          aria-label="Open search (Ctrl+K)"
-          style={{ fontSize: '1rem', padding: '8px 10px' }}
-        >
-          🔍
-        </button>
+        {!isMobile ? (
+          <div
+            onClick={() => setSearchOpen(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              background: 'var(--color-surface-2)', border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-full)', padding: '6px 16px',
+              cursor: 'pointer', color: 'var(--color-text-3)',
+              fontFamily: 'Inter, sans-serif', fontSize: '0.9rem', width: 220,
+              transition: 'border-color 0.15s, background 0.15s'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.background = 'var(--color-surface)'; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.background = 'var(--color-surface-2)'; }}
+          >
+            <span>🔍</span>
+            <span>Search...</span>
+            <span style={{ marginLeft: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontFamily: 'JetBrains Mono, monospace', color: 'var(--color-text-3)' }}>Ctrl K</span>
+          </div>
+        ) : (
+          <button
+            className="nav-link"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Open search (Ctrl+K)"
+            style={{ fontSize: '1rem', padding: '8px 10px' }}
+          >
+            🔍
+          </button>
+        )}
+
+        {!isMobile && user && (
+          <Link
+            to="/dashboard/wishlist"
+            className="nav-link"
+            aria-label="Wishlist"
+            style={{ fontSize: '1rem', padding: '8px 10px' }}
+          >
+            ❤️
+          </Link>
+        )}
 
         {/* Cart */}
         <Link

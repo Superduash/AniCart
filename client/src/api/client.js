@@ -32,6 +32,11 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    // Do not intercept or retry if the original request itself was the refresh endpoint
+    if (originalRequest.url?.includes('/auth/refresh')) {
+      return Promise.reject(error);
+    }
+
     // If error is 401 and we haven't retried yet
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
@@ -42,13 +47,14 @@ apiClient.interceptors.response.use(
         
         if (res.data?.data?.accessToken) {
           setAccessToken(res.data.data.accessToken);
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          originalRequest.headers.Authorization = `Bearer ${res.data.data.accessToken}`;
           return apiClient(originalRequest);
         }
       } catch (refreshError) {
         // Refresh failed, user needs to login again
         setAccessToken(null);
-        // We could dispatch a logout event or redirect here
+        // Dispatch event to clear React state globally
+        window.dispatchEvent(new Event('auth:unauthorized'));
       }
     }
     

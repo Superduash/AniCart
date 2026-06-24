@@ -110,33 +110,6 @@ export default function DashboardShell() {
         <Outlet />
       </div>
 
-      {/* Mobile bottom tab bar */}
-      {isMobile && (
-        <nav style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: 'rgba(10,22,40,0.95)', backdropFilter: 'blur(20px)',
-          borderTop: '1px solid var(--color-border)',
-          display: 'flex', zIndex: 100, padding: '8px 0 12px',
-        }}>
-          {NAV_ITEMS.map(item => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              style={({ isActive }) => ({
-                flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-                gap: 3, padding: '6px 4px', textDecoration: 'none',
-                color: isActive ? 'var(--color-accent)' : 'var(--color-text-3)',
-                transition: 'color 0.15s',
-              })}
-            >
-              <span style={{ fontSize: '1.2rem' }}>{item.icon}</span>
-              <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '0.65rem', letterSpacing: 1, textTransform: 'uppercase' }}>
-                {item.label}
-              </span>
-            </NavLink>
-          ))}
-        </nav>
-      )}
     </div>
   );
 }

@@ -167,20 +167,26 @@ function AnimatedRoutes() {
   );
 }
 
+import { useWindowWidth } from './hooks/useWindowWidth';
+import BottomNav from './components/layout/BottomNav';
+
 // App shell with navbar
 function AppShell() {
   const { toasts, removeToast, searchOpen } = useUI();
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   return (
     <>
       <BackgroundEffects />
       <a href="#main" className="skip-link">Skip to main content</a>
       <Navbar />
-      <main id="main" className="page-wrapper">
+      <main id="main" className="page-wrapper" style={{ paddingBottom: isMobile ? 80 : 0 }}>
         <Suspense fallback={<PageLoader />}>
           <AnimatedRoutes />
         </Suspense>
       </main>
+      {isMobile && <BottomNav />}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
       {searchOpen && <SearchOverlay />}
     </>

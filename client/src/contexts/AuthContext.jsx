@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import axios from 'axios';
 import apiClient, { setAccessToken } from '../api/client';
 
 const AuthContext = createContext(null);
@@ -7,11 +8,24 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // true while initial refresh runs
 
+  // Listen for global unauthorized events to instantly clear state
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      setAccessToken(null);
+      setUser(null);
+      localStorage.removeItem('anicart_user');
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+
   // Silent token refresh on app mount
   useEffect(() => {
     const silentRefresh = async () => {
       try {
-        const res = await apiClient.post('/auth/refresh');
+        // Use native axios to bypass apiClient interceptors and avoid recursive loops
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+        const res = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
         if (res.data?.data?.accessToken) {
           setAccessToken(res.data.data.accessToken);
           const { user: refreshedUser } = res.data.data;
