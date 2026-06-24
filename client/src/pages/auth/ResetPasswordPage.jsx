@@ -61,7 +61,7 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      await apiClient.post('/auth/reset-password', { token, password: form.password });
+      await apiClient.post(`/auth/reset-password/${token}`, { password: form.password });
       addToast('Password updated! Please sign in.', 'success');
       navigate('/auth/login');
     } catch (err) {

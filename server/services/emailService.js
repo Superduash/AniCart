@@ -57,7 +57,7 @@ const sendEmail = async ({ to, subject, html }) => {
 };
 
 const sendVerificationEmail = async (user, verificationToken) => {
-  const verifyUrl = `${config.CLIENT_URL}/verify-email?token=${verificationToken}`;
+  const verifyUrl = `${config.CLIENT_URL}/auth/verify-email?token=${verificationToken}`;
 
   const result = await sendEmail({
     to: user.email,
@@ -76,7 +76,7 @@ const sendVerificationEmail = async (user, verificationToken) => {
 };
 
 const sendPasswordResetEmail = async (user, resetToken) => {
-  const resetUrl = `${config.CLIENT_URL}/reset-password?token=${resetToken}`;
+  const resetUrl = `${config.CLIENT_URL}/auth/reset?token=${resetToken}`;
 
   const result = await sendEmail({
     to: user.email,

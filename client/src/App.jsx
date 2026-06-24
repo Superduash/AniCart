@@ -1,4 +1,4 @@
-import React, { Suspense, lazy } from 'react';
+import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -18,32 +18,32 @@ import Navbar from './components/layout/Navbar';
 import ToastContainer from './components/ui/ToastContainer';
 import SearchOverlay from './components/search/SearchOverlay';
 
-// Page routes (lazy loaded)
-const LandingPage         = lazy(() => import('./pages/LandingPage'));
-const MarketplacePage     = lazy(() => import('./pages/MarketplacePage'));
-const ProductDetailPage   = lazy(() => import('./pages/ProductDetailPage'));
-const CartPage            = lazy(() => import('./pages/CartPage'));
-const CheckoutPage        = lazy(() => import('./pages/CheckoutPage'));
+// Page routes (standard imports to avoid Suspense layout shifts)
+import LandingPage         from './pages/LandingPage';
+import MarketplacePage     from './pages/MarketplacePage';
+import ProductDetailPage   from './pages/ProductDetailPage';
+import CartPage            from './pages/CartPage';
+import CheckoutPage        from './pages/CheckoutPage';
 
-const LoginPage           = lazy(() => import('./pages/auth/LoginPage'));
-const SignupPage          = lazy(() => import('./pages/auth/SignupPage'));
-const VerifyEmailPage     = lazy(() => import('./pages/auth/VerifyEmailPage'));
-const ForgotPasswordPage  = lazy(() => import('./pages/auth/ForgotPasswordPage'));
-const ResetPasswordPage   = lazy(() => import('./pages/auth/ResetPasswordPage'));
+import LoginPage           from './pages/auth/LoginPage';
+import SignupPage          from './pages/auth/SignupPage';
+import VerifyEmailPage     from './pages/auth/VerifyEmailPage';
+import ForgotPasswordPage  from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage   from './pages/auth/ResetPasswordPage';
 
-const DashboardShell      = lazy(() => import('./components/layout/DashboardShell'));
-const LibraryPage         = lazy(() => import('./pages/dashboard/LibraryPage'));
-const OrdersPage          = lazy(() => import('./pages/dashboard/OrdersPage'));
-const WishlistPage        = lazy(() => import('./pages/dashboard/WishlistPage'));
-const SettingsPage        = lazy(() => import('./pages/dashboard/SettingsPage'));
+import DashboardShell      from './components/layout/DashboardShell';
+import LibraryPage         from './pages/dashboard/LibraryPage';
+import OrdersPage          from './pages/dashboard/OrdersPage';
+import WishlistPage        from './pages/dashboard/WishlistPage';
+import SettingsPage        from './pages/dashboard/SettingsPage';
 
-const CreatorShell        = lazy(() => import('./components/layout/CreatorShell'));
-const CreatorUploadsPage  = lazy(() => import('./pages/creator/CreatorUploadsPage'));
-const CreatorStatsPage    = lazy(() => import('./pages/creator/CreatorStatsPage'));
+import CreatorShell        from './components/layout/CreatorShell';
+import CreatorUploadsPage  from './pages/creator/CreatorUploadsPage';
+import CreatorStatsPage    from './pages/creator/CreatorStatsPage';
 
-const AdminShell          = lazy(() => import('./components/layout/AdminShell'));
-const AdminProductsPage   = lazy(() => import('./pages/admin/AdminProductsPage'));
-const AdminCreatorsPage   = lazy(() => import('./pages/admin/AdminCreatorsPage'));
+import AdminShell          from './components/layout/AdminShell';
+import AdminProductsPage   from './pages/admin/AdminProductsPage';
+import AdminCreatorsPage   from './pages/admin/AdminCreatorsPage';
 
 // Page transition variants
 const pageVariants = {
@@ -182,9 +182,7 @@ function AppShell() {
       <a href="#main" className="skip-link">Skip to main content</a>
       <Navbar />
       <main id="main" className="page-wrapper" style={{ paddingBottom: isMobile ? 80 : 0 }}>
-        <Suspense fallback={<PageLoader />}>
-          <AnimatedRoutes />
-        </Suspense>
+        <AnimatedRoutes />
       </main>
       {isMobile && <BottomNav />}
       <ToastContainer toasts={toasts} removeToast={removeToast} />

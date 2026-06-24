@@ -11,7 +11,7 @@ export default function VerifyEmailPage() {
 
   useEffect(() => {
     if (!token) { setStatus('error'); return; }
-    apiClient.post('/auth/verify-email', { token })
+    apiClient.get(`/auth/verify-email/${token}`)
       .then(() => setStatus('success'))
       .catch(() => setStatus('error'));
   }, [token]);

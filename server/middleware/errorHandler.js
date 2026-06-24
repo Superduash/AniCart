@@ -79,12 +79,14 @@ const errorHandler = (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
-  // Log error for debugging
-  logger.error('Unhandled request error', {
-    message: err.message,
-    stack: err.stack,
-    statusCode: err.statusCode,
-  });
+  // Log error for debugging, but suppress stack trace for 401s to prevent console spam
+  if (err.statusCode !== 401) {
+    logger.error('Unhandled request error', {
+      message: err.message,
+      stack: err.stack,
+      statusCode: err.statusCode,
+    });
+  }
 
   // Handle specific error types
   if (err.name === 'ValidationError') {
