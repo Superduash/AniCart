@@ -70,3 +70,8 @@ venv/
 *.bak
 *.swp
 *.orig
+
+# Exports
+AniCart_Server_Code.txt
+AniCart_Website_Code.txt
+
