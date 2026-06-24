@@ -23,8 +23,21 @@ const handleStripeWebhook = async (req, res) => {
       await orderService.completeOrder(paymentIntent.id);
     } catch (err) {
       logger.error(`Error completing order for payment intent ${paymentIntent.id}:`, err);
-      // We return 200 even on error so Stripe doesn't infinitely retry if it's our internal logic error,
-      // though typically you might want a retry logic or dead-letter queue.
+    }
+  }
+
+  // H3 Fix: cancel orphaned pending orders when payment fails or is abandoned
+  if (event.type === 'payment_intent.payment_failed' || event.type === 'payment_intent.canceled') {
+    const pi = event.data.object;
+    logger.info(`PaymentIntent ${pi.id} ${event.type} — cancelling pending order`);
+    try {
+      const Order = require('../models/Order');
+      await Order.findOneAndUpdate(
+        { stripePaymentIntentId: pi.id, status: 'pending' },
+        { status: 'cancelled' }
+      );
+    } catch (err) {
+      logger.error(`Error cancelling order for payment intent ${pi.id}:`, err);
     }
   }
 

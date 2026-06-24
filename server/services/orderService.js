@@ -29,6 +29,20 @@ async function createPaymentIntent(userId) {
     );
   }
 
+  // H4 Fix: prevent repurchasing already-owned products
+  const existingLicenses = await License.find({
+    user: userId,
+    product: { $in: cart.items.map(i => i.product._id) },
+    isActive: true,
+  }).select('product');
+
+  if (existingLicenses.length > 0) {
+    const ownedIds = new Set(existingLicenses.map(l => l.product.toString()));
+    const alreadyOwned = cart.items.filter(i => ownedIds.has(i.product._id.toString()));
+    const names = alreadyOwned.map(i => i.product.name).join(', ');
+    throw ApiError.badRequest(`You already own: ${names}. Remove them from your cart.`);
+  }
+
   const order = await Order.createFromCart(userId, cart.items);
 
   if (!require('../config').STRIPE_SECRET_KEY) {

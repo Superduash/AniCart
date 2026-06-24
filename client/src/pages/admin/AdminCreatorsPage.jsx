@@ -10,7 +10,8 @@ export default function AdminCreatorsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiClient.get('/creator/admin/creator-requests')
+    // C2 Fix: creatorRoutes is mounted at '/' not '/creator/', so correct path is /admin/creator-requests
+    apiClient.get('/admin/creator-requests')
       .then(r => {
         const data = r.data?.data?.users || r.data?.data || [];
         setUsers(Array.isArray(data) ? data : []);
@@ -21,11 +22,23 @@ export default function AdminCreatorsPage() {
 
   const handlePromote = async (id) => {
     try {
-      await apiClient.put(`/creator/admin/creator-requests/${id}/approve`);
+      // C2 Fix: correct URL
+      await apiClient.put(`/admin/creator-requests/${id}/approve`);
       setUsers(u => u.filter(x => x._id !== id));
-      addToast('User promoted to Creator!', 'success');
+      addToast('Creator application approved!', 'success');
     } catch {
-      addToast('Failed to promote user.', 'error');
+      addToast('Failed to approve application.', 'error');
+    }
+  };
+
+  // C2 Fix: added reject handler which was completely missing
+  const handleReject = async (id) => {
+    try {
+      await apiClient.put(`/admin/creator-requests/${id}/reject`);
+      setUsers(u => u.filter(x => x._id !== id));
+      addToast('Creator application rejected.', 'info');
+    } catch {
+      addToast('Failed to reject application.', 'error');
     }
   };
 
@@ -35,23 +48,25 @@ export default function AdminCreatorsPage() {
         Creator Applications
       </h1>
       <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-sm)', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)', marginBottom: 32 }}>
-        Manage user roles
+        Review pending creator requests
       </div>
 
       {loading ? (
-        <div style={{ color: 'var(--color-text-3)' }}>Loading users...</div>
+        <div style={{ color: 'var(--color-text-3)' }}>Loading applications...</div>
       ) : users.length === 0 ? (
         <div style={{ padding: 60, textAlign: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
-          No regular users found.
+          {/* H2 Fix: corrected empty state message */}
+          No pending creator applications.
         </div>
       ) : (
         <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
             <thead>
               <tr style={{ background: 'var(--color-surface-2)', borderBottom: '1px solid var(--color-border)', fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', letterSpacing: 1, textTransform: 'uppercase', color: 'var(--color-text-3)' }}>
-                <th style={{ padding: '16px 20px', fontWeight: 600 }}>Name</th>
+                <th style={{ padding: '16px 20px', fontWeight: 600 }}>Applicant</th>
                 <th style={{ padding: '16px 20px', fontWeight: 600 }}>Email</th>
-                <th style={{ padding: '16px 20px', fontWeight: 600 }}>Joined</th>
+                <th style={{ padding: '16px 20px', fontWeight: 600 }}>Portfolio</th>
+                <th style={{ padding: '16px 20px', fontWeight: 600 }}>Applied</th>
                 <th style={{ padding: '16px 20px', fontWeight: 600, textAlign: 'right' }}>Actions</th>
               </tr>
             </thead>
@@ -65,11 +80,29 @@ export default function AdminCreatorsPage() {
                     {u.email}
                   </td>
                   <td style={{ padding: '16px 20px', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', color: 'var(--color-text-3)' }}>
-                    {new Date(u.createdAt).toLocaleDateString()}
+                    {u.creatorRequest?.portfolioLink ? (
+                      <a href={u.creatorRequest.portfolioLink} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>
+                        View →
+                      </a>
+                    ) : '—'}
                   </td>
-                  <td style={{ padding: '16px 20px', textAlign: 'right' }}>
-                    <button onClick={() => handlePromote(u._id)} className="btn btn-sm" style={{ background: 'var(--color-pink)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700 }}>
-                      Promote to Creator
+                  <td style={{ padding: '16px 20px', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', color: 'var(--color-text-3)' }}>
+                    {u.creatorRequest?.requestedAt
+                      ? new Date(u.creatorRequest.requestedAt).toLocaleDateString()
+                      : new Date(u.createdAt).toLocaleDateString()}
+                  </td>
+                  <td style={{ padding: '16px 20px', textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                    <button
+                      onClick={() => handlePromote(u._id)}
+                      style={{ background: 'var(--color-pink)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-xs)' }}
+                    >
+                      ✓ Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(u._id)}
+                      style={{ background: 'var(--color-surface-2)', color: 'var(--color-error)', border: '1px solid var(--color-error)', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-xs)' }}
+                    >
+                      ✕ Reject
                     </button>
                   </td>
                 </tr>

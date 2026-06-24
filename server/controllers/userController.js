@@ -7,6 +7,7 @@
 const { successResponse } = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
 const userService = require('../services/userService');
+const License = require('../models/License'); // H8 Fix: needed for ownership check
 
 /**
  * @desc    Get user profile
@@ -108,6 +109,20 @@ const removeFromWishlist = catchAsync(async (req, res) => {
   );
 });
 
+/**
+ * @desc    H8 Fix: Check if user owns a specific product (single License.exists() query, not full library)
+ * @route   GET /api/users/library/:productId
+ * @access  Private
+ */
+const checkProductOwnership = catchAsync(async (req, res) => {
+  const owned = await License.exists({
+    user: req.user.id,
+    product: req.params.productId,
+    isActive: true,
+  });
+  res.status(200).json(successResponse({ data: { owned: !!owned } }));
+});
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -116,4 +131,5 @@ module.exports = {
   getWishlist,
   addToWishlist,
   removeFromWishlist,
+  checkProductOwnership,
 };

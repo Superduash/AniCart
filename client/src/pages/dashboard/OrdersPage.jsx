@@ -13,7 +13,8 @@ function OrderCard({ order, onView }) {
   return (
     <div className="glass-card-flat" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
       {/* Thumbnails */}
-      <div style={{ display: 'flex', gap: -6, flexShrink: 0 }}>
+      {/* L5 Fix: removed `gap: -6` which is invalid CSS — overlap is achieved by marginLeft: -10 on images */}
+      <div style={{ display: 'flex', flexShrink: 0 }}>
         {thumbnails.map((src, i) => (
           <img key={i} src={src} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, border: '2px solid var(--color-void)', marginLeft: i > 0 ? -10 : 0 }} />
         ))}

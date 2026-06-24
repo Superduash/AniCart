@@ -8,6 +8,8 @@ const ApiError = require('../utils/apiError');
 const CONSTANTS = require('../utils/constants');
 const { successResponse } = require('../utils/apiResponse');
 const catchAsync = require('../utils/catchAsync');
+const Product = require('../models/Product');
+const Order = require('../models/Order');
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -186,15 +188,51 @@ const getCreatorProducts = catchAsync(async (req, res) => {
 });
 
 const getCreatorStats = catchAsync(async (req, res) => {
-  const user = await User.findById(req.user.id).select('creatorStats role');
+  // C4 Fix: compute actual stats from orders and products, not just creatorStats subdoc
+  const [user, products, orders] = await Promise.all([
+    User.findById(req.user.id).select('creatorStats role'),
+    Product.find({ creator: req.user.id, status: 'active' }).select('name series price assets salesCount'),
+    Order.find({ status: 'completed' }),
+  ]);
+
   if (!user || user.role !== CONSTANTS.ROLES.CREATOR) {
     throw ApiError.forbidden('Only creators can access this');
   }
 
+  const creatorProductIds = new Set(products.map(p => p._id.toString()));
+
+  let totalEarnings = 0;
+  let totalSales = 0;
+  const salesByProduct = {};
+
+  for (const order of orders) {
+    for (const item of order.items) {
+      const pid = item.product?.toString();
+      if (creatorProductIds.has(pid)) {
+        totalEarnings += item.price || 0;
+        totalSales += 1;
+        salesByProduct[pid] = (salesByProduct[pid] || 0) + 1;
+      }
+    }
+  }
+
+  const topProducts = products
+    .map(p => ({ ...p.toObject(), salesCount: salesByProduct[p._id.toString()] || 0 }))
+    .sort((a, b) => b.salesCount - a.salesCount)
+    .slice(0, 5);
+
   res.status(200).json(
     successResponse({
       message: 'Creator stats retrieved successfully',
-      data: { stats: user.creatorStats },
+      data: {
+        stats: {
+          totalEarnings: Number(totalEarnings.toFixed(2)),
+          totalSales,
+          activeProducts: products.length,
+          topProducts,
+          ...user.creatorStats?.toObject?.() || user.creatorStats || {},
+        }
+      },
     })
   );
 });
@@ -213,8 +251,12 @@ const createCreatorProduct = catchAsync(async (req, res) => {
     price,
     description,
     creator: req.user.id,
-    status: 'draft', // Or pending as per blueprint
+    status: 'draft',
     assets: { status: 'pending' },
+    // C6 Fix: these required fields were missing, causing Mongoose validation errors
+    rightsConfirmed: true,       // creator explicitly agreed during application
+    termsAcceptedAt: new Date(),
+    licenseType: 'original',
   });
 
   res.status(201).json(

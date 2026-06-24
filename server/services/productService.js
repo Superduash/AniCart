@@ -310,7 +310,8 @@ async function getSeries() {
   return Product.getDistinctSeries();
 }
 
-async function downloadProduct(userId, productId, resolution = 'original') {
+// C9 Fix: default was 'original' which doesn't exist — processor creates 4k/2k/1080p/preview/thumbnail
+async function downloadProduct(userId, productId, resolution = '4k') {
   if (!s3Client) {
     throw ApiError.internal('Storage client is not configured');
   }

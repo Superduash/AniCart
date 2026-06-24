@@ -36,6 +36,9 @@ export default function ProductDetailPage() {
   const { cart, addToCart } = useCart();
   const { addToast } = useUI();
   useTitle('');
+  const [productName, setProductName] = useState('');
+  // M3 Fix: use productName state so hook correctly updates when product loads
+  useTitle(productName || 'Product');
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -57,13 +60,15 @@ export default function ProductDetailPage() {
       try {
         const [prodRes, reviewsRes] = await Promise.allSettled([
           apiClient.get(`/products/${id}`),
-          apiClient.get(`/products/${id}/reviews`),
+          // C3 Fix: review endpoints are at /reviews/:productId, not /products/:id/reviews
+          apiClient.get(`/reviews/${id}`),
         ]);
         if (prodRes.status === 'fulfilled') {
           const prod = prodRes.value.data?.data || prodRes.value.data;
           setProduct(prod);
           setWishlisted(prod.isWishlisted || false);
-          document.title = `${prod.name} — AniCart`;
+          // M3 Fix: set productName state so useTitle hook gets the correct value
+          setProductName(prod.name);
           // Fetch related
           if (prod.series) {
             apiClient.get('/products', { params: { series: prod.series, limit: 4, status: 'active' } })
@@ -71,19 +76,20 @@ export default function ProductDetailPage() {
               .catch(() => {});
           }
         } else { navigate('/marketplace'); }
+        let fetchedReviews = [];
         if (reviewsRes.status === 'fulfilled') {
           const reviewData = reviewsRes.value.data?.data || [];
-          setReviews(Array.isArray(reviewData) ? reviewData : []);
+          fetchedReviews = Array.isArray(reviewData) ? reviewData : [];
+          setReviews(fetchedReviews);
         }
-        // Check library ownership
+        // H8 Fix: use dedicated ownership endpoint instead of fetching entire library
         if (user) {
-          apiClient.get('/users/library')
+          apiClient.get(`/users/library/${id}`)
             .then(r => {
-              const library = r.data?.data || [];
-              const owned = library.some(item => (item._id || item.id || item.product?._id) === id);
+              const owned = r.data?.data?.owned || false;
               setInLibrary(owned);
               if (owned) {
-                const myReview = reviews.find(r => r.user?._id === user._id || r.userId === user._id);
+                const myReview = fetchedReviews.find(r => r.user?._id === user._id || r.userId === user._id);
                 setHasReviewed(!!myReview);
               }
             })
@@ -115,7 +121,8 @@ export default function ProductDetailPage() {
   const handleDownload = async () => {
     try {
       const res = await apiClient.get(`/products/${id}/download`);
-      const url = res.data?.data?.url || res.data?.url;
+      // H1 Fix: backend returns 'downloadUrl' not 'url'
+      const url = res.data?.data?.downloadUrl || res.data?.downloadUrl;
       if (url) window.open(url, '_blank', 'noopener');
     } catch { addToast('Download failed. Please try again.', 'error'); }
   };
@@ -125,7 +132,8 @@ export default function ProductDetailPage() {
     if (!reviewForm.rating) { addToast('Please select a rating.', 'warning'); return; }
     setReviewLoading(true);
     try {
-      const res = await apiClient.post(`/products/${id}/reviews`, reviewForm);
+      // C3 Fix: correct endpoint for posting reviews
+      const res = await apiClient.post(`/reviews/${id}`, reviewForm);
       const newReview = res.data?.data;
       if (newReview) setReviews(prev => [newReview, ...prev]);
       setHasReviewed(true);

@@ -99,7 +99,8 @@ const getStripeConfig = catchAsync(async (req, res) => {
     successResponse({
       message: 'Stripe config retrieved',
       data: {
-        publishableKey: process.env.STRIPE_PUBLIC_KEY,
+      // H9 Fix: use standard Stripe env var name STRIPE_PUBLISHABLE_KEY (not STRIPE_PUBLIC_KEY)
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLIC_KEY,
       },
     })
   );

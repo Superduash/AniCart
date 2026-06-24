@@ -8,8 +8,9 @@ export default function CreatorStatsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiClient.get('/creators/stats')
-      .then(r => setStats(r.data?.data))
+    // C4 Fix: correct URL is /creator/stats (no 's' on creator)
+    apiClient.get('/creator/stats')
+      .then(r => setStats(r.data?.data?.stats || r.data?.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);

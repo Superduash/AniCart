@@ -118,9 +118,9 @@ function AvatarDropdown({ user, onClose }) {
 }
 
 export default function Navbar() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { cartCount } = useCart();
-  const { setSearchOpen } = useUI();
+  const { setSearchOpen, addToast } = useUI();
   const width = useWindowWidth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -345,7 +345,17 @@ export default function Navbar() {
                   {user.role === 'admin' && (
                     <Link to="/admin" className="nav-link" style={{ padding: '12px 8px' }}>Admin Panel</Link>
                   )}
-                  <button onClick={async () => { const { logout } = await import('../../contexts/AuthContext'); }} className="nav-link" style={{ padding: '12px 8px', textAlign: 'left', color: 'var(--color-error)' }}>Sign Out</button>
+                  <button
+                    onClick={async () => {
+                      await logout();
+                      addToast('Signed out successfully.', 'info');
+                      navigate('/');
+                    }}
+                    className="nav-link"
+                    style={{ padding: '12px 8px', textAlign: 'left', color: 'var(--color-error)', background: 'none', border: 'none', width: '100%', cursor: 'pointer' }}
+                  >
+                    Sign Out
+                  </button>
                 </>
               ) : (
                 <>

@@ -55,6 +55,14 @@ router.get('/series/list', getSeries);
 router.post('/', protect, adminOnly, createProductValidation, createProduct);
 
 /**
+ * @route   GET /api/products/admin/pending
+ * @desc    Get all pending products
+ * @access  Private/Admin
+ * NOTE: This MUST come before /:id to prevent Express from matching 'admin' as an id
+ */
+router.get('/admin/pending', protect, adminOnly, paginationValidation, getPendingProducts);
+
+/**
  * @route   GET /api/products/:id
  * @desc    Get single product by ID
  * @access  Public
@@ -88,13 +96,6 @@ router.put('/:id/restore', protect, adminOnly, productIdValidation, restoreProdu
  * @access  Private
  */
 router.get('/:id/download', protect, productIdValidation, downloadProduct);
-
-/**
- * @route   GET /api/products/admin/pending
- * @desc    Get all pending products
- * @access  Private/Admin
- */
-router.get('/admin/pending', protect, adminOnly, paginationValidation, getPendingProducts);
 
 /**
  * @route   PUT /api/products/:id/approve

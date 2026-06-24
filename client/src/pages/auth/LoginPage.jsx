@@ -4,11 +4,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUI } from '../../contexts/UIContext';
 import { useTitle } from '../../hooks/useTitle';
 import apiClient, { setAccessToken } from '../../api/client';
+import { useCart } from '../../contexts/CartContext';
 
 export default function LoginPage() {
   useTitle('Sign In');
   const { login, user } = useAuth();
   const { addToast } = useUI();
+  const { cart, syncCart } = useCart();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const nextUrl = searchParams.get('next') || '/dashboard';
@@ -50,6 +52,8 @@ export default function LoginPage() {
       setAccessToken(accessToken);
       if (rememberMe) localStorage.setItem('anicart_remember_email', form.email);
       else localStorage.removeItem('anicart_remember_email');
+      // C8 Fix: sync guest cart before login() triggers server cart fetch, which would overwrite local cart
+      if (cart.length > 0) await syncCart(cart).catch(() => {});
       login(loggedInUser, accessToken);
       addToast(`Welcome back, ${loggedInUser.name}! ⚡`, 'success');
       navigate(nextUrl, { replace: true });

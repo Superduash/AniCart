@@ -113,7 +113,8 @@ export default function CreatorUploadsPage() {
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
-      await apiClient.delete(`/creators/products/${id}`);
+      // C5 Fix: correct URL is /creator/products/:id (was /creators/products/:id)
+      await apiClient.delete(`/creator/products/${id}`);
       setProducts(p => p.filter(x => x._id !== id));
       addToast('Product deleted.', 'info');
     } catch { addToast('Failed to delete.', 'error'); }

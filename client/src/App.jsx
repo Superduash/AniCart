@@ -45,6 +45,41 @@ import AdminShell          from './components/layout/AdminShell';
 import AdminProductsPage   from './pages/admin/AdminProductsPage';
 import AdminCreatorsPage   from './pages/admin/AdminCreatorsPage';
 
+// H6 Fix: creator apply page accessible to any logged-in user
+import CreatorApplyPage    from './pages/creator/CreatorApplyPage';
+
+// H7 Fix: Error boundary to prevent white-screen crashes
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, info) {
+    console.error('[ErrorBoundary] Uncaught error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, textAlign: 'center' }}>
+          <div style={{ fontSize: '3rem', marginBottom: 20 }}>⚠</div>
+          <div style={{ fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '1.2rem', color: 'var(--color-text)', marginBottom: 12 }}>Something went wrong</div>
+          <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', marginBottom: 24 }}>An unexpected error occurred. Please refresh the page.</p>
+          <button onClick={() => { this.setState({ hasError: false }); window.location.reload(); }} className="btn btn-primary">
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 // Page transition variants
 const pageVariants = {
   initial: { opacity: 0, y: 16 },
@@ -86,7 +121,8 @@ function ProtectedRoute({ children, role }) {
   }
 
   if (role === 'creator' && user.role !== 'creator' && user.role !== 'admin') {
-    return <Navigate to="/" replace />;
+    // H6 Fix: redirect to apply page instead of silently going to home
+    return <Navigate to="/creator/apply" replace />;
   }
 
   if (role === 'admin' && user.role !== 'admin') {
@@ -136,7 +172,14 @@ function AnimatedRoutes() {
           <Route index element={<Navigate to="library" replace />} />
         </Route>
 
-        {/* Protected: Creator */}
+        {/* Protected: Creator Apply (accessible to any logged-in user) */}
+        <Route path="/creator/apply" element={
+          <ProtectedRoute>
+            <PageWrapper><CreatorApplyPage /></PageWrapper>
+          </ProtectedRoute>
+        } />
+
+        {/* Protected: Creator Studio */}
         <Route path="/creator" element={<Navigate to="/creator/uploads" replace />} />
         <Route path="/creator/*" element={
           <ProtectedRoute role="creator">
@@ -173,8 +216,11 @@ import BottomNav from './components/layout/BottomNav';
 // App shell with navbar
 function AppShell() {
   const { toasts, removeToast, searchOpen } = useUI();
+  const { isLoading } = useAuth(); // M10 Fix
   const width = useWindowWidth();
   const isMobile = width < 768;
+
+  if (isLoading) return <PageLoader />; // M10 Fix
 
   return (
     <>
@@ -182,7 +228,10 @@ function AppShell() {
       <a href="#main" className="skip-link">Skip to main content</a>
       <Navbar />
       <main id="main" className="page-wrapper" style={{ paddingBottom: isMobile ? 80 : 0 }}>
-        <AnimatedRoutes />
+        {/* H7 Fix: wrap routes in ErrorBoundary to catch render-time crashes */}
+        <ErrorBoundary>
+          <AnimatedRoutes />
+        </ErrorBoundary>
       </main>
       {isMobile && <BottomNav />}
       <ToastContainer toasts={toasts} removeToast={removeToast} />

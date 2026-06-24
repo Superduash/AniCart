@@ -32,7 +32,8 @@ const getAdminStats = catchAsync(async (req, res) => {
     {
       $group: {
         _id: '$items.product',
-        sales: { $sum: '$items.quantity' },
+        // C10 Fix: Order model uses 'qty' not 'quantity' — this caused sales to always be 0
+        sales: { $sum: '$items.qty' },
         revenue: { $sum: '$items.price' },
       },
     },

@@ -29,7 +29,8 @@ export function CartProvider({ children }) {
     }
   }, [cart, user]);
 
-  const fetchCart = async () => {
+  // M7 Fix: wrap in useCallback so consumers don't re-render unnecessarily on every CartProvider render
+  const fetchCart = useCallback(async () => {
     try {
       setCartLoading(true);
       const res = await apiClient.get('/cart');
@@ -41,7 +42,7 @@ export function CartProvider({ children }) {
     } finally {
       setCartLoading(false);
     }
-  };
+  }, []);
 
   const addToCart = useCallback(async (product) => {
     // Optimistic update

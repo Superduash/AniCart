@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import apiClient, { setAccessToken } from '../api/client';
+// M6 Fix: import from client.js instead of duplicating URL construction
+import apiClient, { setAccessToken, API_BASE_URL } from '../api/client';
 
 const AuthContext = createContext(null);
 
@@ -31,8 +32,8 @@ export function AuthProvider({ children }) {
     const silentRefresh = async () => {
       try {
         // Use native axios to bypass apiClient interceptors and avoid recursive loops
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-        const res = await axios.post(`${API_URL}/auth/refresh`, {}, { withCredentials: true });
+        // M6 Fix: use imported API_BASE_URL instead of duplicating this string
+        const res = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, { withCredentials: true });
         if (res.data?.data?.accessToken) {
           setAccessToken(res.data.data.accessToken);
           const { user: refreshedUser } = res.data.data;

@@ -84,7 +84,8 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
     if (onDownload) { onDownload(product); return; }
     try {
       const res = await apiClient.get(`/products/${id}/download`);
-      const url = res.data?.data?.url || res.data?.url;
+      // H1 Fix: backend returns 'downloadUrl' not 'url'
+      const url = res.data?.data?.downloadUrl || res.data?.downloadUrl;
       if (url) window.open(url, '_blank', 'noopener');
     } catch {
       addToast('Download failed. Please try again.', 'error');

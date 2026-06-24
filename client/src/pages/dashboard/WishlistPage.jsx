@@ -44,7 +44,8 @@ export default function WishlistPage() {
           {Array(6).fill(0).map((_, i) => <ProductCardSkeleton key={i} />)}
         </div>
       ) : products.length === 0 ? (
-        <EmptyState icon="♡" title="Nothing saved yet" body="Heart any wallpaper in the marketplace to save it here." ctaLabel="Explore Marketplace" ctaTo="/marketplace" />
+        {/* M8 Fix: updated to reference the heart button on product cards which already exists */}
+        <EmptyState icon="♡" title="Nothing saved yet" body="Click the ♡ heart icon on any wallpaper card or product page to save it here." ctaLabel="Explore Marketplace" ctaTo="/marketplace" />
       ) : (
         <div className="products-grid" role="list">
           {products.map(p => <ProductCard key={p._id || p.id} product={p} />)}

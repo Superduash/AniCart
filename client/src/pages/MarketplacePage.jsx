@@ -34,6 +34,7 @@ export default function MarketplacePage() {
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '');
   const [page, setPage] = useState(parseInt(searchParams.get('page') || '1'));
   const [filterOpen, setFilterOpen] = useState(false);
+  const [showAllSeries, setShowAllSeries] = useState(false); // M4 Fix
 
   // Data
   const [products, setProducts] = useState([]);
@@ -135,12 +136,21 @@ export default function MarketplacePage() {
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)', marginBottom: 10 }}>Series</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {seriesList.slice(0, 8).map(s => (
+            {/* M4 Fix: show first 8 by default, with show-more toggle */}
+            {(showAllSeries ? seriesList : seriesList.slice(0, 8)).map(s => (
               <label key={s} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                 <input type="checkbox" checked={selectedSeries.includes(s)} onChange={() => toggleSeries(s)} style={{ accentColor: 'var(--color-accent)', width: 14, height: 14 }} />
                 <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', color: selectedSeries.includes(s) ? 'var(--color-text)' : 'var(--color-text-2)' }}>{s}</span>
               </label>
             ))}
+            {seriesList.length > 8 && (
+              <button
+                onClick={() => setShowAllSeries(v => !v)}
+                style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: 'var(--text-xs)', cursor: 'pointer', letterSpacing: 1, textTransform: 'uppercase', textAlign: 'left', padding: '4px 0', marginTop: 2 }}
+              >
+                {showAllSeries ? '▲ Show less' : `▼ Show all (${seriesList.length})`}
+              </button>
+            )}
           </div>
         </div>
       )}
@@ -258,13 +268,29 @@ export default function MarketplacePage() {
             </div>
           )}
 
-          {/* Pagination */}
+          {/* L6 Fix: windowed pagination showing current ±2, first, last, with ellipsis */}
           {totalPages > 1 && (
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginTop: 40, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 40, flexWrap: 'wrap', alignItems: 'center' }}>
               <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="btn btn-secondary btn-sm" style={{ minWidth: 80 }}>← Prev</button>
-              {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map(p => (
-                <button key={p} onClick={() => setPage(p)} className={`btn btn-sm ${p === page ? 'btn-primary' : 'btn-muted'}`} style={{ minWidth: 40 }}>{p}</button>
-              ))}
+              {(() => {
+                const pages = [];
+                const addPage = (p) => { if (!pages.includes(p) && p >= 1 && p <= totalPages) pages.push(p); };
+                addPage(1);
+                for (let i = Math.max(2, page - 2); i <= Math.min(totalPages - 1, page + 2); i++) addPage(i);
+                addPage(totalPages);
+                const sorted = [...new Set(pages)].sort((a, b) => a - b);
+                const result = [];
+                for (let i = 0; i < sorted.length; i++) {
+                  if (i > 0 && sorted[i] - sorted[i - 1] > 1) {
+                    result.push(<span key={`ellipsis-${i}`} style={{ color: 'var(--color-text-3)', padding: '0 4px' }}>…</span>);
+                  }
+                  const p = sorted[i];
+                  result.push(
+                    <button key={p} onClick={() => setPage(p)} className={`btn btn-sm ${p === page ? 'btn-primary' : 'btn-muted'}`} style={{ minWidth: 40 }}>{p}</button>
+                  );
+                }
+                return result;
+              })()}
               <button disabled={page === totalPages} onClick={() => setPage(p => p + 1)} className="btn btn-secondary btn-sm" style={{ minWidth: 80 }}>Next →</button>
             </div>
           )}

@@ -51,7 +51,7 @@ export default function CartPage() {
   useTitle('Cart');
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { cart, cartTotal, removeFromCart, clearCart } = useCart();
+  const { cart, cartTotal, cartLoading, removeFromCart, clearCart } = useCart();
   const { addToast } = useUI();
   const [recommended, setRecommended] = React.useState([]);
 
@@ -79,7 +79,13 @@ export default function CartPage() {
           {cart.length} item{cart.length !== 1 ? 's' : ''}
         </div>
 
-        {cart.length === 0 ? (
+        {/* M2 Fix: show loading state while cart is syncing with server */}
+        {cartLoading ? (
+          <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--color-text-3)', fontFamily: 'Inter, sans-serif' }}>
+            <div className="loading-spinner light" style={{ width: 32, height: 32, margin: '0 auto 16px' }} />
+            <div style={{ fontSize: 'var(--text-sm)' }}>Syncing cart...</div>
+          </div>
+        ) : cart.length === 0 ? (
           <EmptyState
             icon="🛒"
             title="Your cart is empty"

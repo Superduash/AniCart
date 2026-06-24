@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+// M6 Fix: export this so AuthContext and other modules can import it without duplication
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+const API_URL = API_BASE_URL;
 
 const apiClient = axios.create({
   baseURL: API_URL,

@@ -17,6 +17,7 @@ const {
   getWishlist,
   addToWishlist,
   removeFromWishlist,
+  checkProductOwnership,  // H8 Fix
 } = require('../controllers/userController');
 
 // Import middleware
@@ -54,6 +55,13 @@ router.put('/password', protect, strictLimiter, changePasswordValidation, change
  * @access  Private
  */
 router.get('/library', protect, getLibrary);
+
+/**
+ * @route   GET /api/users/library/:productId
+ * @desc    H8 Fix: Check if user owns a specific product (dedicated endpoint, avoids fetching entire library)
+ * @access  Private
+ */
+router.get('/library/:productId', protect, checkProductOwnership);
 
 /**
  * @route   GET /api/users/wishlist

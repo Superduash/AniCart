@@ -110,6 +110,19 @@ export default function SignupPage() {
               <button onClick={() => { setSubmitted(false); setStep(1); setForm({ name: '', email: '', password: '', confirmPassword: '' }); }} className="btn btn-secondary btn-sm">
                 ← Change email
               </button>
+              {/* H5 Fix: resend verification email button — backend POST /auth/resend-verification exists */}
+              <button
+                onClick={async () => {
+                  try {
+                    await apiClient.post('/auth/resend-verification', { email: submittedEmail });
+                    addToast('Verification email resent!', 'success');
+                  } catch { addToast('Failed to resend. Try again later.', 'error'); }
+                }}
+                className="btn btn-ghost btn-sm"
+                style={{ marginTop: 12, display: 'block', width: '100%' }}
+              >
+                Resend verification email
+              </button>
             </div>
           ) : (
             <>
