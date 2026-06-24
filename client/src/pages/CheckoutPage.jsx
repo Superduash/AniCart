@@ -110,7 +110,11 @@ export default function CheckoutPage() {
         });
         setClientSecret(res.data?.data?.clientSecret || res.data?.clientSecret);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to initialize checkout.');
+        let errMsg = err.response?.data?.message || 'Failed to initialize checkout.';
+        if (errMsg.toLowerCase().includes('api key') || errMsg.includes('sk_test_') || errMsg.toLowerCase().includes('stripe')) {
+          errMsg = 'Payment not implemented yet.';
+        }
+        setError(errMsg);
       } finally {
         setLoading(false);
       }

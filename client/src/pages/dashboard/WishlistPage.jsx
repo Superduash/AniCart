@@ -14,7 +14,7 @@ export default function WishlistPage() {
   useEffect(() => {
     apiClient.get('/users/wishlist')
       .then(r => {
-        const data = r.data?.data || [];
+        const data = r.data?.data?.wishlist || r.data?.data || [];
         setItems(Array.isArray(data) ? data : []);
       })
       .catch(() => setItems([]))

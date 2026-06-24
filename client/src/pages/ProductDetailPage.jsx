@@ -117,10 +117,17 @@ export default function ProductDetailPage() {
     const newState = !wishlisted;
     setWishlisted(newState);
     try {
-      newState
-        ? await apiClient.post(`/users/wishlist/${id}`)
-        : await apiClient.delete(`/users/wishlist/${id}`);
-    } catch { setWishlisted(!newState); }
+      if (newState) {
+        await apiClient.post(`/users/wishlist/${id}`);
+        addToast('Saved to wishlist!', 'success');
+      } else {
+        await apiClient.delete(`/users/wishlist/${id}`);
+        addToast('Removed from wishlist.', 'info');
+      }
+    } catch {
+      setWishlisted(!newState);
+      addToast('Failed to update wishlist.', 'error');
+    }
   };
 
   const handleDownload = async () => {

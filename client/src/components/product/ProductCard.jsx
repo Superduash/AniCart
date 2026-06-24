@@ -74,8 +74,10 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
     try {
       if (newState) {
         await apiClient.post(`/users/wishlist/${id}`);
+        addToast('Saved to wishlist!', 'success');
       } else {
         await apiClient.delete(`/users/wishlist/${id}`);
+        addToast('Removed from wishlist.', 'info');
       }
     } catch {
       setWishlisted(!newState); // revert
