@@ -319,13 +319,17 @@ async function downloadProduct(userId, productId, resolution = '4k') {
     throw ApiError.internal('Storage client is not configured');
   }
 
-  const license = await License.findOne({ user: userId, product: productId, isActive: true });
-  if (!license) {
-    throw ApiError.forbidden('You do not own a license for this product');
-  }
-
   const product = await Product.findById(productId);
   if (!product) throw ApiError.notFound('Product not found');
+
+  let license = await License.findOne({ user: userId, product: productId, isActive: true });
+  if (!license) {
+    if (product.price === 0) {
+      license = await License.create({ user: userId, product: productId, isActive: true, maxDownloads: 999999 });
+    } else {
+      throw ApiError.forbidden('You do not own a license for this product');
+    }
+  }
 
   let assetKey = product.assets && product.assets[resolution] && product.assets[resolution].key;
   

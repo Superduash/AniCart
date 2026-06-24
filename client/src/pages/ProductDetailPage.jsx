@@ -104,8 +104,12 @@ export default function ProductDetailPage() {
   const handleCartAction = async () => {
     if (!user) { addToast('Sign in to purchase.', 'warning'); navigate('/auth/login?next=/products/' + id); return; }
     if (inCart) { navigate('/cart'); return; }
-    await addToCart(product);
-    addToast(`${product.name} added to cart!`, 'success');
+    try {
+      await addToCart(product);
+      addToast(`${product.name} added to cart!`, 'success');
+    } catch (err) {
+      addToast(`Failed to add ${product.name} to cart.`, 'error');
+    }
   };
 
   const handleWishlist = async () => {
@@ -246,9 +250,9 @@ export default function ProductDetailPage() {
             )}
 
             {/* Primary action */}
-            {inLibrary ? (
+            {inLibrary || product.price === 0 ? (
               <button onClick={handleDownload} className="btn btn-success btn-full btn-lg" style={{ marginBottom: 12 }}>
-                ↓ Download
+                ↓ {inLibrary ? 'Download' : 'Download for Free'}
               </button>
             ) : (
               <button onClick={handleCartAction} className={`btn btn-full btn-lg ${inCart ? 'btn-secondary' : 'btn-primary'}`} style={{ marginBottom: 12 }}>

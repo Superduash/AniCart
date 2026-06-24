@@ -54,8 +54,12 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
     if (inCart) {
       navigate('/cart');
     } else {
-      await addToCart(product);
-      addToast(`${product.name} added to cart!`, 'success');
+      try {
+        await addToCart(product);
+        addToast(`${product.name} added to cart!`, 'success');
+      } catch (err) {
+        addToast(`Failed to add ${product.name} to cart.`, 'error');
+      }
     }
   };
 
@@ -157,14 +161,14 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
         <StarRating rating={product.rating || product.averageRating} count={product.reviewCount || product.reviews} />
 
         <div className="product-footer">
-          {inLibrary ? (
+          {inLibrary || product.price === 0 ? (
             <button
               className="btn btn-sm"
               onClick={handleDownload}
               aria-label={`Download ${product.name}`}
               style={{ background: 'var(--color-accent)', color: 'var(--color-void)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-xs)', letterSpacing: 1, padding: '6px 14px', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', width: '100%', transition: 'box-shadow 0.15s' }}
             >
-              ↓ Download
+              ↓ {inLibrary ? 'Download' : 'Free Download'}
             </button>
           ) : (
             <>

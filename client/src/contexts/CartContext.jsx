@@ -62,12 +62,15 @@ export function CartProvider({ children }) {
         await apiClient.post('/cart/add', { productId: product._id || product.id });
         // Re-sync with server
         fetchCart();
-      } catch {
+        return true;
+      } catch (err) {
         // Revert optimistic update on failure
         setCart(prev => prev.filter(i => (i._id || i.id) !== (product._id || product.id)));
+        throw err;
       }
     }
-  }, [user]);
+    return true;
+  }, [user, fetchCart]);
 
   const removeFromCart = useCallback(async (productId) => {
     setCart(prev => prev.filter(i => (i._id || i.id) !== productId));

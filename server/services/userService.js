@@ -78,7 +78,10 @@ async function getLibrary(userId) {
 }
 
 async function getWishlist(userId) {
-  const user = await User.findById(userId).populate('wishlist');
+  const user = await User.findById(userId).populate({
+    path: 'wishlist',
+    select: '-fileHash -rightsConfirmed -termsAcceptedAt -licenseType -authorName -sourceLink -copyrightOwner -assets.original -assets.4k -assets.2k -assets.1080p',
+  });
   if (!user) throw ApiError.notFound('User not found');
   return user.wishlist;
 }
@@ -88,7 +91,7 @@ async function addToWishlist(userId, productId) {
     userId,
     { $addToSet: { wishlist: productId } },
     { new: true }
-  ).populate('wishlist');
+  ).select('wishlist');
   return user.wishlist;
 }
 
@@ -97,7 +100,7 @@ async function removeFromWishlist(userId, productId) {
     userId,
     { $pull: { wishlist: productId } },
     { new: true }
-  ).populate('wishlist');
+  ).select('wishlist');
   return user.wishlist;
 }
 
