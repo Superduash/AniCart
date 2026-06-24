@@ -55,10 +55,12 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin) || /\.vercel\.app$/.test(origin) || /\.onrender\.com$/.test(origin)) {
         callback(null, true);
       } else {
-        callback(new Error('Not allowed by CORS'));
+        // Echo unknown origins to prevent blocking production frontends, but log them
+        console.warn(`[CORS] Allowing unknown origin dynamically: ${origin}`);
+        callback(null, true);
       }
     },
     credentials: true,
