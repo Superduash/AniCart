@@ -15,7 +15,7 @@
 
 *A full-stack anime merchandise platform with sci-fi glassmorphism UI, JWT authentication, cart state management, and cloud deployment.*
 
-[**🌐 Live Demo**](https://your-demo-link.vercel.app) · [**📖 Architecture**](#-architecture) · [**🚀 Quick Start**](#-quick-start) · [**🎨 Design System**](#-design-system)
+[**🌐 Live Demo**](https://anicartwallpaper.vercel.app/) · [**📖 Architecture**](#-architecture) · [**🚀 Quick Start**](#-quick-start) · [**🎨 Design System**](#-design-system)
 
 <br/>
 
