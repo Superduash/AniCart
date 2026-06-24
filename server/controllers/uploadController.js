@@ -193,8 +193,14 @@ const uploadWallpaper = catchAsync(async (req, res) => {
   // Check for duplicates
   const fileHash = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
   const duplicate = await Product.findOne({ fileHash });
-  if (duplicate) {
-    throw ApiError.badRequest('Duplicate image detected. This wallpaper already exists.');
+  if (duplicate && duplicate._id.toString() !== productId) {
+    if (['removed', 'failed', 'rejected'].includes(duplicate.status) || duplicate.assets?.status === 'failed') {
+      // Free up the hash so the user can re-upload it
+      duplicate.fileHash = undefined;
+      await duplicate.save();
+    } else {
+      throw ApiError.badRequest('Duplicate image detected. This wallpaper already exists.');
+    }
   }
 
   // Update product metadata
