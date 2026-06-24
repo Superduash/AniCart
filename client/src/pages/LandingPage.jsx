@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTitle } from '../hooks/useTitle';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../api/client';
@@ -31,38 +31,27 @@ const HOW_IT_WORKS = [
   { num: '03', icon: '⬇',  title: 'DOWNLOAD', desc: 'Access your library anytime. Download 4K, 2K, or 1080p — whatever you purchased.' },
 ];
 
-export default function LandingPage() {
-  useTitle('Premium Anime Wallpapers');
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const [products, setProducts] = useState([]);
-  const [series, setSeries] = useState([]);
-  const [productsLoading, setProductsLoading] = useState(true);
+function HeroSlider({ products, loading, user }) {
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [prodRes, seriesRes] = await Promise.allSettled([
-          apiClient.get('/products', { params: { limit: 8, sort: 'newest', status: 'active' } }),
-          apiClient.get('/products/series/list'),
-        ]);
-        if (prodRes.status === 'fulfilled') {
-          const data = prodRes.value.data?.data;
-          setProducts(Array.isArray(data) ? data : data?.products || []);
-        }
-        if (seriesRes.status === 'fulfilled') {
-          setSeries(seriesRes.value.data?.data || []);
-        }
-      } finally {
-        setProductsLoading(false);
-      }
-    };
-    load();
-  }, []);
+    if (!products || products.length === 0) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % products.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [products]);
 
-  return (
-    <div style={{ minHeight: '100vh' }}>
-      {/* ─── HERO ─── */}
+  if (loading) {
+    return (
+      <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="skeleton" style={{ width: '80%', height: '80%', borderRadius: 20 }} />
+      </section>
+    );
+  }
+
+  if (!products || products.length === 0) {
+    return (
       <section className="hero-section" style={{ position: 'relative' }}>
         <div className="hero-content">
           <div className="hero-badge">
@@ -91,11 +80,112 @@ export default function LandingPage() {
             )}
           </div>
         </div>
-
-        {/* Decorative orbs */}
-        <div style={{ position: 'absolute', top: '20%', right: '8%', width: 180, height: 180, borderRadius: '50%', background: 'radial-gradient(circle, rgba(0,243,255,0.05) 0%, transparent 70%)', animation: 'drift 12s ease-in-out infinite', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '15%', left: '5%', width: 130, height: 130, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,45,120,0.05) 0%, transparent 70%)', animation: 'drift 8s ease-in-out infinite 4s', pointerEvents: 'none' }} />
       </section>
+    );
+  }
+
+  return (
+    <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', padding: 0 }}>
+      <AnimatePresence>
+        {products.map((p, index) => {
+          if (index !== currentIndex) return null;
+          const previewUrl = p.assets?.preview?.url || p.img || p.imageUrl;
+          return (
+            <motion.div
+              key={p._id || p.id}
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -50 }}
+              transition={{ duration: 0.6, ease: "easeInOut" }}
+              style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <div style={{ position: 'absolute', inset: 0, zIndex: -1 }}>
+                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1 }} />
+                <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(15px)', transform: 'scale(1.1)' }} alt="" />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, maxWidth: 1200, width: '100%', padding: '0 40px', zIndex: 2, alignItems: 'center' }}>
+                <div className="hero-content" style={{ margin: 0, padding: 0, textAlign: 'left' }}>
+                  <div className="hero-badge">
+                    <div className="hero-badge-dot" />
+                    ✦ FEATURED WALLPAPER
+                  </div>
+                  <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)', lineHeight: 1.1, marginBottom: 20 }}>
+                    {p.name}
+                  </h1>
+                  <p className="hero-desc" style={{ fontSize: '1.1rem', opacity: 0.8, maxWidth: 500, marginBottom: 30, textAlign: 'left' }}>
+                    {p.series} • {(p.price || 0) === 0 ? 'Free' : `$${(p.price || 0).toFixed(2)}`}
+                  </p>
+                  <div className="hero-cta" style={{ justifyContent: 'flex-start' }}>
+                    <Link to={`/products/${p._id || p.id}`} className="btn btn-primary btn-lg">
+                      View Artwork →
+                    </Link>
+                  </div>
+                </div>
+
+                <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', aspectRatio: '16/10' }}>
+                  <div style={{ position: 'absolute', inset: 0, zIndex: 10 }} onContextMenu={e => e.preventDefault()} />
+                  <img src={previewUrl} draggable="false" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', userSelect: 'none' }} alt={p.name} />
+                </div>
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+
+      <div style={{ position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10, zIndex: 10 }}>
+        {products.map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setCurrentIndex(idx)}
+            style={{ width: 40, height: 4, borderRadius: 2, background: idx === currentIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.3)', border: 'none', cursor: 'pointer', transition: 'background 0.3s' }}
+            aria-label={`Go to slide ${idx + 1}`}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+export default function LandingPage() {
+  useTitle('Premium Anime Wallpapers');
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const [products, setProducts] = useState([]);
+  const [heroProducts, setHeroProducts] = useState([]);
+  const [series, setSeries] = useState([]);
+  const [productsLoading, setProductsLoading] = useState(true);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [prodRes, seriesRes, heroRes] = await Promise.allSettled([
+          apiClient.get('/products', { params: { limit: 8, sort: 'newest', status: 'active' } }),
+          apiClient.get('/products/series/list'),
+          apiClient.get('/products', { params: { limit: 5, sort: 'rating', status: 'active' } })
+        ]);
+        if (prodRes.status === 'fulfilled') {
+          const data = prodRes.value.data?.data;
+          setProducts(Array.isArray(data) ? data : data?.products || []);
+        }
+        if (seriesRes.status === 'fulfilled') {
+          setSeries(seriesRes.value.data?.data || []);
+        }
+        if (heroRes.status === 'fulfilled') {
+          const data = heroRes.value.data?.data;
+          setHeroProducts(Array.isArray(data) ? data : data?.products || []);
+        }
+      } finally {
+        setProductsLoading(false);
+      }
+    };
+    load();
+  }, []);
+
+  return (
+    <div style={{ minHeight: '100vh' }}>
+      {/* ─── HERO ─── */}
+      <HeroSlider products={heroProducts} loading={productsLoading} user={user} />
 
       {/* ─── SERIES MARQUEE ─── */}
       <SeriesMarquee series={series} />

@@ -327,9 +327,20 @@ async function downloadProduct(userId, productId, resolution = '4k') {
   const product = await Product.findById(productId);
   if (!product) throw ApiError.notFound('Product not found');
 
-  const assetKey = product.assets && product.assets[resolution] && product.assets[resolution].key;
+  let assetKey = product.assets && product.assets[resolution] && product.assets[resolution].key;
+  
   if (!assetKey) {
-    throw ApiError.badRequest(`Requested resolution '${resolution}' is not available for this product`);
+    const fallbacks = ['4k', '2k', '1080p', 'original'];
+    for (const res of fallbacks) {
+      if (product.assets && product.assets[res] && product.assets[res].key) {
+        assetKey = product.assets[res].key;
+        break;
+      }
+    }
+  }
+
+  if (!assetKey) {
+    throw ApiError.badRequest(`No downloadable assets found for this product`);
   }
 
   if (license.downloadCount >= license.maxDownloads) {

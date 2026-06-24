@@ -8,6 +8,7 @@ export function CartProvider({ children }) {
   const { user } = useAuth();
   const [cart, setCart] = useState([]);
   const [cartLoading, setCartLoading] = useState(false);
+  const [loadedGuest, setLoadedGuest] = useState(false);
 
   // Load cart from API when user logs in, from localStorage for guests
   useEffect(() => {
@@ -19,15 +20,16 @@ export function CartProvider({ children }) {
         const saved = localStorage.getItem('anicart_cart');
         if (saved) setCart(JSON.parse(saved));
       } catch { setCart([]); }
+      setLoadedGuest(true);
     }
   }, [user]);
 
   // Persist guest cart to localStorage
   useEffect(() => {
-    if (!user) {
+    if (!user && loadedGuest) {
       localStorage.setItem('anicart_cart', JSON.stringify(cart));
     }
-  }, [cart, user]);
+  }, [cart, user, loadedGuest]);
 
   // M7 Fix: wrap in useCallback so consumers don't re-render unnecessarily on every CartProvider render
   const fetchCart = useCallback(async () => {

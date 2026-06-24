@@ -179,7 +179,11 @@ export default function ProductDetailPage() {
           {/* LEFT: image */}
           <div>
             <div style={{ position: 'relative', borderRadius: 'var(--radius-xl)', overflow: 'hidden', aspectRatio: '16/10', boxShadow: 'var(--shadow-xl)' }}>
-              <img src={previewUrl} alt={`${product.name} from ${product.series}`} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+              <div 
+                style={{ position: 'absolute', inset: 0, zIndex: 10 }} 
+                onContextMenu={e => e.preventDefault()} 
+              />
+              <img src={previewUrl} alt={`${product.name} from ${product.series}`} draggable="false" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block', pointerEvents: 'none', userSelect: 'none' }} />
               {!inLibrary && (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: 20, background: 'linear-gradient(to top, rgba(2,6,23,0.7) 0%, transparent 60%)' }}>
                   <span style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', letterSpacing: 2, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase' }}>

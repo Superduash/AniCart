@@ -102,11 +102,17 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
       style={{ cursor: 'pointer' }}
     >
       {/* Image */}
-      <div className="product-img-wrap">
+      <div className="product-img-wrap" style={{ position: 'relative' }}>
+        <div 
+          style={{ position: 'absolute', inset: 0, zIndex: 10 }} 
+          onContextMenu={e => e.preventDefault()} 
+        />
         <img
           src={previewUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="250"%3E%3Crect fill="%230a1628" width="400" height="250"/%3E%3C/svg%3E'}
           alt={`${product.name} from ${product.series}`}
           loading="lazy"
+          draggable="false"
+          style={{ pointerEvents: 'none', userSelect: 'none' }}
           onError={e => { e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="250"%3E%3Crect fill="%230a1628" width="400" height="250"/%3E%3C/svg%3E'; }}
         />
 
