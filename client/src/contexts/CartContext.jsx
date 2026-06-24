@@ -36,8 +36,11 @@ export function CartProvider({ children }) {
     try {
       setCartLoading(true);
       const res = await apiClient.get('/cart');
-      const items = res.data?.data?.items || res.data?.data || [];
-      setCart(Array.isArray(items) ? items : []);
+      const rawItems = res.data?.data?.cart?.items || res.data?.data?.items || [];
+      const flatItems = Array.isArray(rawItems) 
+        ? rawItems.map(i => i.product ? i.product : i).filter(Boolean)
+        : [];
+      setCart(flatItems);
     } catch {
       // Fallback to empty if API fails
       setCart([]);
