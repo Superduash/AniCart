@@ -164,7 +164,7 @@ export default function Navbar() {
             </Link>
           </li>
           <li>
-            <Link to="/auth/signup" className="nav-link" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
+            <Link to={user ? (user.role === 'creator' || user.role === 'admin' ? '/creator' : '/creator/apply') : '/auth/signup'} className="nav-link" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
               Creators
             </Link>
           </li>
@@ -336,6 +336,8 @@ export default function Navbar() {
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <Link to="/marketplace" className="nav-link" style={{ padding: '12px 8px' }}>Browse</Link>
+              <Link to="/marketplace" className="nav-link" style={{ padding: '12px 8px' }}>Series</Link>
+              <Link to={user ? (user.role === 'creator' || user.role === 'admin' ? '/creator' : '/creator/apply') : '/auth/signup'} className="nav-link" style={{ padding: '12px 8px' }}>Creators</Link>
               {user ? (
                 <>
                   <Link to="/dashboard" className="nav-link" style={{ padding: '12px 8px' }}>Dashboard</Link>
