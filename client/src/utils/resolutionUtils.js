@@ -19,25 +19,25 @@ export const RESOLUTION_CONFIG = {
   },
   '4k': {
     key: '4k',
-    label: '4K Ultra HD',
+    label: '4K (Ultra HD)',
     standardDimensions: { width: 3840, height: 2160 },
     priority: 1,
   },
   '2k': {
     key: '2k',
-    label: '2K Quad HD',
+    label: '2K (Quad HD)',
     standardDimensions: { width: 2560, height: 1440 },
     priority: 2,
   },
   '1080p': {
     key: '1080p',
-    label: 'HD (1920×1080)',
+    label: '1080p (Full HD)',
     standardDimensions: { width: 1920, height: 1080 },
     priority: 3,
   },
   '720p': {
     key: '720p',
-    label: 'HD Ready',
+    label: '720p (HD)',
     standardDimensions: { width: 1280, height: 720 },
     priority: 4,
   },
@@ -70,13 +70,20 @@ export const RESOLUTION_PRIORITY = [
 
 /**
  * Get available variants from product assets
- * Only includes variants that have a valid R2 key
+ * Only includes variants that have a valid R2 key, or are overridden by the admin
  * 
  * @param {Object} product - Product object with assets
  * @returns {string[]} - Array of available variant keys
  */
 export function getAvailableVariants(product) {
-  if (!product || !product.assets) return [];
+  if (!product) return [];
+  
+  // If admin explicitly set availableResolutions, use those (filtered by priority to maintain order and remove duplicates)
+  if (product.availableResolutions && Array.isArray(product.availableResolutions) && product.availableResolutions.length > 0) {
+    return RESOLUTION_PRIORITY.filter(key => product.availableResolutions.includes(key));
+  }
+  
+  if (!product.assets) return [];
   
   const availableKeys = [];
   for (const key of RESOLUTION_PRIORITY) {
@@ -85,11 +92,13 @@ export function getAvailableVariants(product) {
       availableKeys.push(key);
     }
   }
-  return availableKeys;
+  
+  return [...new Set(availableKeys)];
 }
 
 /**
- * Get the highest resolution from available variants
+ * Get the default/highest resolution from available variants
+ * Prefers standard optimized resolutions over 'original' for default selection
  * 
  * @param {string[]} availableVariants - Array of available variant keys
  * @returns {string|null} - Highest priority variant key
@@ -97,12 +106,24 @@ export function getAvailableVariants(product) {
 export function getHighestResolution(availableVariants) {
   if (!availableVariants || availableVariants.length === 0) return null;
   
-  for (const key of RESOLUTION_PRIORITY) {
+  // Prefer standard resolutions first, then fallback to original/mobile
+  const defaultPriority = [
+    '4k',
+    '2k',
+    '1080p',
+    '720p',
+    'original',
+    'mobile-portrait',
+    'mobile-landscape',
+  ];
+  
+  for (const key of defaultPriority) {
     if (availableVariants.includes(key)) {
       return key;
     }
   }
-  return null;
+  
+  return availableVariants[0] || null;
 }
 
 /**
@@ -144,7 +165,11 @@ export function getDisplayLabel(product, resolutionKey) {
     const fileSize = formatFileSize(asset.size);
     
     if (width && height) {
-      return `${baseLabel} — ${width}×${height} · ${format} · ${fileSize}`;
+      if (fileSize !== 'Unknown') {
+        return `${baseLabel} — ${width}×${height} · ${format} · ${fileSize}`;
+      } else {
+        return `${baseLabel} — ${width}×${height} · ${format}`;
+      }
     }
   }
   
