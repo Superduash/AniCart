@@ -14,6 +14,7 @@ export default function AdminProductsPage() {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [zoomedImage, setZoomedImage] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -47,6 +48,19 @@ export default function AdminProductsPage() {
       addToast(`Failed to ${action} product.`, 'error');
     } finally {
       setProcessingId(null);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    try {
+      await apiClient.delete(`/admin/products/${id}`);
+      setProducts(p => p.filter(x => (x._id || x.id) !== id));
+      addToast('Product permanently deleted.', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to delete product.';
+      addToast(msg, 'error');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -112,13 +126,29 @@ export default function AdminProductsPage() {
                   disabled={processingId === productId}
                 />
 
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <button onClick={() => handleAction(productId, 'reject')} disabled={processingId === productId} className="btn btn-muted" style={{ flex: 1, color: 'var(--color-error)' }}>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                  <button onClick={() => handleAction(productId, 'reject')} disabled={processingId === productId || deletingId === productId} className="btn btn-muted" style={{ flex: 1, color: 'var(--color-error)' }}>
                     {processingId === productId ? 'Processing...' : 'Reject'}
                   </button>
-                  <button onClick={() => handleAction(productId, 'approve')} disabled={processingId === productId} className="btn btn-primary" style={{ flex: 1, background: 'var(--color-pink)', color: '#fff' }}>
+                  <button onClick={() => handleAction(productId, 'approve')} disabled={processingId === productId || deletingId === productId} className="btn btn-primary" style={{ flex: 1, background: 'var(--color-pink)', color: '#fff' }}>
                     {processingId === productId ? 'Processing...' : 'Approve'}
                   </button>
+                </div>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  {deletingId === productId ? (
+                    <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+                      <button onClick={() => handleDelete(productId)} className="btn btn-sm" style={{ flex: 1, background: 'var(--color-error)', color: '#fff' }}>
+                        Confirm Delete
+                      </button>
+                      <button onClick={() => setDeletingId(null)} className="btn btn-sm btn-muted" style={{ flex: 1 }}>
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeletingId(productId)} disabled={processingId === productId} className="btn btn-sm btn-muted" style={{ width: '100%', color: 'var(--color-error)' }}>
+                      🗑️ Delete Permanently
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

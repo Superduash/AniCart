@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTitle } from '../../hooks/useTitle';
 import { useUI } from '../../contexts/UIContext';
+import { useAuth } from '../../contexts/AuthContext';
 import apiClient from '../../api/client';
 import Modal from '../../components/ui/Modal';
 import { useSocket } from '../../contexts/SocketContext';
@@ -52,8 +53,10 @@ function FileUploadBox({ label, accept, onFile, file, subtext }) {
 export default function CreatorUploadsPage() {
   useTitle('My Uploads | Creator Studio');
   const { addToast } = useUI();
+  const { user } = useAuth();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const isAdmin = user?.role === 'admin';
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -162,13 +165,21 @@ export default function CreatorUploadsPage() {
     setSourceFile(null);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, isActive) => {
     try {
-      // C5 Fix: correct URL is /creator/products/:id (was /creators/products/:id)
-      await apiClient.delete(`/creator/products/${id}`);
+      // Admins use the admin route which can delete any product including live ones
+      if (isAdmin) {
+        await apiClient.delete(`/admin/products/${id}`);
+      } else {
+        // Creators can only delete non-active products
+        await apiClient.delete(`/creator/products/${id}`);
+      }
       setProducts(p => p.filter(x => (x._id || x.id) !== id));
-      addToast('Product deleted.', 'info');
-    } catch { addToast('Failed to delete.', 'error'); }
+      addToast('Product permanently deleted.', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to delete.';
+      addToast(msg, 'error');
+    }
     setDeletingId(null);
   };
 
@@ -232,11 +243,13 @@ export default function CreatorUploadsPage() {
                   )}
                   {deletingId === productId ? (
                     <div style={{ display: 'flex', gap: 4, flex: 1 }}>
-                      <button onClick={() => handleDelete(productId)} className="btn btn-muted btn-sm" style={{ flex: 1, background: 'var(--color-error)', color: '#fff' }}>Sure?</button>
+                      <button onClick={() => handleDelete(productId, p.status === 'active')} className="btn btn-muted btn-sm" style={{ flex: 1, background: 'var(--color-error)', color: '#fff' }}>Sure?</button>
                       <button onClick={() => setDeletingId(null)} className="btn btn-muted btn-sm" style={{ flex: 1 }}>No</button>
                     </div>
                   ) : (
-                    <button onClick={() => setDeletingId(productId)} className="btn btn-muted btn-sm" style={{ flex: 1, color: 'var(--color-error)' }}>Delete</button>
+                    <button onClick={() => setDeletingId(productId)} className="btn btn-muted btn-sm" style={{ flex: 1, color: 'var(--color-error)' }}>
+                      {isAdmin ? 'Delete (Admin)' : 'Delete'}
+                    </button>
                   )}
                 </div>
               </div>
