@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTitle } from '../hooks/useTitle';
 import { useAuth } from '../contexts/AuthContext';
+import { useWindowWidth } from '../hooks/useWindowWidth';
 import apiClient from '../api/client';
 import ProductCard from '../components/product/ProductCard';
 import { ProductCardSkeleton, HeroSkeleton } from '../components/ui/Skeleton';
@@ -36,6 +37,9 @@ function HeroSlider({ products, loading, user }) {
   const [direction, setDirection] = useState(1);
   const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState({});
+  const width = useWindowWidth();
+  const isMobile = width < 768;
+  const isSmallMobile = width < 480;
 
   // Preload all images for instant transitions
   useEffect(() => {
@@ -123,15 +127,15 @@ function HeroSlider({ products, loading, user }) {
     top: '50%',
     transform: 'translateY(-50%)',
     zIndex: 20,
-    width: 56,
-    height: 56,
+    width: isMobile ? 44 : 56,
+    height: isMobile ? 44 : 56,
     borderRadius: '50%',
     background: 'rgba(0, 0, 0, 0.5)',
     backdropFilter: 'blur(12px)',
     WebkitBackdropFilter: 'blur(12px)',
     border: '1px solid rgba(255, 255, 255, 0.15)',
     color: 'white',
-    fontSize: '1.4rem',
+    fontSize: isMobile ? '1.2rem' : '1.4rem',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
@@ -151,7 +155,15 @@ function HeroSlider({ products, loading, user }) {
   return (
     <section 
       className="hero-section" 
-      style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', padding: 0 }}
+      style={{ 
+        position: 'relative', 
+        overflow: 'hidden', 
+        height: isMobile ? (isSmallMobile ? '60vh' : '65vh') : '70vh', 
+        minHeight: isMobile ? 400 : 500, 
+        display: 'flex', 
+        alignItems: 'center', 
+        padding: 0 
+      }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -164,12 +176,12 @@ function HeroSlider({ products, loading, user }) {
       {/* Previous Arrow */}
       <motion.button
         onClick={goToPrev}
-        style={{ ...arrowButtonStyle, left: 24 }}
-        whileHover={arrowButtonHoverStyle}
+        style={{ ...arrowButtonStyle, left: isMobile ? 12 : 24 }}
+        whileHover={!isMobile ? arrowButtonHoverStyle : {}}
         whileTap={{ scale: 0.95 }}
         aria-label="Previous slide"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width={isMobile ? 20 : 24} height={isMobile ? 20 : 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="15 18 9 12 15 6" />
         </svg>
       </motion.button>
@@ -177,12 +189,12 @@ function HeroSlider({ products, loading, user }) {
       {/* Next Arrow */}
       <motion.button
         onClick={goToNext}
-        style={{ ...arrowButtonStyle, right: 24 }}
-        whileHover={arrowButtonHoverStyle}
+        style={{ ...arrowButtonStyle, right: isMobile ? 12 : 24 }}
+        whileHover={!isMobile ? arrowButtonHoverStyle : {}}
         whileTap={{ scale: 0.95 }}
         aria-label="Next slide"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width={isMobile ? 20 : 24} height={isMobile ? 20 : 24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="9 18 15 12 9 6" />
         </svg>
       </motion.button>
@@ -211,26 +223,40 @@ function HeroSlider({ products, loading, user }) {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, maxWidth: 1200, width: '100%', padding: '0 40px', zIndex: 2, alignItems: 'center' }}>
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', 
+            gap: isMobile ? 16 : 40, 
+            maxWidth: 1200, 
+            width: '100%', 
+            padding: isMobile ? '0 16px' : '0 40px', 
+            zIndex: 2, 
+            alignItems: 'center' 
+          }}>
             <motion.div 
               className="hero-content" 
-              style={{ margin: 0, padding: 0, textAlign: 'left' }}
+              style={{ margin: 0, padding: 0, textAlign: isMobile ? 'center' : 'left', order: isMobile ? 2 : 1 }}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.15, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
             >
               <motion.div 
                 className="hero-badge"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
+                style={{ justifyContent: 'center' }}
+                initial={{ opacity: 0, x: isMobile ? 0 : -20, y: isMobile ? -10 : 0 }}
+                animate={{ opacity: 1, x: 0, y: 0 }}
                 transition={{ delay: 0.1, duration: 0.5 }}
               >
                 <div className="hero-badge-dot" />
-                ✦ FEATURED WALLPAPER
+                ✦ FEATURED
               </motion.div>
               <motion.h1 
                 className="hero-title" 
-                style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)', lineHeight: 1.1, marginBottom: 20 }}
+                style={{ 
+                  fontSize: isMobile ? (isSmallMobile ? '1.5rem' : '1.8rem') : 'clamp(2rem, 4vw, 3.5rem)', 
+                  lineHeight: 1.1, 
+                  marginBottom: isMobile ? 12 : 20 
+                }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2, duration: 0.6 }}
@@ -239,7 +265,15 @@ function HeroSlider({ products, loading, user }) {
               </motion.h1>
               <motion.p 
                 className="hero-desc" 
-                style={{ fontSize: '1.1rem', opacity: 0.8, maxWidth: 500, marginBottom: 30, textAlign: 'left' }}
+                style={{ 
+                  fontSize: isMobile ? '0.9rem' : '1.1rem', 
+                  opacity: 0.8, 
+                  maxWidth: 500, 
+                  marginBottom: isMobile ? 16 : 30, 
+                  textAlign: isMobile ? 'center' : 'left',
+                  marginLeft: 'auto',
+                  marginRight: 'auto'
+                }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.3, duration: 0.6 }}
@@ -248,39 +282,50 @@ function HeroSlider({ products, loading, user }) {
               </motion.p>
               <motion.div 
                 className="hero-cta" 
-                style={{ justifyContent: 'flex-start' }}
+                style={{ justifyContent: 'center', flexDirection: isMobile ? 'column' : 'row', alignItems: 'center' }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4, duration: 0.6 }}
               >
-                <Link to={`/products/${products[currentIndex]._id || products[currentIndex].id}`} className="btn btn-primary btn-lg">
+                <Link to={`/products/${products[currentIndex]._id || products[currentIndex].id}`} className="btn btn-primary btn-lg" style={{ width: isMobile ? '100%' : 'auto', maxWidth: 280 }}>
                   View Artwork →
                 </Link>
               </motion.div>
             </motion.div>
 
-            <motion.div 
-              style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', aspectRatio: '16/10' }}
-              initial={{ opacity: 0, x: 40, scale: 0.95 }}
-              animate={{ opacity: 1, x: 0, scale: 1 }}
-              transition={{ delay: 0.2, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
-            >
-              <div style={{ position: 'absolute', inset: 0, zIndex: 10 }} onContextMenu={e => e.preventDefault()} />
-              <img 
-                src={products[currentIndex].assets?.preview?.url || products[currentIndex].img || products[currentIndex].imageUrl} 
-                draggable="false" 
-                style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', userSelect: 'none' }} 
-                loading="eager" 
-                fetchpriority="high" 
-                alt={products[currentIndex].name} 
-              />
-            </motion.div>
+            {!isMobile && (
+              <motion.div 
+                style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', aspectRatio: '16/10', order: 2 }}
+                initial={{ opacity: 0, x: 40, scale: 0.95 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+              >
+                <div style={{ position: 'absolute', inset: 0, zIndex: 10 }} onContextMenu={e => e.preventDefault()} />
+                <img 
+                  src={products[currentIndex].assets?.preview?.url || products[currentIndex].img || products[currentIndex].imageUrl} 
+                  draggable="false" 
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', userSelect: 'none' }} 
+                  loading="eager" 
+                  fetchpriority="high" 
+                  alt={products[currentIndex].name} 
+                />
+              </motion.div>
+            )}
           </div>
         </motion.div>
       </AnimatePresence>
 
       {/* Bottom indicators with slide counter */}
-      <div style={{ position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10, zIndex: 10, alignItems: 'center' }}>
+      <div style={{ 
+        position: 'absolute', 
+        bottom: isMobile ? 20 : 30, 
+        left: '50%', 
+        transform: 'translateX(-50%)', 
+        display: 'flex', 
+        gap: isMobile ? 6 : 10, 
+        zIndex: 10, 
+        alignItems: 'center' 
+      }}>
         {products.map((_, idx) => (
           <motion.button
             key={idx}
@@ -289,17 +334,17 @@ function HeroSlider({ products, loading, user }) {
               setCurrentIndex(idx);
             }}
             style={{ 
-              width: idx === currentIndex ? 48 : 32, 
-              height: 4, 
+              width: idx === currentIndex ? (isMobile ? 32 : 48) : (isMobile ? 20 : 32), 
+              height: isMobile ? 3 : 4, 
               borderRadius: 2, 
               background: idx === currentIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.3)', 
               border: 'none', 
               cursor: 'pointer',
               outline: 'none'
             }}
-            whileHover={{ background: idx === currentIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.5)' }}
+            whileHover={!isMobile ? { background: idx === currentIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.5)' } : {}}
             animate={{ 
-              width: idx === currentIndex ? 48 : 32,
+              width: idx === currentIndex ? (isMobile ? 32 : 48) : (isMobile ? 20 : 32),
               background: idx === currentIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.3)'
             }}
             transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
@@ -308,12 +353,23 @@ function HeroSlider({ products, loading, user }) {
         ))}
       </div>
 
-      {/* Slide counter */}
-      <div style={{ position: 'absolute', bottom: 30, right: 40, zIndex: 10, fontFamily: 'JetBrains Mono, monospace', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', letterSpacing: 2 }}>
-        <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{String(currentIndex + 1).padStart(2, '0')}</span>
-        <span style={{ margin: '0 6px' }}>/</span>
-        <span>{String(products.length).padStart(2, '0')}</span>
-      </div>
+      {/* Slide counter - hidden on small mobile */}
+      {!isSmallMobile && (
+        <div style={{ 
+          position: 'absolute', 
+          bottom: isMobile ? 20 : 30, 
+          right: isMobile ? 16 : 40, 
+          zIndex: 10, 
+          fontFamily: 'JetBrains Mono, monospace', 
+          fontSize: isMobile ? '0.75rem' : '0.85rem', 
+          color: 'rgba(255,255,255,0.6)', 
+          letterSpacing: 2 
+        }}>
+          <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{String(currentIndex + 1).padStart(2, '0')}</span>
+          <span style={{ margin: '0 6px' }}>/</span>
+          <span>{String(products.length).padStart(2, '0')}</span>
+        </div>
+      )}
     </section>
   );
 }

@@ -997,17 +997,75 @@
 .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--color-border); }
 
 /* ════ RESPONSIVE ════ */
+
+/* Tablet and below (768px) */
 @media (max-width: 768px) {
   .navbar { padding: 0 16px; }
-  .section { padding: 56px 20px; }
+  .section { padding: 48px 20px; }
   .footer-inner { grid-template-columns: 1fr; text-align: center; }
   .footer-copy { text-align: center; }
-  .hero-section { padding: 100px 20px 60px; }
+  .hero-section { padding: 80px 20px 48px; min-height: auto; }
+  .hero-title { font-size: clamp(2rem, 8vw, 3rem); }
+  .hero-desc { font-size: var(--text-base); margin-bottom: 28px; }
   .dashboard-sidebar { display: none; }
   .dashboard-content { margin-left: 0; padding: 24px 16px 100px; }
-  .products-grid-4 { grid-template-columns: repeat(2, 1fr); }
+  .products-grid-4 { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .products-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .feature-card { padding: 24px; }
+  .auth-card { padding: 32px 24px; }
+  .glass-card { padding: 24px !important; }
+  .footer { padding: 32px 20px 24px; }
+  .toast-container { left: 16px; right: 16px; top: 80px; }
+  .toast { min-width: 0; max-width: none; width: 100%; }
 }
+
+/* Small tablets and large phones (480px) */
 @media (max-width: 480px) {
   .hero-cta { flex-direction: column; align-items: center; }
+  .hero-badge { margin-bottom: 20px; padding: 6px 14px; font-size: 0.7rem; }
   .products-grid-4 { grid-template-columns: 1fr; }
+  .section-header { margin-bottom: 32px; }
+  .section-title { font-size: clamp(1.4rem, 6vw, 2rem); }
+  .section { padding: 40px 16px; }
+  .btn-lg { height: 48px; padding: 0 24px; font-size: var(--text-sm); }
+  .product-wishlist-btn { width: 44px; height: 44px; }
+  .product-wishlist-btn svg { width: 20px; height: 20px; }
+}
+
+/* Small phones (375px - iPhone SE 2nd gen, iPhone 12/13/14) */
+@media (max-width: 375px) {
+  .navbar { padding: 0 12px; }
+  .section { padding: 32px 12px; }
+  .products-grid { grid-template-columns: 1fr; }
+  .products-grid-4 { grid-template-columns: 1fr; }
+  .hero-section { padding: 72px 12px 40px; }
+  .auth-card { padding: 24px 16px; }
+}
+
+/* Extra small phones (320px - iPhone SE 1st gen, minimum supported) */
+@media (max-width: 320px) {
+  .navbar { padding: 0 8px; }
+  .nav-logo { font-size: 1.1rem; letter-spacing: 1px; }
+  .section { padding: 24px 8px; }
+  .products-grid { grid-template-columns: 1fr; }
+  .hero-title { font-size: 1.8rem; }
+  .hero-desc { font-size: var(--text-sm); }
+  .btn { height: 40px; padding: 0 16px; font-size: var(--text-xs); }
+  .btn-lg { height: 44px; padding: 0 20px; }
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+  /* Disable hover-only animations on touch */
+  .product-card:hover { transform: none; }
+  .product-card:hover .product-img-wrap img { transform: none; }
+  .feature-card:hover { transform: none; }
+  .glass-card:hover { border-color: var(--glass-border); box-shadow: none; }
+  
+  /* Ensure touch targets are adequate */
+  .btn, .nav-link, .product-wishlist-btn, .product-quick-add {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
