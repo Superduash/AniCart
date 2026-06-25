@@ -31,18 +31,19 @@ export const generateOpenGraph = ({ title, description, image, url, type = 'webs
     'og:title': title ? `${title} | ${SITE_NAME}` : SITE_NAME,
     'og:description': description || `Download premium 4K anime wallpapers at ${SITE_NAME}.`,
     'og:image': image || DEFAULT_IMAGE,
-    'og:url': url || SITE_URL,
+    'og:url': url || generateCanonical(window.location.pathname),
     'og:type': type,
     'og:site_name': SITE_NAME,
   };
 };
 
-export const generateTwitterCard = ({ title, description, image }) => {
+export const generateTwitterCard = ({ title, description, image, url }) => {
   return {
     'twitter:card': 'summary_large_image',
     'twitter:title': title ? `${title} | ${SITE_NAME}` : SITE_NAME,
     'twitter:description': description || `Download premium 4K anime wallpapers at ${SITE_NAME}.`,
     'twitter:image': image || DEFAULT_IMAGE,
+    'twitter:url': url || generateCanonical(window.location.pathname),
   };
 };
 
@@ -65,24 +66,41 @@ export const generateOrganizationSchema = () => ({
   name: SITE_NAME,
   url: SITE_URL,
   logo: DEFAULT_IMAGE,
+  sameAs: [],
+});
+
+export const generateImageObjectSchema = (product) => ({
+  '@context': 'https://schema.org',
+  '@type': 'ImageObject',
+  name: product.name,
+  contentUrl: product.img || product.assets?.preview?.url || DEFAULT_IMAGE,
+  thumbnailUrl: product.assets?.thumbnail?.url || product.img || DEFAULT_IMAGE,
+  description: `${product.name}${product.series ? ` from ${product.series}` : ''} - Premium anime wallpaper on ${SITE_NAME}`,
+  uploadDate: product.createdAt || new Date().toISOString(),
+  width: product.resolution?.includes('4k') ? '3840' : '1920',
+  height: product.resolution?.includes('4k') ? '2160' : '1080',
+  creator: {
+    '@type': 'Organization',
+    name: SITE_NAME,
+  },
 });
 
 export const generateProductSchema = (product) => ({
   '@context': 'https://schema.org',
   '@type': 'Product',
   name: product.name,
-  image: product.img,
-  description: `Download ${product.name} wallpaper in ${product.resolution} resolution.`,
-  sku: product.id,
+  image: product.img || product.assets?.preview?.url || DEFAULT_IMAGE,
+  description: `Download ${product.name} wallpaper in ${product.resolution || '4K'} resolution.`,
+  sku: product.id || product._id,
   brand: {
     '@type': 'Brand',
-    name: product.series,
+    name: product.series || 'AniCart',
   },
   offers: {
     '@type': 'Offer',
-    url: `${SITE_URL}/wallpaper/${product.slug || product.id}`,
+    url: `${SITE_URL}/products/${product.slug || product.id || product._id}`,
     priceCurrency: 'USD',
-    price: product.price,
+    price: product.price || '0',
     itemCondition: 'https://schema.org/NewCondition',
     availability: 'https://schema.org/InStock',
   },
@@ -92,7 +110,7 @@ export const generateCollectionPageSchema = (title, url) => ({
   '@context': 'https://schema.org',
   '@type': 'CollectionPage',
   name: title,
-  url: url,
+  url: url || generateCanonical(window.location.pathname),
 });
 
 export const generateBreadcrumbsSchema = (items) => ({

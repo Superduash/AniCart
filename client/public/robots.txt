@@ -1,5 +1,10 @@
+# AniCart - Production Robots.txt
+# https://anicartwallpaper.vercel.app/robots.txt
+
 User-agent: *
 Allow: /
+
+# Block private/user pages
 Disallow: /admin
 Disallow: /dashboard
 Disallow: /profile
@@ -7,8 +12,20 @@ Disallow: /cart
 Disallow: /checkout
 Disallow: /library
 Disallow: /settings
+Disallow: /creator
+
+# Block auth pages
 Disallow: /login
 Disallow: /signup
-Disallow: /api
+Disallow: /auth/
 
+# Block API endpoints
+Disallow: /api/
+
+# Block internal/utility routes
+Disallow: /verify
+Disallow: /reset-password
+Disallow: /forgot-password
+
+# Sitemap
 Sitemap: https://anicartwallpaper.vercel.app/sitemap.xml

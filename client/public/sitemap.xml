@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <sitemap>
+    <loc>https://anicartwallpaper.vercel.app/sitemap-static.xml</loc>
+    <lastmod>2026-06-25</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://anicartwallpaper.vercel.app/sitemap-dynamic.xml</loc>
+    <lastmod>2026-06-25</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://anicartwallpaper.vercel.app/sitemap-series.xml</loc>
+    <lastmod>2026-06-25</lastmod>
+  </sitemap>
+  <sitemap>
+    <loc>https://anicartwallpaper.vercel.app/sitemap-characters.xml</loc>
+    <lastmod>2026-06-25</lastmod>
+  </sitemap>
+</sitemapindex>
