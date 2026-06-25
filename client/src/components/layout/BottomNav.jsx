@@ -2,12 +2,15 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUI } from '../../contexts/UIContext';
+import { useWindowWidth } from '../../hooks/useWindowWidth';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Home, LayoutGrid, Search, Heart, User, ShoppingCart } from 'lucide-react';
 
 export default function BottomNav() {
   const { user } = useAuth();
   const { setSearchOpen } = useUI();
+  const width = useWindowWidth();
+  const isMobile = width < 768;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -15,7 +18,7 @@ export default function BottomNav() {
     { label: 'Home', icon: <Home size={24} />, path: '/' },
     { label: 'Browse', icon: <LayoutGrid size={24} />, path: '/marketplace' },
     { label: 'Cart', icon: <ShoppingCart size={24} />, path: '/cart' },
-    { label: 'Wishlist', icon: <Heart size={24} />, action: () => navigate(user ? '/dashboard/wishlist' : '/auth/login'), path: '/dashboard/wishlist' },
+    { label: 'Wishlist', icon: <Heart size={24} color={isMobile ? 'white' : 'currentColor'} />, action: () => navigate(user ? '/dashboard/wishlist' : '/auth/login'), path: '/dashboard/wishlist' },
     { label: 'Profile', icon: <User size={24} />, path: user ? '/dashboard' : '/auth/login' }
   ];
 

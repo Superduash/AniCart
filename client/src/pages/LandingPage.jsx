@@ -56,14 +56,14 @@ function HeroSlider({ products, loading, user }) {
 
   // Auto-advance with pause on hover
   useEffect(() => {
-    if (!products || products.length === 0 || isHovered) return;
+    if (!products || products.length === 0) return;
     const timer = setInterval(() => {
       setDirection(1);
       setCurrentIndex((prev) => (prev + 1) % products.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, [products, isHovered]);
-
+  }, [products]);
+  
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -101,11 +101,11 @@ function HeroSlider({ products, loading, user }) {
   // Animation variants - fast and smooth
   const slideVariants = {
     enter: (direction) => ({
-      x: direction > 0 ? 60 : -60,
+      transform: `translate3d(${direction > 0 ? 60 : -60}px, 0, 0)`,
       opacity: 0
     }),
     center: {
-      x: 0,
+      transform: 'translate3d(0, 0, 0)',
       opacity: 1,
       transition: {
         duration: 0.35,
@@ -113,7 +113,7 @@ function HeroSlider({ products, loading, user }) {
       }
     },
     exit: (direction) => ({
-      x: direction < 0 ? 60 : -60,
+      transform: `translate3d(${direction < 0 ? 60 : -60}px, 0, 0)`,
       opacity: 0,
       transition: {
         duration: 0.35,

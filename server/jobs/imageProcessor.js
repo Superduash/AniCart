@@ -107,7 +107,6 @@ async function buildWebpVariant(buffer, width, quality, effort = 4) {
   return sharp(buffer)
     .resize({
       width,
-      withoutEnlargement: true,
       fit: 'inside',
       kernel: sharp.kernel.lanczos3,
     })
