@@ -141,7 +141,7 @@ export default function CreatorUploadsPage() {
     try {
       // C5 Fix: correct URL is /creator/products/:id (was /creators/products/:id)
       await apiClient.delete(`/creator/products/${id}`);
-      setProducts(p => p.filter(x => x._id !== id));
+      setProducts(p => p.filter(x => (x._id || x.id) !== id));
       addToast('Product deleted.', 'info');
     } catch { addToast('Failed to delete.', 'error'); }
     setDeletingId(null);
@@ -176,8 +176,10 @@ export default function CreatorUploadsPage() {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-          {products.map(p => (
-            <div key={p._id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+          {products.map(p => {
+            const productId = p._id || p.id;
+            return (
+            <div key={productId} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
               <div style={{ aspectRatio: '16/10', position: 'relative', background: 'var(--color-surface-2)' }}>
                 {p.assets?.preview?.url && <img src={p.assets.preview.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                 <div style={{ position: 'absolute', top: 12, right: 12, padding: '4px 10px', borderRadius: 'var(--radius-full)', fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
@@ -195,22 +197,22 @@ export default function CreatorUploadsPage() {
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {p.status === 'active' && (
-                    <Link to={`/products/${p._id}`} className="btn btn-secondary btn-sm" style={{ flex: 1, textAlign: 'center' }}>
+                    <Link to={`/products/${productId}`} className="btn btn-secondary btn-sm" style={{ flex: 1, textAlign: 'center' }}>
                       View
                     </Link>
                   )}
-                  {deletingId === p._id ? (
+                  {deletingId === productId ? (
                     <div style={{ display: 'flex', gap: 4, flex: 1 }}>
-                      <button onClick={() => handleDelete(p._id)} className="btn btn-muted btn-sm" style={{ flex: 1, background: 'var(--color-error)', color: '#fff' }}>Sure?</button>
+                      <button onClick={() => handleDelete(productId)} className="btn btn-muted btn-sm" style={{ flex: 1, background: 'var(--color-error)', color: '#fff' }}>Sure?</button>
                       <button onClick={() => setDeletingId(null)} className="btn btn-muted btn-sm" style={{ flex: 1 }}>No</button>
                     </div>
                   ) : (
-                    <button onClick={() => setDeletingId(p._id)} className="btn btn-muted btn-sm" style={{ flex: 1, color: 'var(--color-error)' }}>Delete</button>
+                    <button onClick={() => setDeletingId(productId)} className="btn btn-muted btn-sm" style={{ flex: 1, color: 'var(--color-error)' }}>Delete</button>
                   )}
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 

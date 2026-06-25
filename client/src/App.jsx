@@ -123,7 +123,7 @@ function ProtectedRoute({ children, role }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return <PageShellSkeleton />;
+  if (isLoading) return <div style={{ minHeight: '100vh' }} />;
 
   if (!user) {
     return <Navigate to={`/auth/login?next=${encodeURIComponent(location.pathname)}`} replace />;
@@ -246,7 +246,7 @@ function AppShell() {
       <main id="main" className="page-wrapper" style={{ paddingBottom: isMobile ? 80 : 0 }}>
         {/* H7 Fix: wrap routes in ErrorBoundary to catch render-time crashes */}
         <ErrorBoundary>
-          <React.Suspense fallback={<PageShellSkeleton />}>
+          <React.Suspense fallback={<div style={{ minHeight: '100vh' }} />}>
             <AnimatedRoutes />
           </React.Suspense>
         </ErrorBoundary>

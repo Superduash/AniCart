@@ -41,7 +41,7 @@ export default function AdminProductsPage() {
         await apiClient.put(`/products/${id}/reject`, { rejectionReason: reason });
         addToast('Product rejected.', 'info');
       }
-      setProducts(p => p.filter(x => x._id !== id));
+      setProducts(p => p.filter(x => (x._id || x.id) !== id));
     } catch {
       addToast(`Failed to ${action} product.`, 'error');
     } finally {
@@ -70,8 +70,10 @@ export default function AdminProductsPage() {
         </div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
-          {products.map(p => (
-            <div key={p._id} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
+          {products.map(p => {
+            const productId = p._id || p.id;
+            return (
+            <div key={productId} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
               <img src={p.assets?.preview?.url || p.img} alt="" style={{ width: '100%', aspectRatio: '16/10', objectFit: 'cover', background: 'var(--color-surface-2)' }} />
               <div style={{ padding: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
@@ -87,23 +89,23 @@ export default function AdminProductsPage() {
                 
                 <textarea
                   placeholder="Rejection reason (optional)"
-                  value={rejectReason[p._id] || ''}
-                  onChange={(e) => setRejectReason({ ...rejectReason, [p._id]: e.target.value })}
+                  value={rejectReason[productId] || ''}
+                  onChange={(e) => setRejectReason({ ...rejectReason, [productId]: e.target.value })}
                   style={{ width: '100%', minHeight: 60, padding: '8px 12px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text)', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', marginBottom: 12, resize: 'vertical' }}
-                  disabled={processingId === p._id}
+                  disabled={processingId === productId}
                 />
 
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <button onClick={() => handleAction(p._id, 'reject')} disabled={processingId === p._id} className="btn btn-muted" style={{ flex: 1, color: 'var(--color-error)' }}>
-                    {processingId === p._id ? 'Processing...' : 'Reject'}
+                  <button onClick={() => handleAction(productId, 'reject')} disabled={processingId === productId} className="btn btn-muted" style={{ flex: 1, color: 'var(--color-error)' }}>
+                    {processingId === productId ? 'Processing...' : 'Reject'}
                   </button>
-                  <button onClick={() => handleAction(p._id, 'approve')} disabled={processingId === p._id} className="btn btn-primary" style={{ flex: 1, background: 'var(--color-pink)', color: '#fff' }}>
-                    {processingId === p._id ? 'Processing...' : 'Approve'}
+                  <button onClick={() => handleAction(productId, 'approve')} disabled={processingId === productId} className="btn btn-primary" style={{ flex: 1, background: 'var(--color-pink)', color: '#fff' }}>
+                    {processingId === productId ? 'Processing...' : 'Approve'}
                   </button>
                 </div>
               </div>
             </div>
-          ))}
+          )})}
         </div>
       )}
 

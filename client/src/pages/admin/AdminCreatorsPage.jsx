@@ -24,7 +24,7 @@ export default function AdminCreatorsPage() {
     try {
       // C2 Fix: correct URL
       await apiClient.put(`/admin/creator-requests/${id}/approve`);
-      setUsers(u => u.filter(x => x._id !== id));
+      setUsers(u => u.filter(x => (x._id || x.id) !== id));
       addToast('Creator application approved!', 'success');
     } catch {
       addToast('Failed to approve application.', 'error');
@@ -35,7 +35,7 @@ export default function AdminCreatorsPage() {
   const handleReject = async (id) => {
     try {
       await apiClient.put(`/admin/creator-requests/${id}/reject`);
-      setUsers(u => u.filter(x => x._id !== id));
+      setUsers(u => u.filter(x => (x._id || x.id) !== id));
       addToast('Creator application rejected.', 'info');
     } catch {
       addToast('Failed to reject application.', 'error');
@@ -71,8 +71,10 @@ export default function AdminCreatorsPage() {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
-                <tr key={u._id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+              {users.map(u => {
+                const userId = u._id || u.id;
+                return (
+                <tr key={userId} style={{ borderBottom: '1px solid var(--color-border)' }}>
                   <td style={{ padding: '16px 20px', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)' }}>
                     {u.name}
                   </td>
@@ -93,20 +95,20 @@ export default function AdminCreatorsPage() {
                   </td>
                   <td style={{ padding: '16px 20px', textAlign: 'right', display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                     <button
-                      onClick={() => handlePromote(u._id)}
+                      onClick={() => handlePromote(userId)}
                       style={{ background: 'var(--color-pink)', color: '#fff', border: 'none', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-xs)' }}
                     >
                       ✓ Approve
                     </button>
                     <button
-                      onClick={() => handleReject(u._id)}
+                      onClick={() => handleReject(userId)}
                       style={{ background: 'var(--color-surface-2)', color: 'var(--color-error)', border: '1px solid var(--color-error)', padding: '6px 14px', borderRadius: 6, cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-xs)' }}
                     >
                       ✕ Reject
                     </button>
                   </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
         </div>
