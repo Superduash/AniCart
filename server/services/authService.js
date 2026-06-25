@@ -145,10 +145,6 @@ async function login({ email, password }) {
     throw new ApiError(429, 'Too many login attempts. Try again in 10 minutes.');
   }
 
-  if (!user.isVerified) {
-    throw ApiError.forbidden('Please verify your email before logging in.');
-  }
-
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
     const { locked } = await recordFailedLogin(normalizedEmail);
