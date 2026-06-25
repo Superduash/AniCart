@@ -61,6 +61,10 @@ apiClient.interceptors.response.use(
         headers: response.headers,
         timestamp: Date.now()
       });
+    } else {
+      // Clear entire GET cache on any successful mutation (POST, PUT, DELETE, PATCH)
+      // This prevents stale data bugs throughout the entire app
+      cache.clear();
     }
     return response;
   },

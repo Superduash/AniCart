@@ -48,7 +48,17 @@ export default function WishlistPage() {
         <EmptyState icon="♡" title="Nothing saved yet" body="Click the ♡ heart icon on any wallpaper card or product page to save it here." ctaLabel="Explore Marketplace" ctaTo="/marketplace" />
       ) : (
         <div className="products-grid" role="list">
-          {products.map(p => <ProductCard key={p._id || p.id} product={p} />)}
+          {products.map(p => (
+            <ProductCard 
+              key={p._id || p.id} 
+              product={p} 
+              onWishlistChange={(id, isWishlisted) => {
+                if (!isWishlisted) {
+                  setItems(prev => prev.filter(i => (i._id || i.id) !== id));
+                }
+              }} 
+            />
+          ))}
         </div>
       )}
     </div>

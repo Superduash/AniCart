@@ -29,7 +29,7 @@ function ResolutionBadge({ resolution }) {
   return <span className={`res-badge ${cls}`}>{resolution}</span>;
 }
 
-export default function ProductCard({ product, inLibrary = false, onDownload }) {
+export default function ProductCard({ product, inLibrary = false, onDownload, onWishlistChange }) {
   const navigate = useNavigate();
   const { cart, addToCart, removeFromCart } = useCart();
   const { user } = useAuth();
@@ -86,6 +86,7 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
         await apiClient.delete(`/users/wishlist/${id}`);
         addToast('Removed from wishlist.', 'info');
       }
+      if (onWishlistChange) onWishlistChange(id, newState);
     } catch {
       setWishlisted(!newState); // revert
       addToast('Failed to update wishlist.', 'error');
