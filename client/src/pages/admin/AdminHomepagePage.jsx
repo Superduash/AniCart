@@ -23,8 +23,10 @@ export default function AdminHomepagePage() {
         apiClient.get('/products', { params: { isHero: true, sort: 'heroOrder', limit: 50 } }),
         apiClient.get('/products', { params: { isFeatured: true, sort: 'featuredOrder', limit: 50 } })
       ]);
-      setHeroProducts(heroRes.data?.data?.products || []);
-      setFeaturedProducts(featRes.data?.data?.products || []);
+      const heroData = heroRes.data?.data;
+      const featData = featRes.data?.data;
+      setHeroProducts(Array.isArray(heroData) ? heroData : heroData?.products || []);
+      setFeaturedProducts(Array.isArray(featData) ? featData : featData?.products || []);
     } catch {
       addToast('Failed to load homepage layout', 'error');
     } finally {
@@ -40,7 +42,8 @@ export default function AdminHomepagePage() {
     setSearching(true);
     try {
       const res = await apiClient.get('/products', { params: { search: searchQuery, limit: 10 } });
-      setSearchResults(res.data?.data?.products || []);
+      const data = res.data?.data;
+      setSearchResults(Array.isArray(data) ? data : data?.products || []);
     } catch {
       addToast('Search failed', 'error');
     } finally {
