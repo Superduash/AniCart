@@ -91,4 +91,14 @@ server = app.listen(PORT, () => {
   
   // Start the background worker within the same process
   require('./worker');
+
+  // Start internal self-ping scheduler to keep backend warm (after 60s delay)
+  setTimeout(() => {
+    try {
+      const { startSelfPing } = require('./utils/selfPing');
+      startSelfPing(server, PORT);
+    } catch (err) {
+      logger.error(`Self-ping initialization failed: ${err.message}`);
+    }
+  }, 60000);
 });
