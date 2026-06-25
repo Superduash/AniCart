@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUI } from '../../contexts/UIContext';
 import apiClient from '../../api/client';
-import AdminProductEditor from '../components/admin/AdminProductEditor';
+import AdminProductEditor from '../../components/admin/AdminProductEditor';
 
 export default function AdminProductDetailPage() {
   const { id } = useParams();

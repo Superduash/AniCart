@@ -4,7 +4,7 @@ import { useTitle } from '../../hooks/useTitle';
 import { useUI } from '../../contexts/UIContext';
 import apiClient from '../../api/client';
 import { ProductCardSkeleton } from '../../components/ui/Skeleton';
-import AdminProductEditor from '../components/admin/AdminProductEditor';
+import AdminProductEditor from '../../components/admin/AdminProductEditor';
 
 export default function AdminProductsPage() {
   const { addToast } = useUI();
