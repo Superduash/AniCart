@@ -196,7 +196,7 @@ export default function LandingPage() {
       <SeriesMarquee series={series} />
 
       {/* ─── FEATURED PRODUCTS ─── */}
-      <section className="section" id="products" style={{ paddingTop: 'calc(var(--navbar-height) + 10px)', paddingBottom: 80 }}>
+      <section className="section" id="products" style={{ paddingTop: 40, paddingBottom: 80, scrollMarginTop: 80 }}>
         <div className="section-header">
           <div className="section-tag">◈ FEATURED COLLECTION</div>
           <h2 className="section-title">New <span>This Week</span></h2>

@@ -12,6 +12,9 @@
   --color-surface-2:     #111827;
   --color-surface-hover: #162032;
 
+  /* Layout */
+  --navbar-height:       70px;
+
   /* Borders */
   --color-border:        rgba(255, 255, 255, 0.07);
   --color-border-glow:   rgba(0, 243, 255, 0.15);
