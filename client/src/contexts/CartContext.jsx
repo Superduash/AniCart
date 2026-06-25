@@ -10,39 +10,7 @@ export function CartProvider({ children }) {
   const [cartLoading, setCartLoading] = useState(true);
   const [loadedGuest, setLoadedGuest] = useState(false);
 
-  // Load cart from API when user logs in, from localStorage for guests
-  useEffect(() => {
-    if (user) {
-      const saved = localStorage.getItem('anicart_cart');
-      if (saved) {
-        try {
-          const guestCart = JSON.parse(saved);
-          if (guestCart.length > 0) {
-            syncCart(guestCart).then(() => {
-              localStorage.removeItem('anicart_cart');
-            });
-            return;
-          }
-        } catch {}
-      }
-      fetchCart();
-    } else {
-      // Guest: load from localStorage
-      try {
-        const saved = localStorage.getItem('anicart_cart');
-        if (saved) setCart(JSON.parse(saved));
-      } catch { setCart([]); }
-      setLoadedGuest(true);
-      setCartLoading(false);
-    }
-  }, [user, fetchCart, syncCart]);
 
-  // Persist guest cart to localStorage
-  useEffect(() => {
-    if (!user && loadedGuest) {
-      localStorage.setItem('anicart_cart', JSON.stringify(cart));
-    }
-  }, [cart, user, loadedGuest]);
 
   // M7 Fix: wrap in useCallback so consumers don't re-render unnecessarily on every CartProvider render
   const fetchCart = useCallback(async () => {
@@ -117,6 +85,40 @@ export function CartProvider({ children }) {
       fetchCart();
     } catch { fetchCart(); }
   }, [fetchCart]);
+
+  // Load cart from API when user logs in, from localStorage for guests
+  useEffect(() => {
+    if (user) {
+      const saved = localStorage.getItem('anicart_cart');
+      if (saved) {
+        try {
+          const guestCart = JSON.parse(saved);
+          if (guestCart.length > 0) {
+            syncCart(guestCart).then(() => {
+              localStorage.removeItem('anicart_cart');
+            });
+            return;
+          }
+        } catch {}
+      }
+      fetchCart();
+    } else {
+      // Guest: load from localStorage
+      try {
+        const saved = localStorage.getItem('anicart_cart');
+        if (saved) setCart(JSON.parse(saved));
+      } catch { setCart([]); }
+      setLoadedGuest(true);
+      setCartLoading(false);
+    }
+  }, [user, fetchCart, syncCart]);
+
+  // Persist guest cart to localStorage
+  useEffect(() => {
+    if (!user && loadedGuest) {
+      localStorage.setItem('anicart_cart', JSON.stringify(cart));
+    }
+  }, [cart, user, loadedGuest]);
 
   const cartTotal = cart.reduce((sum, i) => sum + (i.price || 0), 0);
   const cartCount = cart.length;
