@@ -1,19 +1,20 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export default function BackgroundEffects() {
-  const [mousePos, setMousePos] = React.useState({ x: -999, y: -999 });
+  const glowRef = useRef(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     let rafId = null;
     let pendingX = -999, pendingY = -999;
 
-    // L2 Fix: throttle mousemove with requestAnimationFrame to avoid setState on every pixel
     const handler = (e) => {
       pendingX = e.clientX;
       pendingY = e.clientY;
-      if (rafId !== null) return; // already scheduled
+      if (rafId !== null) return;
       rafId = requestAnimationFrame(() => {
-        setMousePos({ x: pendingX, y: pendingY });
+        if (glowRef.current) {
+          glowRef.current.style.transform = `translate(calc(${pendingX}px - 50%), calc(${pendingY}px - 50%))`;
+        }
         rafId = null;
       });
     };
@@ -28,7 +29,7 @@ export default function BackgroundEffects() {
   return (
     <>
       <div className="scanline" aria-hidden="true" />
-      <div className="cursor-glow" aria-hidden="true" style={{ left: mousePos.x, top: mousePos.y }} />
+      <div ref={glowRef} className="cursor-glow" aria-hidden="true" />
       <div className="starfield" aria-hidden="true" />
       <div className="nebula" aria-hidden="true">
         <div className="nebula-blob" />

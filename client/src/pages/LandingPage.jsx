@@ -126,37 +126,36 @@ export default function LandingPage() {
   const [heroProducts, setHeroProducts] = useState([]);
   const [series, setSeries] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
+  const [heroLoading, setHeroLoading] = useState(true);
+  const [seriesLoading, setSeriesLoading] = useState(true);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [prodRes, seriesRes, heroRes] = await Promise.allSettled([
-          apiClient.get('/products', { params: { limit: 8, sort: 'newest', status: 'active' } }),
-          apiClient.get('/products/series/list'),
-          apiClient.get('/products', { params: { limit: 5, sort: 'rating', status: 'active' } })
-        ]);
-        if (prodRes.status === 'fulfilled') {
-          const data = prodRes.value.data?.data;
-          setProducts(Array.isArray(data) ? data : data?.products || []);
-        }
-        if (seriesRes.status === 'fulfilled') {
-          setSeries(seriesRes.value.data?.data || []);
-        }
-        if (heroRes.status === 'fulfilled') {
-          const data = heroRes.value.data?.data;
-          setHeroProducts(Array.isArray(data) ? data : data?.products || []);
-        }
-      } finally {
-        setProductsLoading(false);
-      }
-    };
-    load();
+    apiClient.get('/products', { params: { limit: 5, sort: 'rating', status: 'active' } })
+      .then(res => {
+        const data = res.data?.data;
+        setHeroProducts(Array.isArray(data) ? data : data?.products || []);
+      })
+      .catch(() => setHeroProducts([]))
+      .finally(() => setHeroLoading(false));
+
+    apiClient.get('/products/series/list')
+      .then(res => setSeries(res.data?.data || []))
+      .catch(() => setSeries([]))
+      .finally(() => setSeriesLoading(false));
+
+    apiClient.get('/products', { params: { limit: 8, sort: 'newest', status: 'active' } })
+      .then(res => {
+        const data = res.data?.data;
+        setProducts(Array.isArray(data) ? data : data?.products || []);
+      })
+      .catch(() => setProducts([]))
+      .finally(() => setProductsLoading(false));
   }, []);
 
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* ─── HERO SLIDER ─── */}
-      <HeroSlider products={heroProducts} loading={productsLoading} user={user} />
+      <HeroSlider products={heroProducts} loading={heroLoading} user={user} />
 
       {/* ─── DISCOVER HERO ─── */}
       <section className="hero-section" style={{ position: 'relative' }}>

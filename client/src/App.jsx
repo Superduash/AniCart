@@ -21,9 +21,11 @@ import SearchOverlay from './components/search/SearchOverlay';
 
 // Core Pages (Synchronous for instant navigation)
 import LandingPage         from './pages/LandingPage';
-import MarketplacePage     from './pages/MarketplacePage';
-import ProductDetailPage   from './pages/ProductDetailPage';
-import CartPage            from './pages/CartPage';
+
+// Lazy Loaded Pages (for code-splitting heavy routes)
+const MarketplacePage      = React.lazy(() => import('./pages/MarketplacePage'));
+const ProductDetailPage    = React.lazy(() => import('./pages/ProductDetailPage'));
+const CartPage             = React.lazy(() => import('./pages/CartPage'));
 import NotFoundPage        from './pages/NotFoundPage';
 import PlaceholderPage     from './pages/PlaceholderPage';
 import { PageShellSkeleton } from './components/ui/Skeleton';
@@ -232,22 +234,9 @@ import BottomNav from './components/layout/BottomNav';
 // App shell with navbar
 function AppShell() {
   const { toasts, removeToast, searchOpen } = useUI();
-  const { isLoading } = useAuth(); // M10 Fix
+  // removed isLoading check to prevent blocking first paint
   const width = useWindowWidth();
   const isMobile = width < 768;
-
-  if (isLoading) {
-    return (
-      <>
-        <BackgroundEffects />
-        <Navbar />
-        <main className="page-wrapper" style={{ paddingBottom: isMobile ? 80 : 0 }}>
-          <PageShellSkeleton />
-        </main>
-        {isMobile && <BottomNav />}
-      </>
-    );
-  }
 
   return (
     <>
