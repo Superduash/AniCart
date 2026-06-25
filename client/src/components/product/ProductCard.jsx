@@ -222,7 +222,7 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`/admin/products/${id}`);
+                navigate(`/admin/products/${id}/edit`);
               }}
               className="btn btn-ghost btn-sm"
               style={{ fontSize: '0.75rem', padding: '4px 8px', marginLeft: 'auto' }}
