@@ -299,6 +299,82 @@ const productSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
+    // Admin editing fields
+    displayResolution: {
+      type: String,
+      trim: true,
+      enum: ['4K Ultra HD', '2K Quad HD', 'HD (1920×1080)', 'HD Ready', 'Mobile Portrait', 'Mobile Landscape', 'Original'],
+    },
+    defaultDownload: {
+      type: String,
+      trim: true,
+      enum: ['original', '4k', '2k', '1080p', '720p', 'mobile-portrait', 'mobile-landscape'],
+    },
+    character: {
+      type: String,
+      trim: true,
+    },
+    category: {
+      type: String,
+      trim: true,
+    },
+    altText: {
+      type: String,
+      trim: true,
+    },
+    metaTitle: {
+      type: String,
+      trim: true,
+    },
+    metaDescription: {
+      type: String,
+      trim: true,
+    },
+    sortOrder: {
+      type: Number,
+      default: 0,
+    },
+    downloadPermissions: {
+      type: String,
+      enum: ['all', 'premium', 'free', 'none'],
+      default: 'all',
+    },
+    ageRating: {
+      type: String,
+      enum: ['G', 'PG', 'PG-13', 'R', 'NC-17'],
+    },
+    visibility: {
+      type: String,
+      enum: ['public', 'private', 'unlisted'],
+      default: 'public',
+    },
+    lastEditedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+    },
+    lastEditedAt: {
+      type: Date,
+    },
+    editHistory: [
+      {
+        editedBy: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        editedAt: {
+          type: Date,
+        },
+        changes: {
+          type: Object,
+        },
+        ip: {
+          type: String,
+        },
+        userAgent: {
+          type: String,
+        },
+      },
+    ],
   },
   {
     timestamps: true,

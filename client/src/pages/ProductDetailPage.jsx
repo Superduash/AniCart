@@ -12,6 +12,7 @@ import { ProductCardSkeleton } from '../components/ui/Skeleton';
 import ProductCard from '../components/product/ProductCard';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import Footer from '../components/layout/Footer';
+import { getAvailableVariants, getHighestResolution, getDisplayLabel, getFormatFromContentType, formatFileSize, RESOLUTION_CONFIG } from '../utils/resolutionUtils';
 
 function StarPicker({ value, onChange }) {
   const [hover, setHover] = useState(0);
@@ -32,25 +33,13 @@ function StarPicker({ value, onChange }) {
   );
 }
 
-const AVAILABLE_RESOLUTIONS = ['4k', '2k', '1080p', '720p', 'mobile-portrait', 'mobile-landscape'];
-
-const RESOLUTION_LABELS = {
-  '4k': '4K UHD',
-  '2k': '2K (QHD)',
-  '1080p': 'FHD',
-  '720p': 'HD',
-  'mobile-portrait': 'Mobile Portrait',
-  'mobile-landscape': 'Mobile Landscape',
-};
-
-const getResolutionLabel = (product, r) => {
-  const baseLabel = RESOLUTION_LABELS[r] || r.toUpperCase();
-  const asset = product?.assets?.[r];
-  if (asset && asset.width && asset.height) {
-    return `${baseLabel} (${asset.width}×${asset.height})`;
-  }
-  return baseLabel;
-};
+/**
+ * Get display label for a resolution with full details
+ * Wrapper around shared utility
+ */
+function getResolutionLabel(product, r) {
+  return getDisplayLabel(product, r);
+}
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -62,7 +51,7 @@ export default function ProductDetailPage() {
   const isMobile = width < 768;
   const [productName, setProductName] = useState('');
   const [product, setProduct] = useState(null);
-  const [downloadResolution, setDownloadResolution] = useState('4k');
+  const [downloadResolution, setDownloadResolution] = useState(product?.defaultDownload || '4k');
 
   const [loading, setLoading] = useState(true);
   const [related, setRelated] = useState([]);
@@ -94,6 +83,18 @@ export default function ProductDetailPage() {
           setProduct(prod);
           // M3 Fix: set productName state so useTitle hook gets the correct value
           setProductName(prod.name);
+          // Set default download resolution to highest available variant, preferring original if available
+          if (prod) {
+            if (prod.defaultDownload) {
+              setDownloadResolution(prod.defaultDownload);
+            } else if (prod.assets) {
+              const variants = getAvailableVariants(prod);
+              const highest = getHighestResolution(variants);
+              if (highest) {
+                setDownloadResolution(highest);
+              }
+            }
+          }
           // Fetch related
           if (prod.series) {
             apiClient.get('/products', { params: { series: prod.series, limit: 4, status: 'active' } })
@@ -172,9 +173,10 @@ export default function ProductDetailPage() {
   };
 
   // Build list of resolutions the product actually has available
-  const availableRes = product?.assets
-    ? AVAILABLE_RESOLUTIONS.filter(r => product.assets[r]?.key)
-    : AVAILABLE_RESOLUTIONS;
+  const availableRes = product?.assets ? getAvailableVariants(product) : [];
+
+  // Set default download resolution to highest available variant, preferring original if available
+  const defaultDownload = product?.defaultDownload || '4k';
 
   const submitReview = async (e) => {
     e.preventDefault();
@@ -243,7 +245,7 @@ export default function ProductDetailPage() {
     <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--navbar-height) + 10px)' }}>
       <SEO
         title={product.name}
-        description={`Download ${product.name} wallpaper in ${product.resolution} resolution.`}
+        description={`Download ${product.name} wallpaper in ${(product.displayResolution || product.resolution)} resolution.`}
         image={previewUrl}
         type="product"
         schemas={[productSchema, breadcrumbsSchema]}
@@ -310,11 +312,11 @@ export default function ProductDetailPage() {
             )}
 
             {/* Resolution */}
-            {product.resolution && (
+            {(product.displayResolution || product.resolution) && (
               <div style={{ marginBottom: 20, padding: '10px 14px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}>
                 <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)', marginBottom: 4 }}>Resolution</div>
                 <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}>
-                  {product.resolution} · WebP
+                  {(product.displayResolution || product.resolution)} · WebP
                 </div>
               </div>
             )}
@@ -337,9 +339,11 @@ export default function ProductDetailPage() {
                   onChange={e => setDownloadResolution(e.target.value)}
                   style={{ flex: 1, padding: '8px 12px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-accent)', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-xs)', cursor: 'pointer' }}
                 >
-                  {(availableRes.length > 0 ? availableRes : AVAILABLE_RESOLUTIONS).map(r => (
+                  {availableRes.length > 0 ? availableRes.map(r => (
                     <option key={r} value={r}>{getResolutionLabel(product, r)}</option>
-                  ))}
+                  )) : (
+                    <option value="" disabled>No resolutions available</option>
+                  )}
                 </select>
               </div>
             )}

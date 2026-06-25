@@ -53,6 +53,7 @@ const CreatorStatsPage    = React.lazy(() => import('./pages/creator/CreatorStat
 
 import AdminShell         from './components/layout/AdminShell';
 const AdminProductsPage   = React.lazy(() => import('./pages/admin/AdminProductsPage'));
+const AdminProductDetailPage = React.lazy(() => import('./pages/admin/AdminProductDetailPage'));
 const AdminCreatorsPage   = React.lazy(() => import('./pages/admin/AdminCreatorsPage'));
 const AdminHomepagePage   = React.lazy(() => import('./pages/admin/AdminHomepagePage'));
 
@@ -233,6 +234,7 @@ function AnimatedRoutes() {
           </ProtectedRoute>
         }>
           <Route path="products" element={<PageWrapper><AdminProductsPage /></PageWrapper>} />
+          <Route path="products/:id/edit" element={<PageWrapper><AdminProductDetailPage /></PageWrapper>} />
           <Route path="creators" element={<PageWrapper><AdminCreatorsPage /></PageWrapper>} />
           <Route path="homepage" element={<PageWrapper><AdminHomepagePage /></PageWrapper>} />
           <Route index element={<Navigate to="products" replace />} />

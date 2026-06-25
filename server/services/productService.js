@@ -13,6 +13,7 @@ const config = require('../config');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const redis = require('../config/redis');
+const resolutionService = require('../services/resolutionService');
 
 let s3Client;
 if (config.R2_ACCOUNT_ID && config.R2_ACCESS_KEY_ID) {
@@ -341,6 +342,8 @@ async function updateProduct(id, body) {
   if (rating !== undefined) product.rating = rating;
   if (reviews !== undefined) product.reviews = reviews;
   if (resolution !== undefined) product.resolution = resolution;
+  if (displayResolution !== undefined) product.displayResolution = displayResolution;
+  if (defaultDownload !== undefined) product.defaultDownload = defaultDownload;
   if (tags !== undefined) product.tags = tags;
   if (status !== undefined) product.status = status;
   if (isHero !== undefined) product.isHero = isHero;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, Routes, Route } from 'react-router-dom';
 import SEO from '../SEO';
 
 const NAV = [
@@ -42,7 +42,12 @@ export default function AdminShell() {
           </button>
         </div>
       </aside>
-      <div className="dashboard-content"><Outlet /></div>
+      <div className="dashboard-content">
+        <Routes>
+          <Route path="/products/:id/edit" element={<Outlet />} />
+          <Route path="*" element={<Outlet />} />
+        </Routes>
+      </div>
     </div>
   );
 }

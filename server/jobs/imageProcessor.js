@@ -45,14 +45,7 @@ const PUBLIC_VARIANT_CONFIG = {
   thumbnail: { width: 400, quality: 55, effort: 2, mimeType: 'image/webp', format: 'webp' },
 };
 
-const RESOLUTION_DISPLAY_MAP = {
-  '4k': '4K UHD',
-  '2k': '2K (QHD)',
-  '1080p': 'FHD',
-  '720p': 'HD',
-  'mobile-portrait': 'Mobile',
-  'mobile-landscape': 'Mobile',
-};
+const resolutionService = require('../services/resolutionService');
 
 let watermarkOverlayBufferPromise = null;
 
@@ -358,8 +351,12 @@ const privateAssets = {
     status: failedVariants.length > 0 ? 'failed' : 'ready',
   };
   product.img = thumbnailUpload.url;
+  // Use resolution service to get the correct display label and default download
   if (successfulResolutions.length > 0) {
-    product.resolution = RESOLUTION_DISPLAY_MAP[successfulResolutions[0]] || product.resolution;
+    const computedMetadata = resolutionService.computeResolutionMetadata(product);
+    product.displayResolution = computedMetadata.displayResolutionLabel || product.displayResolution;
+    product.defaultDownload = computedMetadata.defaultDownload || product.defaultDownload;
+    product.availableResolutions = computedMetadata.availableVariants;
   }
   product.status = failedVariants.length > 0 ? 'pending' : 'active';
 

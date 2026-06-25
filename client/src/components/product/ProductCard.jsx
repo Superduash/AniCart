@@ -7,6 +7,7 @@ import { useWindowWidth } from '../../hooks/useWindowWidth';
 import { motion } from 'framer-motion';
 import apiClient from '../../api/client';
 import { Heart } from 'lucide-react';
+import { getAvailableVariants, getHighestResolution, getResolutionLabel, getResolutionClass } from '../../utils/resolutionUtils';
 
 function StarRating({ rating, count }) {
   if (!rating || rating === 0) return null;
@@ -23,11 +24,38 @@ function StarRating({ rating, count }) {
   );
 }
 
-function ResolutionBadge({ resolution }) {
-  const cls = resolution?.toLowerCase().includes('4k') ? 'res-4k'
-    : resolution?.toLowerCase().includes('2k') ? 'res-2k'
-    : 'res-1080p';
-  return <span className={`res-badge ${cls}`}>{resolution}</span>;
+function ResolutionBadge({ resolution, displayResolution, product }) {
+  // If product has assets, derive display resolution from actual available variants (excluding original)
+  let displayResolutionValue = displayResolution || resolution;
+  let resolutionClass = 'res-1080p';
+  
+  if (product && product.assets) {
+    const availableVariants = getAvailableVariants(product);
+    // Filter out 'original' for display purposes
+    const displayVariants = availableVariants.filter(v => v !== 'original');
+    const highestKey = displayVariants.length > 0 
+      ? getHighestResolution(displayVariants) 
+      : availableVariants.length > 0 
+        ? getHighestResolution(availableVariants) 
+        : null;
+    
+    if (highestKey) {
+      displayResolutionValue = getResolutionLabel(highestKey);
+      resolutionClass = getResolutionClass(highestKey);
+    }
+  }
+  
+  // Fallback to legacy resolution prop if no assets available
+  if (!displayResolutionValue && resolution) {
+    displayResolutionValue = resolution;
+    resolutionClass = resolution.toLowerCase().includes('4k') ? 'res-4k'
+      : resolution.toLowerCase().includes('2k') ? 'res-2k'
+      : 'res-1080p';
+  }
+  
+  if (!displayResolutionValue) return null;
+  
+  return <span className={`res-badge ${resolutionClass}`}>{displayResolutionValue}</span>;
 }
 
 export default function ProductCard({ product, inLibrary = false, onDownload, onWishlistChange }) {
@@ -170,13 +198,26 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
       <div className="product-info">
         <div className="product-meta">
           {product.series && <span>{product.series}</span>}
-          {product.series && product.resolution && <span>·</span>}
-          {product.resolution && <ResolutionBadge resolution={product.resolution} />}
+          {product.series && (product.displayResolution || product.resolution) && <span>·</span>}
+          {(product.displayResolution || product.resolution) && <ResolutionBadge resolution={product.resolution} displayResolution={product.displayResolution} product={product} />}
         </div>
         <div className="product-name">{product.name}</div>
         <StarRating rating={product.rating || product.averageRating} count={product.reviewCount || product.reviews} />
 
         <div className="product-footer">
+          {user?.role === 'admin' && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/admin/products/${id}`);
+              }}
+              className="btn btn-ghost btn-sm"
+              style={{ fontSize: '0.75rem', padding: '4px 8px', marginLeft: 'auto' }}
+              aria-label="Edit product"
+            >
+              Edit
+            </button>
+          )}
         </div>
       </div>
     </motion.article>
