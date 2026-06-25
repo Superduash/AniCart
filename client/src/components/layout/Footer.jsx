@@ -14,8 +14,11 @@ export default function Footer() {
         {/* Center links */}
         <ul className="footer-links">
           <li><Link to="/marketplace">Browse</Link></li>
-          <li><Link to="/auth/login">Login</Link></li>
-          <li><Link to="/auth/signup">Sign Up</Link></li>
+          <li><Link to="/anime">Anime Series</Link></li>
+          <li><Link to="/characters">Characters</Link></li>
+          <li><Link to="/collections">Collections</Link></li>
+          <li><Link to="/new">New Wallpapers</Link></li>
+          <li><Link to="/trending">Trending</Link></li>
           <li><Link to="/creator/apply">Creator Program</Link></li>
         </ul>
 

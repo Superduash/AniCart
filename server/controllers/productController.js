@@ -114,6 +114,38 @@ const getSeries = catchAsync(async (req, res) => {
 });
 
 /**
+ * @desc    Get all product tags (for filters)
+ * @route   GET /api/v1/products/tags/list
+ * @access  Public
+ */
+const getTags = catchAsync(async (req, res) => {
+  const tags = await productService.getDistinctTags();
+
+  res.status(200).json(
+    successResponse({
+      message: 'Tags retrieved successfully',
+      data: { tags },
+    })
+  );
+});
+
+/**
+ * @desc    Get all active characters
+ * @route   GET /api/v1/products/characters/list
+ * @access  Public
+ */
+const getCharacters = catchAsync(async (req, res) => {
+  const characters = await productService.getCharacters();
+
+  res.status(200).json(
+    successResponse({
+      message: 'Characters retrieved successfully',
+      data: { characters },
+    })
+  );
+});
+
+/**
  * @desc    Restore soft-deleted product (Admin only)
  * @route   PUT /api/v1/products/:id/restore
  * @access  Private/Admin
@@ -213,4 +245,6 @@ module.exports = {
   getPendingProducts,
   approveProduct,
   rejectProduct,
+  getTags,
+  getCharacters,
 };

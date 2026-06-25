@@ -26,6 +26,7 @@ import LandingPage         from './pages/LandingPage';
 const MarketplacePage      = React.lazy(() => import('./pages/MarketplacePage'));
 const ProductDetailPage    = React.lazy(() => import('./pages/ProductDetailPage'));
 const CartPage             = React.lazy(() => import('./pages/CartPage'));
+const HubPage              = React.lazy(() => import('./pages/HubPage'));
 import NotFoundPage        from './pages/NotFoundPage';
 import PlaceholderPage     from './pages/PlaceholderPage';
 import { PageShellSkeleton } from './components/ui/Skeleton';
@@ -151,6 +152,23 @@ function AnimatedRoutes() {
         {/* Public */}
         <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
         <Route path="/marketplace" element={<PageWrapper><MarketplacePage /></PageWrapper>} />
+        
+        {/* SEO Hubs & Landing Pages */}
+        <Route path="/anime" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/anime/:slug" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/characters" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/character/:slug" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/collections" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/categories" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/category/:slug" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/collections/:slug" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/creator/:username" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/4k-wallpapers" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/mobile-wallpapers" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/new" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/trending" element={<PageWrapper><HubPage /></PageWrapper>} />
+        <Route path="/popular" element={<PageWrapper><HubPage /></PageWrapper>} />
+
         <Route path="/products/:id" element={<PageWrapper><ProductDetailPage /></PageWrapper>} />
         <Route path="/wallpaper/:id" element={<PageWrapper><ProductDetailPage /></PageWrapper>} />
         <Route path="/cart" element={<PageWrapper><CartPage /></PageWrapper>} />

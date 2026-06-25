@@ -1,6 +1,18 @@
 {
   "rewrites": [
     {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/sitemap-static.xml",
+      "destination": "/api/sitemap?type=static"
+    },
+    {
+      "source": "/sitemap-dynamic.xml",
+      "destination": "/api/sitemap?type=dynamic"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

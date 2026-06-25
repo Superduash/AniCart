@@ -163,6 +163,7 @@ app.get('/api/health', async (req, res) => {
   });
 });
 
+app.use('/', require('./routers/seoRoutes'));
 app.use('/api/v1', routes);
 
 // Worker health endpoint

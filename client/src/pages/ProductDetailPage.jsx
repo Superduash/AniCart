@@ -372,6 +372,84 @@ export default function ProductDetailPage() {
                 </div>
               ))}
             </div>
+
+            {/* Explore Section for Internal Linking */}
+            {(() => {
+              const POPULAR_CHARACTERS = [
+                { name: 'Gojo Satoru', slug: 'gojo-satoru' },
+                { name: 'Ryomen Sukuna', slug: 'ryomen-sukuna' },
+                { name: 'Megumi Fushiguro', slug: 'megumi-fushiguro' },
+                { name: 'Itadori Yuji', slug: 'itadori-yuji' },
+                { name: 'Mikasa Ackerman', slug: 'mikasa-ackerman' },
+                { name: 'Eren Yeager', slug: 'eren-yeager' },
+                { name: 'Levi Ackerman', slug: 'levi-ackerman' },
+                { name: 'Naruto Uzumaki', slug: 'naruto-uzumaki' },
+                { name: 'Kakashi Hatake', slug: 'kakashi-hatake' },
+                { name: 'Sasuke Uchiha', slug: 'sasuke-uchiha' },
+                { name: 'Monkey D. Luffy', slug: 'monkey-d-luffy' },
+                { name: 'Roronoa Zoro', slug: 'roronoa-zoro' },
+                { name: 'Kaneki Ken', slug: 'kaneki-ken' },
+                { name: 'Tanjiro Kamado', slug: 'tanjiro-kamado' },
+                { name: 'Zenitsu Agatsuma', slug: 'zenitsu-agatsuma' },
+                { name: 'Kyojuro Rengoku', slug: 'kyojuro-rengoku' },
+                { name: 'Killua Zoldyck', slug: 'killua-zoldyck' },
+                { name: 'Edward Elric', slug: 'edward-elric' },
+                { name: 'Vegeta', slug: 'vegeta' },
+                { name: 'Son Goku', slug: 'son-goku' },
+                { name: 'David Martinez', slug: 'david-martinez' },
+                { name: 'Kurosaki Ichigo', slug: 'kurosaki-ichigo' },
+                { name: 'Makima', slug: 'makima' },
+                { name: 'Denji', slug: 'denji' },
+                { name: 'Lelouch Lamperouge', slug: 'lelouch-lamperouge' }
+              ];
+              const slugifyText = (txt) => txt ? txt.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') : '';
+              const matchingChar = POPULAR_CHARACTERS.find(c => product.name.toLowerCase().includes(c.name.split(' ')[0].toLowerCase()));
+              const creatorName = product.authorName || (product.creatorId && (product.creatorId.name || product.creatorId));
+              const isCreatorString = typeof creatorName === 'string';
+              const displayCreator = isCreatorString ? creatorName : '';
+
+              return (
+                <div style={{ marginTop: 20, padding: '16px 20px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+                  <h3 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)', marginBottom: 12 }}>Explore Related Wallpapers</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-text-2)' }}>
+                    {product.series && (
+                      <div>
+                        <span style={{ color: 'var(--color-text-3)' }}>Anime: </span>
+                        <Link to={`/anime/${slugifyText(product.series)}`} style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 600 }}>{product.series} Wallpapers</Link>
+                      </div>
+                    )}
+                    {matchingChar && (
+                      <div>
+                        <span style={{ color: 'var(--color-text-3)' }}>Character: </span>
+                        <Link to={`/character/${matchingChar.slug}`} style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 600 }}>{matchingChar.name} Wallpapers</Link>
+                      </div>
+                    )}
+                    {displayCreator && (
+                      <div>
+                        <span style={{ color: 'var(--color-text-3)' }}>Artist: </span>
+                        <Link to={`/creator/${slugifyText(displayCreator)}`} style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 600 }}>More from {displayCreator}</Link>
+                      </div>
+                    )}
+                    {product.resolution && (
+                      <div>
+                        <span style={{ color: 'var(--color-text-3)' }}>Resolution: </span>
+                        <Link to={product.resolution.toLowerCase().includes('mobile') ? '/mobile-wallpapers' : '/4k-wallpapers'} style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 600 }}>{product.resolution} Collection</Link>
+                      </div>
+                    )}
+                    {product.tags && product.tags.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                        <span style={{ color: 'var(--color-text-3)', alignSelf: 'center' }}>Styles: </span>
+                        {product.tags.map(t => (
+                          <Link key={t} to={`/category/${slugifyText(t)}`} style={{ padding: '2px 8px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 4, color: 'var(--color-text-2)', textDecoration: 'none' }}>
+                            {t}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 

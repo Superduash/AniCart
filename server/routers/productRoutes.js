@@ -21,6 +21,8 @@ const {
   getPendingProducts,
   approveProduct,
   rejectProduct,
+  getTags,
+  getCharacters,
 } = require('../controllers/productController');
 
 // Import middleware
@@ -46,6 +48,20 @@ router.get('/', apiLimiter, paginationValidation, getProducts);
  * @access  Public
  */
 router.get('/series/list', getSeries);
+
+/**
+ * @route   GET /api/products/tags/list
+ * @desc    Get all product tags for filters
+ * @access  Public
+ */
+router.get('/tags/list', getTags);
+
+/**
+ * @route   GET /api/products/characters/list
+ * @desc    Get all active characters
+ * @access  Public
+ */
+router.get('/characters/list', getCharacters);
 
 /**
  * @route   POST /api/products

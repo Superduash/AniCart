@@ -11,7 +11,19 @@ export const generateMeta = ({ title, description, keywords }) => {
 };
 
 export const generateCanonical = (path) => {
-  return `${SITE_URL}${path}`;
+  let origin = SITE_URL || window.location.origin;
+  origin = origin.replace(/^http:/, 'https:').replace('://www.', '://');
+
+  let cleanPath = path || '';
+  if (cleanPath !== '/' && cleanPath.endsWith('/')) {
+    cleanPath = cleanPath.slice(0, -1);
+  }
+
+  if (cleanPath && !cleanPath.startsWith('/')) {
+    cleanPath = `/${cleanPath}`;
+  }
+
+  return `${origin}${cleanPath}`;
 };
 
 export const generateOpenGraph = ({ title, description, image, url, type = 'website' }) => {

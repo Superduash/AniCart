@@ -53,16 +53,44 @@ async function getProducts(query) {
     }
   }
 
-  const { series, resolution, minPrice, maxPrice, page = 1, limit = CONSTANTS.DEFAULTS.PAGE_LIMIT, search, status = 'active' } = query;
+  const { series, resolution, minPrice, maxPrice, page = 1, limit = CONSTANTS.DEFAULTS.PAGE_LIMIT, search, status = 'active', tags, character } = query;
 
   const filter = { status };
 
   if (series) {
-    filter.series = { $in: series.split(',') };
+    const seriesList = series.split(',').map(s => s.trim());
+    const distinctSeries = await Product.getDistinctSeries();
+    const matchedSeries = distinctSeries.filter(ds => {
+      const dsSlug = ds.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return seriesList.some(s => s === dsSlug || s.toLowerCase() === ds.toLowerCase());
+    });
+    filter.series = { $in: matchedSeries.length > 0 ? matchedSeries : seriesList };
   }
 
   if (resolution) {
-    filter.resolution = { $in: resolution.split(',') };
+    const resList = resolution.split(',').map(r => r.trim());
+    filter.$or = [
+      { resolution: { $in: resList.map(r => new RegExp(r.replace(/[-_]/g, ''), 'i')) } },
+      { availableResolutions: { $in: resList.map(r => r.toLowerCase()) } }
+    ];
+  }
+
+  if (tags) {
+    const tagsList = tags.split(',').map(t => t.trim());
+    const distinctTags = await Product.distinct('tags', { status: 'active' });
+    const matchedTags = distinctTags.filter(dt => {
+      const dtSlug = dt.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      return tagsList.some(t => t === dtSlug || t.toLowerCase() === dt.toLowerCase());
+    });
+    filter.tags = { $in: matchedTags.length > 0 ? matchedTags : tagsList };
+  }
+
+  if (character) {
+    const charObj = POPULAR_CHARACTERS.find(c => c.slug === character || c.name.toLowerCase() === character.toLowerCase());
+    const searchName = charObj ? charObj.name : character;
+    const firstWord = searchName.split(' ')[0];
+    const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.name = { $regex: new RegExp(escapeRegex(firstWord), 'i') };
   }
 
   if (minPrice || maxPrice) {
@@ -86,6 +114,17 @@ async function getProducts(query) {
 
   if (query.creatorId) {
     filter.creatorId = query.creatorId;
+  }
+
+  if (query.creator) {
+    const nameRegex = new RegExp(`^${query.creator.replace(/-/g, '[-\\s]')}$`, 'i');
+    const creatorUser = await User.findOne({ name: nameRegex });
+    if (creatorUser) {
+      filter.creatorId = creatorUser._id;
+    } else {
+      // Force empty results if creator doesn't exist
+      filter.creatorId = new mongoose.Types.ObjectId();
+    }
   }
 
   const pageNum = Math.max(1, parseInt(page, 10));
@@ -510,6 +549,47 @@ async function downloadProduct(userId, productId, resolution = '4k') {
   return { downloadUrl, expiresIn: 900 };
 }
 
+const POPULAR_CHARACTERS = [
+  { name: 'Gojo Satoru', slug: 'gojo-satoru' },
+  { name: 'Ryomen Sukuna', slug: 'ryomen-sukuna' },
+  { name: 'Megumi Fushiguro', slug: 'megumi-fushiguro' },
+  { name: 'Itadori Yuji', slug: 'itadori-yuji' },
+  { name: 'Mikasa Ackerman', slug: 'mikasa-ackerman' },
+  { name: 'Eren Yeager', slug: 'eren-yeager' },
+  { name: 'Levi Ackerman', slug: 'levi-ackerman' },
+  { name: 'Naruto Uzumaki', slug: 'naruto-uzumaki' },
+  { name: 'Kakashi Hatake', slug: 'kakashi-hatake' },
+  { name: 'Sasuke Uchiha', slug: 'sasuke-uchiha' },
+  { name: 'Monkey D. Luffy', slug: 'monkey-d-luffy' },
+  { name: 'Roronoa Zoro', slug: 'roronoa-zoro' },
+  { name: 'Kaneki Ken', slug: 'kaneki-ken' },
+  { name: 'Tanjiro Kamado', slug: 'tanjiro-kamado' },
+  { name: 'Zenitsu Agatsuma', slug: 'zenitsu-agatsuma' },
+  { name: 'Kyojuro Rengoku', slug: 'kyojuro-rengoku' },
+  { name: 'Killua Zoldyck', slug: 'killua-zoldyck' },
+  { name: 'Edward Elric', slug: 'edward-elric' },
+  { name: 'Vegeta', slug: 'vegeta' },
+  { name: 'Son Goku', slug: 'son-goku' },
+  { name: 'David Martinez', slug: 'david-martinez' },
+  { name: 'Kurosaki Ichigo', slug: 'kurosaki-ichigo' },
+  { name: 'Makima', slug: 'makima' },
+  { name: 'Denji', slug: 'denji' },
+  { name: 'Lelouch Lamperouge', slug: 'lelouch-lamperouge' }
+];
+
+async function getDistinctTags() {
+  return Product.distinct('tags', { status: 'active' });
+}
+
+async function getCharacters() {
+  const activeProducts = await Product.find({ status: 'active' }).select('name');
+  const available = POPULAR_CHARACTERS.filter(char => {
+    const charFirstName = char.name.split(' ')[0].toLowerCase();
+    return activeProducts.some(p => p.name.toLowerCase().includes(charFirstName));
+  });
+  return available;
+}
+
 module.exports = {
   getProducts,
   getProduct,
@@ -519,4 +599,7 @@ module.exports = {
   restoreProduct,
   getSeries,
   downloadProduct,
+  getDistinctTags,
+  getCharacters,
+  POPULAR_CHARACTERS,
 };

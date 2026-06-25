@@ -3,9 +3,12 @@ Allow: /
 Disallow: /admin
 Disallow: /dashboard
 Disallow: /profile
-Disallow: /api
+Disallow: /cart
+Disallow: /checkout
 Disallow: /library
 Disallow: /settings
-Disallow: /auth
+Disallow: /login
+Disallow: /signup
+Disallow: /api
 
-Sitemap: https://anicartweb.netlify.app/api/v1/sitemap.xml
+Sitemap: https://anicartwallpaper.vercel.app/sitemap.xml
