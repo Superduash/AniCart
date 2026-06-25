@@ -15,6 +15,8 @@ export default function AdminProductsPage() {
   const [total, setTotal] = useState(0);
   const [zoomedImage, setZoomedImage] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [reprocessingId, setReprocessingId] = useState(null);
+  const [reprocessingAll, setReprocessingAll] = useState(false);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -31,6 +33,39 @@ export default function AdminProductsPage() {
   };
 
   useEffect(() => { loadProducts(); }, [page]);
+
+  const handleReprocess = async (id) => {
+    setReprocessingId(id);
+    try {
+      const res = await apiClient.post(`/admin/products/${id}/reprocess`);
+      const updatedProduct = res.data?.data?.product;
+      if (updatedProduct) {
+        setProducts(prev => prev.map(p => (p._id || p.id) === id ? updatedProduct : p));
+      }
+      addToast('Product reprocessed with all resolutions!', 'success');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to reprocess product.';
+      addToast(msg, 'error');
+    } finally {
+      setReprocessingId(null);
+    }
+  };
+
+  const handleReprocessAll = async () => {
+    setReprocessingAll(true);
+    try {
+      const res = await apiClient.post('/admin/products/reprocess-all');
+      const result = res.data?.data;
+      addToast(`Reprocessed ${result?.processed || 0} products with mobile variants!`, 'success');
+      // Reload products to show updated data
+      loadProducts();
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to reprocess all products.';
+      addToast(msg, 'error');
+    } finally {
+      setReprocessingAll(false);
+    }
+  };
 
   const handleAction = async (id, action) => {
     setProcessingId(id);
@@ -66,11 +101,23 @@ export default function AdminProductsPage() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: 'clamp(1.4rem, 3vw, 1.9rem)', color: 'var(--color-pink)', marginBottom: 6 }}>
-        Moderation Queue
-      </h1>
-      <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-sm)', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)', marginBottom: 32 }}>
-        {total} pending review
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16, marginBottom: 32 }}>
+        <div>
+          <h1 style={{ fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: 'clamp(1.4rem, 3vw, 1.9rem)', color: 'var(--color-pink)', marginBottom: 6 }}>
+            Moderation Queue
+          </h1>
+          <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-sm)', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)' }}>
+            {total} pending review
+          </div>
+        </div>
+        <button
+          onClick={handleReprocessAll}
+          disabled={reprocessingAll}
+          className="btn btn-sm"
+          style={{ background: 'var(--color-accent)', color: 'var(--color-void)', fontWeight: 600 }}
+        >
+          {reprocessingAll ? '⏳ Reprocessing All...' : '🔄 Reprocess All (Add Mobile Variants)'}
+        </button>
       </div>
 
       {zoomedImage && (
@@ -134,7 +181,7 @@ export default function AdminProductsPage() {
                     {processingId === productId ? 'Processing...' : 'Approve'}
                   </button>
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                   {deletingId === productId ? (
                     <div style={{ display: 'flex', gap: 8, width: '100%' }}>
                       <button onClick={() => handleDelete(productId)} className="btn btn-sm" style={{ flex: 1, background: 'var(--color-error)', color: '#fff' }}>
@@ -150,6 +197,14 @@ export default function AdminProductsPage() {
                     </button>
                   )}
                 </div>
+                <button
+                  onClick={() => handleReprocess(productId)}
+                  disabled={reprocessingId === productId || processingId === productId}
+                  className="btn btn-sm btn-muted"
+                  style={{ width: '100%', color: 'var(--color-accent)' }}
+                >
+                  {reprocessingId === productId ? '⏳ Reprocessing...' : '🔄 Reprocess (Add Mobile)'}
+                </button>
               </div>
             </div>
           )})}
