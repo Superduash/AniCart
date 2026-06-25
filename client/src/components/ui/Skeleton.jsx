@@ -1,16 +1,23 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Link } from 'react-router-dom';
 
-// Skeleton cell
-export function SkeletonLine({ width = '100%', height = 12, style = {} }) {
+// Skeleton cell with smooth shimmer
+export const SkeletonLine = memo(({ width = '100%', height = 12, style = {} }) => {
   return (
     <div
       className="skeleton"
       aria-hidden="true"
-      style={{ width, height, borderRadius: 6, ...style }}
+      style={{ 
+        width, 
+        height, 
+        borderRadius: 6, 
+        ...style,
+        willChange: 'opacity',
+        backfaceVisibility: 'hidden'
+      }}
     />
   );
-}
+});
 
 // Product card skeleton
 export function ProductCardSkeleton() {
@@ -44,20 +51,20 @@ export function OrderRowSkeleton() {
   );
 }
 
-// Hero skeleton
+// Hero skeleton with smooth breathing animation
 export function HeroSkeleton() {
   return (
     <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', padding: 0 }} aria-busy="true" aria-label="Loading hero">
       <div className="skeleton" style={{ position: 'absolute', inset: 0, zIndex: -1 }} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, maxWidth: 1200, width: '100%', padding: '0 40px', zIndex: 2, alignItems: 'center' }}>
         <div style={{ margin: 0, padding: 0, textAlign: 'left' }}>
-          <SkeletonLine width={180} height={24} style={{ borderRadius: 20, marginBottom: 28 }} />
-          <SkeletonLine width="90%" height={56} style={{ marginBottom: 12 }} />
-          <SkeletonLine width="60%" height={56} style={{ marginBottom: 20 }} />
-          <SkeletonLine width="70%" height={20} style={{ marginBottom: 30 }} />
-          <SkeletonLine width={200} height={52} style={{ borderRadius: 8 }} />
+          <SkeletonLine width={180} height={24} style={{ borderRadius: 20, marginBottom: 28, animationDelay: '0ms' }} />
+          <SkeletonLine width="90%" height={56} style={{ marginBottom: 12, animationDelay: '100ms' }} />
+          <SkeletonLine width="60%" height={56} style={{ marginBottom: 20, animationDelay: '200ms' }} />
+          <SkeletonLine width="70%" height={20} style={{ marginBottom: 30, animationDelay: '300ms' }} />
+          <SkeletonLine width={200} height={52} style={{ borderRadius: 8, animationDelay: '400ms' }} />
         </div>
-        <div className="skeleton" style={{ borderRadius: 16, aspectRatio: '16/10', width: '100%' }} />
+        <div className="skeleton" style={{ borderRadius: 16, aspectRatio: '16/10', width: '100%', animationDelay: '150ms', willChange: 'opacity' }} />
       </div>
     </section>
   );

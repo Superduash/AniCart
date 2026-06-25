@@ -33,14 +33,58 @@ const HOW_IT_WORKS = [
 
 function HeroSlider({ products, loading, user }) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [isHovered, setIsHovered] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState({});
 
+  // Preload all images for instant transitions
   useEffect(() => {
     if (!products || products.length === 0) return;
+    products.forEach((p, idx) => {
+      const url = p.assets?.preview?.url || p.img || p.imageUrl;
+      if (url) {
+        const img = new Image();
+        img.src = url;
+        img.onload = () => setImageLoaded(prev => ({ ...prev, [idx]: true }));
+      }
+    });
+  }, [products]);
+
+  // Auto-advance with pause on hover
+  useEffect(() => {
+    if (!products || products.length === 0 || isHovered) return;
     const timer = setInterval(() => {
+      setDirection(1);
       setCurrentIndex((prev) => (prev + 1) % products.length);
     }, 5000);
     return () => clearInterval(timer);
+  }, [products, isHovered]);
+
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (!products || products.length === 0) return;
+      if (e.key === 'ArrowLeft') {
+        setDirection(-1);
+        setCurrentIndex((prev) => (prev - 1 + products.length) % products.length);
+      } else if (e.key === 'ArrowRight') {
+        setDirection(1);
+        setCurrentIndex((prev) => (prev + 1) % products.length);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [products]);
+
+  const goToPrev = () => {
+    setDirection(-1);
+    setCurrentIndex((prev) => (prev - 1 + products.length) % products.length);
+  };
+
+  const goToNext = () => {
+    setDirection(1);
+    setCurrentIndex((prev) => (prev + 1) % products.length);
+  };
 
   if (loading) {
     return <HeroSkeleton />;
@@ -50,69 +94,232 @@ function HeroSlider({ products, loading, user }) {
     return null;
   }
 
+  // Animation variants for ultra-smooth transitions
+  const slideVariants = {
+    enter: (direction) => ({
+      x: direction > 0 ? 80 : -80,
+      opacity: 0,
+      scale: 0.97
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.6,
+        ease: [0.25, 0.1, 0.25, 1],
+        x: { type: 'spring', stiffness: 300, damping: 30 },
+        opacity: { duration: 0.5 },
+        scale: { duration: 0.5 }
+      }
+    },
+    exit: (direction) => ({
+      x: direction < 0 ? 80 : -80,
+      opacity: 0,
+      scale: 0.97,
+      transition: {
+        duration: 0.5,
+        ease: [0.25, 0.1, 0.25, 1],
+        x: { type: 'spring', stiffness: 300, damping: 30 }
+      }
+    })
+  };
+
+  const arrowButtonStyle = {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    zIndex: 20,
+    width: 56,
+    height: 56,
+    borderRadius: '50%',
+    background: 'rgba(0, 0, 0, 0.5)',
+    backdropFilter: 'blur(12px)',
+    WebkitBackdropFilter: 'blur(12px)',
+    border: '1px solid rgba(255, 255, 255, 0.15)',
+    color: 'white',
+    fontSize: '1.4rem',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+    outline: 'none'
+  };
+
+  const arrowButtonHoverStyle = {
+    background: 'rgba(0, 243, 255, 0.2)',
+    borderColor: 'rgba(0, 243, 255, 0.5)',
+    boxShadow: '0 8px 32px rgba(0, 243, 255, 0.2)',
+    transform: 'translateY(-50%) scale(1.08)'
+  };
+
   return (
-    <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', padding: 0 }}>
-      {/* Prefetch first 3 images to ensure smooth transitions */}
-      {products.slice(0, 3).map((p, idx) => {
+    <section 
+      className="hero-section" 
+      style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', padding: 0 }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Prefetch all images for instant transitions */}
+      {products.map((p, idx) => {
         const url = p.assets?.preview?.url || p.img || p.imageUrl;
-        return <link key={`preload-${idx}`} rel="preload" as="image" href={url} fetchpriority={idx === 0 ? "high" : "auto"} />;
+        return <link key={`preload-${idx}`} rel="preload" as="image" href={url} fetchpriority={idx < 3 ? "high" : "auto"} />;
       })}
-      <AnimatePresence>
-        {products.map((p, index) => {
-          if (index !== currentIndex) return null;
-          const previewUrl = p.assets?.preview?.url || p.img || p.imageUrl;
-          return (
-            <motion.div
-                key={p._id || p.id}
-                initial={{ opacity: 0, x: 20 }}
+
+      {/* Previous Arrow */}
+      <motion.button
+        onClick={goToPrev}
+        style={{ ...arrowButtonStyle, left: 24 }}
+        whileHover={arrowButtonHoverStyle}
+        whileTap={{ scale: 0.95 }}
+        aria-label="Previous slide"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="15 18 9 12 15 6" />
+        </svg>
+      </motion.button>
+
+      {/* Next Arrow */}
+      <motion.button
+        onClick={goToNext}
+        style={{ ...arrowButtonStyle, right: 24 }}
+        whileHover={arrowButtonHoverStyle}
+        whileTap={{ scale: 0.95 }}
+        aria-label="Next slide"
+      >
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="9 18 15 12 9 6" />
+        </svg>
+      </motion.button>
+
+      <AnimatePresence initial={false} custom={direction} mode="popLayout">
+        <motion.div
+          key={currentIndex}
+          custom={direction}
+          variants={slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          <div style={{ position: 'absolute', inset: 0, zIndex: -1 }}>
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1 }} />
+            <motion.img 
+              src={products[currentIndex].assets?.preview?.url || products[currentIndex].img || products[currentIndex].imageUrl} 
+              style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(15px)', transform: 'scale(1.1)' }} 
+              loading="eager" 
+              fetchpriority="high" 
+              alt=""
+              initial={{ scale: 1.15, opacity: 0 }}
+              animate={{ scale: 1.1, opacity: 1 }}
+              transition={{ duration: 1.2, ease: [0.25, 0.1, 0.25, 1] }}
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, maxWidth: 1200, width: '100%', padding: '0 40px', zIndex: 2, alignItems: 'center' }}>
+            <motion.div 
+              className="hero-content" 
+              style={{ margin: 0, padding: 0, textAlign: 'left' }}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.15, duration: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+            >
+              <motion.div 
+                className="hero-badge"
+                initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.4, ease: "easeInOut" }}
-                style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                transition={{ delay: 0.1, duration: 0.5 }}
               >
-                <div style={{ position: 'absolute', inset: 0, zIndex: -1 }}>
-                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1 }} />
-                  <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(15px)', transform: 'scale(1.1)' }} loading={index < 3 ? "eager" : "lazy"} fetchpriority={index === 0 ? "high" : "auto"} alt="" />
-                </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, maxWidth: 1200, width: '100%', padding: '0 40px', zIndex: 2, alignItems: 'center' }}>
-                <div className="hero-content" style={{ margin: 0, padding: 0, textAlign: 'left' }}>
-                  <div className="hero-badge">
-                    <div className="hero-badge-dot" />
-                    ✦ FEATURED WALLPAPER
-                  </div>
-                  <h1 className="hero-title" style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)', lineHeight: 1.1, marginBottom: 20 }}>
-                    {p.name}
-                  </h1>
-                  <p className="hero-desc" style={{ fontSize: '1.1rem', opacity: 0.8, maxWidth: 500, marginBottom: 30, textAlign: 'left' }}>
-                    {p.series} • {(p.price || 0) === 0 ? 'Free' : `$${(p.price || 0).toFixed(2)}`}
-                  </p>
-                  <div className="hero-cta" style={{ justifyContent: 'flex-start' }}>
-                    <Link to={`/products/${p._id || p.id}`} className="btn btn-primary btn-lg">
-                      View Artwork →
-                    </Link>
-                  </div>
-                </div>
-
-                <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', aspectRatio: '16/10' }}>
-                  <div style={{ position: 'absolute', inset: 0, zIndex: 10 }} onContextMenu={e => e.preventDefault()} />
-                  <img src={previewUrl} draggable="false" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', userSelect: 'none' }} loading={index < 3 ? "eager" : "lazy"} fetchpriority={index === 0 ? "high" : "auto"} alt={p.name} />
-                </div>
-              </div>
+                <div className="hero-badge-dot" />
+                ✦ FEATURED WALLPAPER
+              </motion.div>
+              <motion.h1 
+                className="hero-title" 
+                style={{ fontSize: 'clamp(2rem, 4vw, 3.5rem)', lineHeight: 1.1, marginBottom: 20 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+              >
+                {products[currentIndex].name}
+              </motion.h1>
+              <motion.p 
+                className="hero-desc" 
+                style={{ fontSize: '1.1rem', opacity: 0.8, maxWidth: 500, marginBottom: 30, textAlign: 'left' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.6 }}
+              >
+                {products[currentIndex].series} • {(products[currentIndex].price || 0) === 0 ? 'Free' : `$${(products[currentIndex].price || 0).toFixed(2)}`}
+              </motion.p>
+              <motion.div 
+                className="hero-cta" 
+                style={{ justifyContent: 'flex-start' }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+              >
+                <Link to={`/products/${products[currentIndex]._id || products[currentIndex].id}`} className="btn btn-primary btn-lg">
+                  View Artwork →
+                </Link>
+              </motion.div>
             </motion.div>
-          );
-        })}
+
+            <motion.div 
+              style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', aspectRatio: '16/10' }}
+              initial={{ opacity: 0, x: 40, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ delay: 0.2, duration: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+            >
+              <div style={{ position: 'absolute', inset: 0, zIndex: 10 }} onContextMenu={e => e.preventDefault()} />
+              <img 
+                src={products[currentIndex].assets?.preview?.url || products[currentIndex].img || products[currentIndex].imageUrl} 
+                draggable="false" 
+                style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', userSelect: 'none' }} 
+                loading="eager" 
+                fetchpriority="high" 
+                alt={products[currentIndex].name} 
+              />
+            </motion.div>
+          </div>
+        </motion.div>
       </AnimatePresence>
 
-      <div style={{ position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10, zIndex: 10 }}>
+      {/* Bottom indicators with slide counter */}
+      <div style={{ position: 'absolute', bottom: 30, left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: 10, zIndex: 10, alignItems: 'center' }}>
         {products.map((_, idx) => (
-          <button
+          <motion.button
             key={idx}
-            onClick={() => setCurrentIndex(idx)}
-            style={{ width: 40, height: 4, borderRadius: 2, background: idx === currentIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.3)', border: 'none', cursor: 'pointer', transition: 'background 0.3s' }}
+            onClick={() => {
+              setDirection(idx > currentIndex ? 1 : -1);
+              setCurrentIndex(idx);
+            }}
+            style={{ 
+              width: idx === currentIndex ? 48 : 32, 
+              height: 4, 
+              borderRadius: 2, 
+              background: idx === currentIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.3)', 
+              border: 'none', 
+              cursor: 'pointer',
+              outline: 'none'
+            }}
+            whileHover={{ background: idx === currentIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.5)' }}
+            animate={{ 
+              width: idx === currentIndex ? 48 : 32,
+              background: idx === currentIndex ? 'var(--color-accent)' : 'rgba(255,255,255,0.3)'
+            }}
+            transition={{ duration: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
             aria-label={`Go to slide ${idx + 1}`}
           />
         ))}
+      </div>
+
+      {/* Slide counter */}
+      <div style={{ position: 'absolute', bottom: 30, right: 40, zIndex: 10, fontFamily: 'JetBrains Mono, monospace', fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', letterSpacing: 2 }}>
+        <span style={{ color: 'var(--color-accent)', fontWeight: 700 }}>{String(currentIndex + 1).padStart(2, '0')}</span>
+        <span style={{ margin: '0 6px' }}>/</span>
+        <span>{String(products.length).padStart(2, '0')}</span>
       </div>
     </section>
   );

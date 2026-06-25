@@ -692,6 +692,9 @@
   overflow: hidden;
   background: rgba(255,255,255,0.03);
   border-radius: var(--radius-md);
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .skeleton::after {
   content: '';
@@ -702,17 +705,21 @@
   bottom: 0;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(255,255,255,0.05) 50%,
+    rgba(255,255,255,0.04) 30%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.04) 70%,
     transparent 100%
   );
-  animation: shimmer-gpu 1.5s infinite;
+  animation: shimmer-gpu 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   will-change: transform;
+  transform: translateZ(0);
 }
 .skeleton-card {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
+  will-change: opacity;
 }
 .skeleton-img { aspect-ratio: 16 / 10; width: 100%; }
 .skeleton-line { height: 12px; margin-bottom: 8px; }
