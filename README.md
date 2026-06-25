@@ -15,7 +15,7 @@
 
 *A production-ready anime merchandise platform featuring real-time image processing, secure payments, and a creator ecosystem.*
 
-[**🌐 Live Demo**](https://anicartweb.netlify.app/) · [**🚀 Quick Start**](#-quick-start) · [**🎨 Design System**](#-design-system) · [**🔑 API Reference**](#-api-reference)
+[**🌐 Live Demo**](https://anicartwallpaper.vercel.app/) · [**🚀 Quick Start**](#-quick-start) · [**🎨 Design System**](#-design-system) · [**🔑 API Reference**](#-api-reference)
 
 <br/>
 
