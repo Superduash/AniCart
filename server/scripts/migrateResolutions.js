@@ -12,21 +12,22 @@
  * Usage: node scripts/migrateResolutions.js
  */
 
-require('dotenv').config();
+// Load env vars FIRST — before any other require
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
 const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const { getAvailableVariants, computeResolutionMetadata, validateResolutionMetadata } = require('../services/resolutionService');
 const config = require('../config');
+
 
 const BATCH_SIZE = 100;
 const DRY_RUN = process.argv.includes('--dry-run');
 
 async function connectDB() {
   try {
-    await mongoose.connect(config.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(config.MONGODB_URI);
     console.log('✓ Connected to MongoDB');
   } catch (error) {
     console.error('Failed to connect to MongoDB:', error);

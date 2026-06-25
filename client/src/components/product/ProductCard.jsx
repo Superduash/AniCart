@@ -25,11 +25,11 @@ function StarRating({ rating, count }) {
 }
 
 function ResolutionBadge({ resolution, displayResolution, product }) {
-  // If product has assets, derive display resolution from actual available variants (excluding original)
-  let displayResolutionValue = displayResolution || resolution;
+  // If displayResolution is explicitly set (e.g. from admin override), prioritize it
+  let displayResolutionValue = displayResolution;
   let resolutionClass = 'res-1080p';
   
-  if (product && product.assets) {
+  if (!displayResolutionValue && product && product.assets) {
     const availableVariants = getAvailableVariants(product);
     // Filter out 'original' for display purposes
     const displayVariants = availableVariants.filter(v => v !== 'original');
@@ -45,15 +45,28 @@ function ResolutionBadge({ resolution, displayResolution, product }) {
     }
   }
   
-  // Fallback to legacy resolution prop if no assets available
+  // Fallback to legacy resolution prop if no override or assets available
   if (!displayResolutionValue && resolution) {
     displayResolutionValue = resolution;
-    resolutionClass = resolution.toLowerCase().includes('4k') ? 'res-4k'
-      : resolution.toLowerCase().includes('2k') ? 'res-2k'
-      : 'res-1080p';
   }
   
   if (!displayResolutionValue) return null;
+
+  // Determine appropriate css class for display
+  const lowerVal = displayResolutionValue.toLowerCase();
+  if (lowerVal.includes('4k')) {
+    resolutionClass = 'res-4k';
+  } else if (lowerVal.includes('2k')) {
+    resolutionClass = 'res-2k';
+  } else if (lowerVal.includes('1080p') || lowerVal.includes('1920')) {
+    resolutionClass = 'res-1080p';
+  } else if (lowerVal.includes('720') || lowerVal.includes('ready')) {
+    resolutionClass = 'res-720p';
+  } else if (lowerVal.includes('original')) {
+    resolutionClass = 'res-original';
+  } else if (lowerVal.includes('mobile')) {
+    resolutionClass = 'res-mobile';
+  }
   
   return <span className={`res-badge ${resolutionClass}`}>{displayResolutionValue}</span>;
 }

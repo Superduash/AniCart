@@ -14,27 +14,27 @@ export default function AdminProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showEditor, setShowEditor] = useState(false);
 
-  useEffect(() => {
-    const loadProduct = async () => {
-      setLoading(true);
-      try {
-        const response = await apiClient.get(`/admin/products/${id}`);
-        setProduct(response.data.data);
-      } catch (error) {
-        addToast('Failed to load product.', 'error');
-        navigate('/admin/products');
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadProduct = async () => {
+    setLoading(true);
+    try {
+      const response = await apiClient.get(`/admin/products/${id}`);
+      setProduct(response.data.data);
+    } catch (error) {
+      addToast('Failed to load product.', 'error');
+      navigate('/admin/products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     if (user?.role !== 'admin') {
       navigate('/marketplace');
       return;
     }
 
     loadProduct();
-  }, [id, user, navigate, addToast]);
+  }, [id, user, navigate]);
 
   if (loading) {
     return (
@@ -237,6 +237,7 @@ export default function AdminProductDetailPage() {
         <AdminProductEditor 
           product={product} 
           onClose={() => setShowEditor(false)} 
+          onSaved={loadProduct}
         />
       )}
     </div>

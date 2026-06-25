@@ -5,7 +5,8 @@
  * Run with: npm run seed
  */
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const logger = require('../utils/logger');

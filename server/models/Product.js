@@ -77,7 +77,7 @@ const productSchema = new mongoose.Schema(
     availableResolutions: [
       {
         type: String,
-        enum: ['4k', '2k', '1080p', '720p', 'mobile-portrait', 'mobile-landscape'],
+        enum: ['original', '4k', '2k', '1080p', '720p', 'mobile-portrait', 'mobile-landscape'],
       },
     ],
     assets: {

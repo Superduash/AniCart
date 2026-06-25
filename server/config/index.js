@@ -5,7 +5,8 @@
  * Provides default values and validates required configurations.
  */
 
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 const logger = require('../utils/logger');
 
 const config = {

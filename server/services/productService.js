@@ -342,9 +342,18 @@ async function updateProduct(id, body) {
   if (rating !== undefined) product.rating = rating;
   if (reviews !== undefined) product.reviews = reviews;
   if (resolution !== undefined) product.resolution = resolution;
-  if (displayResolution !== undefined) product.displayResolution = displayResolution;
-  if (defaultDownload !== undefined) product.defaultDownload = defaultDownload;
+  if (body.displayResolution !== undefined) product.displayResolution = body.displayResolution;
+  if (body.defaultDownload !== undefined) product.defaultDownload = body.defaultDownload;
+  if (body.availableResolutions !== undefined) product.availableResolutions = body.availableResolutions;
   if (tags !== undefined) product.tags = tags;
+  
+  // Recompute resolution metadata if assets have changed
+  if (body.assets) {
+    const resolutionMetadata = resolutionService.computeResolutionMetadata(product);
+    product.displayResolution = resolutionMetadata.displayResolutionLabel;
+    product.defaultDownload = resolutionMetadata.defaultDownload;
+    product.availableResolutions = resolutionMetadata.availableVariants;
+  }
   if (status !== undefined) product.status = status;
   if (isHero !== undefined) product.isHero = isHero;
   if (heroOrder !== undefined) product.heroOrder = heroOrder;

@@ -7,10 +7,7 @@ const Product = require('../models/Product');
 async function run() {
   try {
     console.log('Connecting to MongoDB...');
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected.');
 
     const products = await Product.find({ slug: { $exists: false } });

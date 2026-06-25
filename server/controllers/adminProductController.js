@@ -16,6 +16,7 @@ const catchAsync = require('../utils/catchAsync');
 const Product = require('../models/Product');
 const User = require('../models/User');
 const { successResponse } = require('../utils/apiResponse');
+const resolutionService = require('../services/resolutionService');
 
 /**
  * Get a product for admin editing
@@ -106,7 +107,7 @@ const updateProductForAdmin = catchAsync(async (req, res) => {
   }
   
   // Validate creator exists if provided
-  if (creatorId && creatorId !== product.creatorId) {
+  if (creatorId && creatorId !== '' && creatorId !== product.creatorId) {
     const creator = await User.findById(creatorId);
     if (!creator) {
       throw ApiError.badRequest('Creator not found');
@@ -189,18 +190,34 @@ const updateProductForAdmin = catchAsync(async (req, res) => {
   }
   
   if (creatorId !== undefined && creatorId !== product.creatorId) {
-    changes.creatorId = { old: product.creatorId, new: creatorId };
-    product.creatorId = creatorId;
+    const nextCreatorId = creatorId === '' ? undefined : creatorId;
+    if (nextCreatorId !== product.creatorId) {
+      changes.creatorId = { old: product.creatorId, new: nextCreatorId };
+      product.creatorId = nextCreatorId;
+    }
   }
   
-  if (displayResolution !== undefined && displayResolution !== product.displayResolution) {
-    changes.displayResolution = { old: product.displayResolution, new: displayResolution };
-    product.displayResolution = displayResolution;
+  // Auto-detect resolution if explicitly cleared or set to auto-detect (empty string / null)
+  let targetDisplayResolution = displayResolution;
+  if (displayResolution === '' || displayResolution === null) {
+    const meta = resolutionService.computeResolutionMetadata(product);
+    targetDisplayResolution = meta.displayResolutionLabel || undefined;
+  }
+
+  let targetDefaultDownload = defaultDownload;
+  if (defaultDownload === '' || defaultDownload === null) {
+    const meta = resolutionService.computeResolutionMetadata(product);
+    targetDefaultDownload = meta.defaultDownload || undefined;
+  }
+
+  if (targetDisplayResolution !== undefined && targetDisplayResolution !== product.displayResolution) {
+    changes.displayResolution = { old: product.displayResolution, new: targetDisplayResolution };
+    product.displayResolution = targetDisplayResolution;
   }
   
-  if (defaultDownload !== undefined && defaultDownload !== product.defaultDownload) {
-    changes.defaultDownload = { old: product.defaultDownload, new: defaultDownload };
-    product.defaultDownload = defaultDownload;
+  if (targetDefaultDownload !== undefined && targetDefaultDownload !== product.defaultDownload) {
+    changes.defaultDownload = { old: product.defaultDownload, new: targetDefaultDownload };
+    product.defaultDownload = targetDefaultDownload;
   }
   
   if (availableResolutions !== undefined && JSON.stringify(availableResolutions) !== JSON.stringify(product.availableResolutions)) {
@@ -239,8 +256,11 @@ const updateProductForAdmin = catchAsync(async (req, res) => {
   }
   
   if (ageRating !== undefined && ageRating !== product.ageRating) {
-    changes.ageRating = { old: product.ageRating, new: ageRating };
-    product.ageRating = ageRating;
+    const nextAgeRating = ageRating === '' ? undefined : ageRating;
+    if (nextAgeRating !== product.ageRating) {
+      changes.ageRating = { old: product.ageRating, new: nextAgeRating };
+      product.ageRating = nextAgeRating;
+    }
   }
   
   // If no changes were made, return success
@@ -351,8 +371,33 @@ const updateProductAssets = catchAsync(async (req, res) => {
   );
 });
 
+/**
+ * Permanently delete a product (metadata only)
+ * 
+ * @route DELETE /api/v1/admin/products/:id
+ * @access Private/Admin
+ */
+const deleteProductAsAdmin = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  
+  const product = await Product.findById(id);
+  if (!product) {
+    throw ApiError.notFound('Product not found');
+  }
+  
+  await Product.findByIdAndDelete(id);
+  
+  res.status(200).json(
+    successResponse({
+      message: 'Product permanently deleted successfully',
+      data: null,
+    })
+  );
+});
+
 module.exports = {
   getProductForAdminEdit,
   updateProductForAdmin,
   updateProductAssets,
+  deleteProductAsAdmin,
 };

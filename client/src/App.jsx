@@ -53,7 +53,7 @@ const CreatorStatsPage    = React.lazy(() => import('./pages/creator/CreatorStat
 
 import AdminShell         from './components/layout/AdminShell';
 const AdminProductsPage   = React.lazy(() => import('./pages/admin/AdminProductsPage'));
-const AdminProductDetailPage = React.lazy(() => import('./pages/AdminProductDetailPage'));
+const AdminProductDetailPage = React.lazy(() => import('./pages/admin/AdminProductDetailPage'));
 const AdminCreatorsPage   = React.lazy(() => import('./pages/admin/AdminCreatorsPage'));
 const AdminHomepagePage   = React.lazy(() => import('./pages/admin/AdminHomepagePage'));
 
