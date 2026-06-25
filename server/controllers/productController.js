@@ -82,16 +82,17 @@ const updateProduct = catchAsync(async (req, res) => {
 });
 
 /**
- * @desc    Soft delete product (Admin only)
+ * @desc    Delete or archive product (Admin or Creator)
  * @route   DELETE /api/v1/products/:id
- * @access  Private/Admin
+ * @access  Private
  */
 const deleteProduct = catchAsync(async (req, res) => {
-  await productService.deleteProduct(req.params.id);
+  const result = await productService.deleteProduct(req.params.id, req.user);
 
   res.status(200).json(
     successResponse({
-      message: 'Product deleted successfully',
+      message: result.action === 'archived' ? 'Product archived successfully (has existing purchases)' : 'Product permanently deleted',
+      data: result,
     })
   );
 });

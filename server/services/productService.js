@@ -4,11 +4,13 @@
 
 const Product = require('../models/Product');
 const License = require('../models/License');
+const Cart = require('../models/Cart');
+const User = require('../models/User');
 const ApiError = require('../utils/apiError');
 const CONSTANTS = require('../utils/constants');
 const config = require('../config');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const redis = require('../config/redis');
 
 let s3Client;
@@ -288,29 +290,92 @@ async function updateProduct(id, body) {
   return product;
 }
 
-async function deleteProduct(id) {
+async function deleteProduct(id, user) {
   const product = await Product.findById(id);
   if (!product) {
     throw ApiError.notFound('Product not found');
   }
-  await product.softDelete();
 
-  if (meiliClient) {
-    try {
-      const index = meiliClient.index('products');
-      await index.updateDocuments([{
-        id: product._id.toString(),
-        status: 'removed',
-      }]);
-    } catch (err) {}
+  if (user.role === 'creator') {
+    if (!product.creatorId || product.creatorId.toString() !== user.id.toString()) {
+      throw ApiError.forbidden('You can only delete your own products');
+    }
+  } else if (user.role !== 'admin') {
+    throw ApiError.forbidden('Not authorized to delete this product');
   }
 
-  // Clear products cache
-  if (redis) {
-    try {
-      const keys = await redis.keys('products:*');
-      if (keys.length > 0) await redis.del(...keys);
-    } catch (err) {}
+  const purchaseCount = await License.countDocuments({ product: id });
+
+  if (user.role === 'admin' || (user.role === 'creator' && purchaseCount === 0)) {
+    await Cart.updateMany(
+      { 'items.product': id },
+      { $pull: { items: { product: id } } }
+    );
+
+    await User.updateMany(
+      { wishlist: id },
+      { $pull: { wishlist: id } }
+    );
+
+    if (s3Client && product.assets) {
+      const assetKeys = [];
+      ['preview', 'thumbnail', 'original', '4k', '2k', '1080p'].forEach(res => {
+        if (product.assets[res] && product.assets[res].key) {
+          assetKeys.push(product.assets[res].key);
+        }
+      });
+
+      for (const key of assetKeys) {
+        try {
+          await s3Client.send(new DeleteObjectCommand({
+            Bucket: config.R2_BUCKET_NAME,
+            Key: key,
+          }));
+        } catch (err) {
+          console.error(`Failed to delete asset ${key} from R2:`, err);
+        }
+      }
+    }
+
+    await Product.findByIdAndDelete(id);
+
+    if (meiliClient) {
+      try {
+        const index = meiliClient.index('products');
+        await index.deleteDocument(id.toString());
+      } catch (err) {}
+    }
+
+    if (redis) {
+      try {
+        const keys = await redis.keys('products:*');
+        if (keys.length > 0) await redis.del(...keys);
+      } catch (err) {}
+    }
+
+    return { action: 'deleted' };
+  } else {
+    product.status = 'archived';
+    await product.save();
+
+    if (meiliClient) {
+      try {
+        const index = meiliClient.index('products');
+        await index.updateDocuments([{
+          id: product._id.toString(),
+          status: 'archived',
+        }]);
+      } catch (err) {}
+    }
+
+    if (redis) {
+      try {
+        const keys = await redis.keys('products:*');
+        if (keys.length > 0) await redis.del(...keys);
+      } catch (err) {}
+    }
+
+    return { action: 'archived' };
   }
 }
 

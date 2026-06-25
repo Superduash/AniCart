@@ -78,10 +78,10 @@ router.put('/:id', protect, adminOnly, updateProductValidation, updateProduct);
 
 /**
  * @route   DELETE /api/products/:id
- * @desc    Soft delete product
- * @access  Private/Admin
+ * @desc    Delete or archive product (Admin or Creator)
+ * @access  Private
  */
-router.delete('/:id', protect, adminOnly, productIdValidation, deleteProduct);
+router.delete('/:id', protect, productIdValidation, deleteProduct);
 
 /**
  * @route   PUT /api/products/:id/restore
