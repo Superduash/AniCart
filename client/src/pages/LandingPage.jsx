@@ -44,9 +44,10 @@ function HeroSlider({ products, loading, user }) {
 
   if (loading) {
     return (
-      <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="skeleton" style={{ width: '80%', height: '80%', borderRadius: 20 }} />
-      </section>
+      <div style={{ height: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-3)' }}>
+        <div className="loading-spinner light" style={{ width: 32, height: 32, marginBottom: 16 }} />
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)' }}>Loading...</div>
+      </div>
     );
   }
 
@@ -196,7 +197,7 @@ export default function LandingPage() {
       <SeriesMarquee series={series} />
 
       {/* ─── FEATURED PRODUCTS ─── */}
-      <section className="section" id="products" style={{ paddingTop: 80, paddingBottom: 80 }}>
+      <section className="section" id="products" style={{ paddingTop: 'calc(var(--navbar-height) + 10px)', paddingBottom: 80 }}>
         <div className="section-header">
           <div className="section-tag">◈ FEATURED COLLECTION</div>
           <h2 className="section-title">New <span>This Week</span></h2>

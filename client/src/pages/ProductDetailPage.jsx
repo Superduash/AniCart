@@ -36,7 +36,6 @@ export default function ProductDetailPage() {
   const { user } = useAuth();
   const { cart, addToCart } = useCart();
   const { addToast } = useUI();
-  useTitle('');
   const [productName, setProductName] = useState('');
   // M3 Fix: use productName state so hook correctly updates when product loads
   useTitle(productName || 'Product');
@@ -85,16 +84,15 @@ export default function ProductDetailPage() {
         }
         // H8 Fix: use dedicated ownership endpoint instead of fetching entire library
         if (user) {
-          apiClient.get(`/users/library/${id}`)
-            .then(r => {
-              const owned = r.data?.data?.owned || false;
-              setInLibrary(owned);
-              if (owned) {
-                const myReview = fetchedReviews.find(r => r.user?._id === user._id || r.userId === user._id);
-                setHasReviewed(!!myReview);
-              }
-            })
-            .catch(() => {});
+          try {
+            const r = await apiClient.get(`/users/library/${id}`);
+            const owned = r.data?.data?.owned || false;
+            setInLibrary(owned);
+            if (owned) {
+              const myReview = fetchedReviews.find(r => r.user?._id === user._id || r.userId === user._id);
+              setHasReviewed(!!myReview);
+            }
+          } catch {}
         }
       } finally { setLoading(false); }
     };
@@ -155,6 +153,17 @@ export default function ProductDetailPage() {
     setReviewLoading(false);
   };
 
+  const deleteReview = async (reviewId) => {
+    try {
+      await apiClient.delete(`/reviews/${reviewId}`);
+      setReviews(prev => prev.filter(r => r._id !== reviewId));
+      setHasReviewed(false);
+      addToast('Review deleted.', 'info');
+    } catch (err) {
+      addToast('Failed to delete review.', 'error');
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ padding: '120px 40px 80px', maxWidth: 1200, margin: '0 auto' }}>
@@ -176,8 +185,23 @@ export default function ProductDetailPage() {
   const avgRating = product.averageRating || product.rating || 0;
   const reviewCount = reviews.length;
 
+  const jsonLd = {
+    "@context": "https://schema.org/",
+    "@type": "Product",
+    "name": product.name,
+    "image": previewUrl,
+    "description": product.description || `Buy ${product.name} anime wallpaper.`,
+    "offers": {
+      "@type": "Offer",
+      "priceCurrency": "USD",
+      "price": product.price || 0,
+      "availability": "https://schema.org/InStock"
+    }
+  };
+
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 80 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--navbar-height) + 10px)' }}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 40px 80px' }}>
         {/* Breadcrumb */}
         <Breadcrumbs items={[
@@ -305,15 +329,21 @@ export default function ProductDetailPage() {
               </div>
               <textarea
                 value={reviewForm.comment}
+                maxLength={500}
                 onChange={e => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
                 placeholder="Share your experience with this wallpaper..."
                 style={{ width: '100%', padding: 12, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text)', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', resize: 'vertical', minHeight: 80, outline: 'none' }}
                 onFocus={e => e.target.style.borderColor = 'var(--color-accent)'}
                 onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
               />
-              <button type="submit" disabled={reviewLoading || !reviewForm.rating} className="btn btn-primary btn-sm" style={{ marginTop: 12 }}>
-                {reviewLoading ? 'Submitting...' : 'Submit Review'}
-              </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 }}>
+                <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: reviewForm.comment.length >= 500 ? 'var(--color-error)' : 'var(--color-text-3)' }}>
+                  {reviewForm.comment.length} / 500 characters
+                </div>
+                <button type="submit" disabled={reviewLoading || !reviewForm.rating} className="btn btn-primary btn-sm">
+                  {reviewLoading ? 'Submitting...' : 'Submit Review'}
+                </button>
+              </div>
             </form>
           )}
 
@@ -339,6 +369,11 @@ export default function ProductDetailPage() {
                         </span>
                       </div>
                     </div>
+                    {user && (review.user?._id === user._id || review.userId === user._id) && (
+                      <button onClick={() => deleteReview(review._id)} aria-label="Delete review" style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--color-error)', cursor: 'pointer', fontSize: '1.2rem', padding: 8 }}>
+                        🗑
+                      </button>
+                    )}
                   </div>
                   {review.comment && (
                     <p style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', lineHeight: 1.7, margin: 0 }}>

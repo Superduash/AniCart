@@ -5,6 +5,7 @@ import { useUI } from '../../contexts/UIContext';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Heart, ShoppingCart, Menu, X, LogOut, LayoutDashboard, Paintbrush, Zap } from 'lucide-react';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -71,26 +72,18 @@ function AvatarDropdown({ user, onClose }) {
 
       {/* Menu items */}
       {[
-        { label: 'Dashboard', icon: '📚', path: '/dashboard' },
-        ...(user.role === 'creator' || user.role === 'admin' ? [{ label: 'Creator Studio', icon: '🎨', path: '/creator' }] : []),
-        ...(user.role === 'admin' ? [{ label: 'Admin Panel', icon: '⚡', path: '/admin' }] : []),
+        { label: 'Dashboard', icon: <LayoutDashboard size={16} />, path: '/dashboard' },
+        ...(user.role === 'creator' || user.role === 'admin' ? [{ label: 'Creator Studio', icon: <Paintbrush size={16} />, path: '/creator' }] : []),
+        ...(user.role === 'admin' ? [{ label: 'Admin Panel', icon: <Zap size={16} />, path: '/admin' }] : []),
       ].map(item => (
         <Link
           key={item.path}
           to={item.path}
           onClick={onClose}
           role="menuitem"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            padding: '9px 12px', borderRadius: 'var(--radius-md)',
-            fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '0.9rem',
-            color: 'var(--color-text-2)', textDecoration: 'none',
-            transition: 'color 0.15s, background 0.15s', cursor: 'pointer',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.background = 'var(--color-accent-dim)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-2)'; e.currentTarget.style.background = 'transparent'; }}
+          className="nav-dropdown-item"
         >
-          <span style={{ fontSize: '1rem' }}>{item.icon}</span>
+          {item.icon}
           {item.label}
         </Link>
       ))}
@@ -99,18 +92,9 @@ function AvatarDropdown({ user, onClose }) {
         <button
           onClick={handleLogout}
           role="menuitem"
-          style={{
-            display: 'flex', alignItems: 'center', gap: 10, width: '100%',
-            padding: '9px 12px', borderRadius: 'var(--radius-md)',
-            fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '0.9rem',
-            color: 'var(--color-text-3)', background: 'none', border: 'none',
-            cursor: 'pointer', transition: 'color 0.15s, background 0.15s',
-            textAlign: 'left',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-error)'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
-          onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-3)'; e.currentTarget.style.background = 'transparent'; }}
+          className="nav-dropdown-logout"
         >
-          <span>🚪</span> Sign Out
+          <LogOut size={16} /> Sign Out
         </button>
       </div>
     </motion.div>
@@ -137,6 +121,13 @@ export default function Navbar() {
   // Close mobile menu on route change
   useEffect(() => { setMobileOpen(false); setAvatarOpen(false); }, [location.pathname]);
 
+  // Handle Escape key for mobile menu
+  useEffect(() => {
+    const handler = (e) => { if (e.key === 'Escape') setMobileOpen(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, []);
+
   const isMobile = width < 768;
 
   return (
@@ -154,23 +145,18 @@ export default function Navbar() {
       {!isMobile && (
         <ul className="nav-links" style={{ flex: 1, justifyContent: 'center', gap: '32px' }}>
           <li>
-            <Link to="/marketplace" className="nav-link" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
+            <Link to="/marketplace" className={`nav-link${location.pathname.startsWith('/marketplace') ? ' active' : ''}`} style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
               Browse
             </Link>
           </li>
           <li>
-            <Link to="/" className="nav-link" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
-              Home
-            </Link>
-          </li>
-          <li>
-            <Link to={user ? (user.role === 'creator' || user.role === 'admin' ? '/creator' : '/creator/apply') : '/auth/signup'} className="nav-link" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
+            <Link to={user ? (user.role === 'creator' || user.role === 'admin' ? '/creator' : '/creator/apply') : '/auth/signup'} className={`nav-link${location.pathname.startsWith('/creator') ? ' active' : ''}`} style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
               Creators
             </Link>
           </li>
           {user && user.role === 'admin' && (
             <li>
-              <Link to="/admin" className="nav-link" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1, color: 'var(--color-pink)' }}>
+              <Link to="/admin" className={`nav-link${location.pathname.startsWith('/admin') ? ' active' : ''}`} style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1, color: 'var(--color-pink)' }}>
                 Admin Panel
               </Link>
             </li>
@@ -195,7 +181,7 @@ export default function Navbar() {
             onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)'; e.currentTarget.style.background = 'var(--color-surface)'; }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.background = 'var(--color-surface-2)'; }}
           >
-            <span>🔍</span>
+            <Search size={18} />
             <span>Search...</span>
             <span style={{ marginLeft: 'auto', background: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '2px 6px', borderRadius: 4, fontSize: '0.65rem', fontFamily: 'JetBrains Mono, monospace', color: 'var(--color-text-3)' }}>Ctrl K</span>
           </div>
@@ -204,34 +190,35 @@ export default function Navbar() {
             className="nav-link"
             onClick={() => setSearchOpen(true)}
             aria-label="Open search (Ctrl+K)"
-            style={{ fontSize: '1rem', padding: '8px 10px' }}
+            style={{ fontSize: '1rem', padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            🔍
+            <Search size={20} />
           </button>
         )}
 
         {!isMobile && user && (
           <Link
             to="/dashboard/wishlist"
-            className="nav-link"
+            className={`nav-link${location.pathname === '/dashboard/wishlist' ? ' active' : ''}`}
             aria-label="Wishlist"
-            style={{ fontSize: '1rem', padding: '8px 10px' }}
+            style={{ fontSize: '1rem', padding: '8px 10px', display: 'flex', alignItems: 'center' }}
           >
-            ❤️
+            <Heart size={20} />
           </Link>
         )}
 
         {/* Cart */}
         <Link
           to="/cart"
-          className="nav-link"
+          className={`nav-link${location.pathname === '/cart' ? ' active' : ''}`}
           aria-label={`${cartCount} items in cart`}
-          style={{ position: 'relative', padding: '8px 10px', fontSize: '1rem' }}
+          style={{ position: 'relative', padding: '8px 10px', fontSize: '1rem', display: 'flex', alignItems: 'center' }}
         >
-          🛒
+          <ShoppingCart size={20} />
           <AnimatePresence>
             {cartCount > 0 && (
               <motion.span
+                key={cartCount}
                 initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }}
                 transition={{ type: 'spring', stiffness: 500, damping: 25 }}
                 style={{
@@ -281,17 +268,17 @@ export default function Navbar() {
         ) : (
           !isMobile ? (
             <>
-              <Link to="/auth/login" className="nav-link nav-btn-outline">Login</Link>
-              <Link to="/auth/signup" className="nav-link nav-btn-solid">Sign Up</Link>
+              <Link to="/auth/login" className={`nav-link nav-btn-outline${location.pathname === '/auth/login' ? ' active' : ''}`}>Login</Link>
+              <Link to="/auth/signup" className={`nav-link nav-btn-solid${location.pathname === '/auth/signup' ? ' active' : ''}`}>Sign Up</Link>
             </>
           ) : (
             <button
               className="nav-link"
               onClick={() => setMobileOpen(p => !p)}
               aria-label="Open menu"
-              style={{ fontSize: '1.2rem', padding: '8px 10px' }}
+              style={{ padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--color-text)' }}
             >
-              {mobileOpen ? '✕' : '☰'}
+              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           )
         )}
@@ -301,9 +288,9 @@ export default function Navbar() {
             className="nav-link"
             onClick={() => setMobileOpen(p => !p)}
             aria-label="Open menu"
-            style={{ fontSize: '1.2rem', padding: '8px 10px' }}
+            style={{ padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--color-text)' }}
           >
-            {mobileOpen ? '✕' : '☰'}
+            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         )}
       </div>
@@ -311,8 +298,19 @@ export default function Navbar() {
       {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setMobileOpen(false)}
+              style={{
+                position: 'fixed', inset: 0, top: 70, background: 'rgba(0,0,0,0.5)', zIndex: 98
+              }}
+            />
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
@@ -342,17 +340,16 @@ export default function Navbar() {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <Link to="/marketplace" className="nav-link" style={{ padding: '12px 8px' }}>Browse</Link>
-              <Link to="/" className="nav-link" style={{ padding: '12px 8px' }}>Home</Link>
-              <Link to={user ? (user.role === 'creator' || user.role === 'admin' ? '/creator' : '/creator/apply') : '/auth/signup'} className="nav-link" style={{ padding: '12px 8px' }}>Creators</Link>
+              <Link to="/marketplace" className={`nav-link${location.pathname.startsWith('/marketplace') ? ' active' : ''}`} style={{ padding: '12px 8px' }}>Browse</Link>
+              <Link to={user ? (user.role === 'creator' || user.role === 'admin' ? '/creator' : '/creator/apply') : '/auth/signup'} className={`nav-link${location.pathname.startsWith('/creator') ? ' active' : ''}`} style={{ padding: '12px 8px' }}>Creators</Link>
               {user ? (
                 <>
-                  <Link to="/dashboard" className="nav-link" style={{ padding: '12px 8px' }}>Dashboard</Link>
+                  <Link to="/dashboard" className={`nav-link${location.pathname.startsWith('/dashboard') ? ' active' : ''}`} style={{ padding: '12px 8px' }}>Dashboard</Link>
                   {(user.role === 'creator' || user.role === 'admin') && (
                     <Link to="/creator" className="nav-link" style={{ padding: '12px 8px' }}>Creator Studio</Link>
                   )}
                   {user.role === 'admin' && (
-                    <Link to="/admin" className="nav-link" style={{ padding: '12px 8px' }}>Admin Panel</Link>
+                    <Link to="/admin" className={`nav-link${location.pathname.startsWith('/admin') ? ' active' : ''}`} style={{ padding: '12px 8px' }}>Admin Panel</Link>
                   )}
                   <button
                     onClick={async () => {
@@ -368,8 +365,8 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link to="/auth/login" className="nav-link" style={{ padding: '12px 8px' }}>Login</Link>
-                  <Link to="/auth/signup" className="nav-link nav-btn-solid" style={{ padding: '12px 8px', marginTop: 8 }}>Sign Up</Link>
+                  <Link to="/auth/login" className={`nav-link${location.pathname === '/auth/login' ? ' active' : ''}`} style={{ padding: '12px 8px' }}>Login</Link>
+                  <Link to="/auth/signup" className={`nav-link nav-btn-solid${location.pathname === '/auth/signup' ? ' active' : ''}`} style={{ padding: '12px 8px', marginTop: 8 }}>Sign Up</Link>
                 </>
               )}
             </div>

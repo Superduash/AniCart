@@ -98,6 +98,7 @@ export default function MarketplacePage() {
       finally { setLoading(false); }
     };
     load();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [debouncedSearch, sort, selectedSeries, selectedRes, minPrice, maxPrice, page]);
 
   const resetFilters = () => {
@@ -177,18 +178,6 @@ export default function MarketplacePage() {
         </div>
       </div>
 
-      {/* Sort */}
-      <div>
-        <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)', marginBottom: 10 }}>Sort By</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          {SORT_OPTIONS.map(opt => (
-            <label key={opt.value} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-              <input type="radio" name="sort" checked={sort === opt.value} onChange={() => { setSort(opt.value); setPage(1); }} style={{ accentColor: 'var(--color-accent)' }} />
-              <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', color: sort === opt.value ? 'var(--color-text)' : 'var(--color-text-2)' }}>{opt.label}</span>
-            </label>
-          ))}
-        </div>
-      </div>
     </div>
   );
 
@@ -198,7 +187,7 @@ export default function MarketplacePage() {
       {isMobile && (
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={() => setFilterOpen(true)} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
-            ⚙ Filters {hasActiveFilters ? `(${[selectedSeries.length, selectedRes.length, minPrice || maxPrice ? 1 : 0].reduce((a,b)=>a+b,0)} active)` : ''}
+            ⚙ Filters {hasActiveFilters ? `(${[search ? 1 : 0, selectedSeries.length, selectedRes.length, minPrice || maxPrice ? 1 : 0].reduce((a,b)=>a+b,0)} active)` : ''}
           </button>
           <select value={sort} onChange={e => setSort(e.target.value)} style={{ flex: 1, padding: '8px 10px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text)', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)' }}>
             {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
@@ -210,7 +199,7 @@ export default function MarketplacePage() {
         {/* Desktop sidebar */}
         {!isMobile && (
           <div style={{ width: 260, flexShrink: 0, borderRight: '1px solid var(--color-border)', minHeight: 'calc(100vh - 70px)', position: 'sticky', top: 70, alignSelf: 'flex-start', maxHeight: 'calc(100vh - 70px)', overflowY: 'auto' }}>
-            <FilterContent />
+            {FilterContent()}
           </div>
         )}
 
@@ -231,6 +220,11 @@ export default function MarketplacePage() {
           {/* Active filter chips */}
           {hasActiveFilters && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+              {search && (
+                <button onClick={() => setSearch('')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--color-accent-dim)', border: '1px solid var(--color-border-glow)', borderRadius: 'var(--radius-full)', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-accent)', cursor: 'pointer' }}>
+                  "{search}" ×
+                </button>
+              )}
               {selectedSeries.map(s => (
                 <button key={s} onClick={() => toggleSeries(s)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '4px 10px', background: 'var(--color-accent-dim)', border: '1px solid var(--color-border-glow)', borderRadius: 'var(--radius-full)', fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-accent)', cursor: 'pointer' }}>
                   {s} ×
@@ -306,7 +300,7 @@ export default function MarketplacePage() {
               <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, color: 'var(--color-text)' }}>Filters</span>
               <button onClick={() => setFilterOpen(false)} style={{ background: 'none', border: 'none', color: 'var(--color-text-3)', cursor: 'pointer', fontSize: '1.1rem' }}>✕</button>
             </div>
-            <FilterContent />
+            {FilterContent()}
             <div style={{ padding: '16px 24px 32px' }}>
               <button onClick={() => setFilterOpen(false)} className="btn btn-primary btn-full">Apply Filters</button>
             </div>

@@ -15,14 +15,14 @@ const { blacklistToken } = require('../services/tokenBlacklistService');
 const refreshCookieOptions = {
   httpOnly: true,
   secure: config.isProduction,
-  sameSite: config.isProduction ? 'none' : 'strict',
+  sameSite: config.isProduction ? 'none' : 'lax',
   maxAge: CONSTANTS.COOKIE.MAX_AGE_MS,
 };
 
 const clearCookieOptions = {
   httpOnly: true,
   secure: config.isProduction,
-  sameSite: config.isProduction ? 'none' : 'strict',
+  sameSite: config.isProduction ? 'none' : 'lax',
   expires: new Date(0),
 };
 
@@ -180,6 +180,7 @@ const refreshToken = catchAsync(async (req, res) => {
       successResponse({
         message: 'Token refreshed successfully',
         data: {
+          user: tokens.user,
           accessToken: tokens.accessToken,
         },
       })

@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useUI } from '../../contexts/UIContext';
 import { useDebounce } from '../../hooks/useDebounce';
 import apiClient from '../../api/client';
+import { Search, X } from 'lucide-react';
 
 export default function SearchOverlay() {
   const { setSearchOpen } = useUI();
@@ -11,6 +12,7 @@ export default function SearchOverlay() {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const inputRef = useRef(null);
   const debounced = useDebounce(query, 300);
 
@@ -24,16 +26,40 @@ export default function SearchOverlay() {
         const res = await apiClient.get('/products', { params: { search: debounced, limit: 6 } });
         setResults(res.data?.data?.products || res.data?.data || []);
       } catch { setResults([]); }
-      finally { setLoading(false); }
+      finally { setLoading(false); setActiveIndex(-1); }
     };
     fetch();
   }, [debounced]);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!query.trim()) return;
     setSearchOpen(false);
     navigate(`/marketplace?search=${encodeURIComponent(query.trim())}`);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      setSearchOpen(false);
+      return;
+    }
+    
+    if (results.length === 0 && !query.trim()) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setActiveIndex(prev => (prev < results.length ? prev + 1 : prev));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setActiveIndex(prev => (prev > -1 ? prev - 1 : prev));
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (activeIndex >= 0 && activeIndex < results.length) {
+        handleResultClick(results[activeIndex]);
+      } else {
+        handleSubmit();
+      }
+    }
   };
 
   const handleResultClick = (product) => {
@@ -81,12 +107,13 @@ export default function SearchOverlay() {
               padding: '14px 16px',
               boxShadow: 'var(--shadow-neon)',
             }}>
-              <span style={{ fontSize: '1.2rem', color: 'var(--color-accent)', flexShrink: 0 }}>🔍</span>
+              <Search size={20} color="var(--color-accent)" style={{ flexShrink: 0 }} />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChange={e => { setQuery(e.target.value); setActiveIndex(-1); }}
+                onKeyDown={handleKeyDown}
                 placeholder="Search wallpapers, series..."
                 aria-label="Search"
                 style={{
@@ -97,9 +124,9 @@ export default function SearchOverlay() {
               />
               {loading && <div className="loading-spinner light" />}
               {query && (
-                <button type="button" onClick={() => setQuery('')} aria-label="Clear search"
-                  style={{ background: 'none', border: 'none', color: 'var(--color-text-3)', cursor: 'pointer', fontSize: '1rem', padding: 4, flexShrink: 0 }}>
-                  ✕
+                <button type="button" onClick={() => { setQuery(''); setActiveIndex(-1); inputRef.current?.focus(); }} aria-label="Clear search"
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4, flexShrink: 0 }}>
+                  <X size={20} />
                 </button>
               )}
             </div>
@@ -117,20 +144,20 @@ export default function SearchOverlay() {
             }}>
               {results.length > 0 ? (
                 <>
-                  {results.map(product => (
+                  {results.map((product, i) => (
                     <button
                       key={product._id || product.id}
                       onClick={() => handleResultClick(product)}
+                      onMouseEnter={() => setActiveIndex(i)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 14,
                         width: '100%', padding: '12px 16px',
-                        background: 'none', border: 'none', cursor: 'pointer',
+                        background: activeIndex === i ? 'var(--color-accent-dim)' : 'transparent',
+                        border: 'none', cursor: 'pointer',
                         borderBottom: '1px solid var(--color-border)',
                         transition: 'background 0.15s',
                         textAlign: 'left',
                       }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--color-accent-dim)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >
                       <img
                         src={product.assets?.preview?.url || product.img || ''}
@@ -147,22 +174,22 @@ export default function SearchOverlay() {
                         </div>
                       </div>
                       <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-accent)', flexShrink: 0 }}>
-                        ${(product.price || 0).toFixed(2)}
+                        {(!product.price || product.price === 0) ? 'Free' : `$${product.price % 1 === 0 ? product.price : product.price.toFixed(2)}`}
                       </div>
                     </button>
                   ))}
                   <button
-                    onClick={() => handleResultClick({ _id: null }) || navigate(`/marketplace?search=${encodeURIComponent(query)}`) || setSearchOpen(false)}
+                    onClick={handleSubmit}
+                    onMouseEnter={() => setActiveIndex(results.length)}
                     style={{
                       display: 'block', width: '100%', padding: '12px 16px',
-                      background: 'none', border: 'none', cursor: 'pointer',
+                      background: activeIndex === results.length ? 'var(--color-accent-dim)' : 'transparent',
+                      border: 'none', cursor: 'pointer',
                       fontFamily: 'Rajdhani, sans-serif', fontWeight: 600,
                       fontSize: 'var(--text-sm)', color: 'var(--color-accent)',
                       textAlign: 'center', transition: 'background 0.15s',
                       letterSpacing: 1,
                     }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--color-accent-dim)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                   >
                     Press Enter to see all results →
                   </button>

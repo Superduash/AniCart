@@ -1,20 +1,22 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUI } from '../../contexts/UIContext';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Home, LayoutGrid, Search, Heart, User } from 'lucide-react';
 
 export default function BottomNav() {
   const { user } = useAuth();
   const { setSearchOpen } = useUI();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const navItems = [
-    { label: 'Home', icon: '🏠', path: '/' },
-    { label: 'Browse', icon: '🛍️', path: '/marketplace' },
-    { label: 'Search', icon: '🔍', action: () => setSearchOpen(true) },
-    { label: 'Wishlist', icon: '❤️', path: '/dashboard/wishlist', requiresAuth: true },
-    { label: 'Profile', icon: '👤', path: user ? '/dashboard' : '/auth/login' }
+    { label: 'Home', icon: <Home size={22} />, path: '/' },
+    { label: 'Browse', icon: <LayoutGrid size={22} />, path: '/marketplace' },
+    { label: 'Search', icon: <Search size={22} />, action: () => setSearchOpen(true) },
+    { label: 'Wishlist', icon: <Heart size={22} />, action: () => navigate(user ? '/dashboard/wishlist' : '/auth/login'), path: '/dashboard/wishlist' },
+    { label: 'Profile', icon: <User size={22} />, path: user ? '/dashboard' : '/auth/login' }
   ];
 
   return (
@@ -30,9 +32,10 @@ export default function BottomNav() {
       zIndex: 100
     }}>
       {navItems.map((item, i) => {
-        if (item.requiresAuth && !user) return null;
-
-        const isActive = item.path && location.pathname === item.path;
+        const isActive = item.path && (
+          location.pathname === item.path ||
+          (item.path !== '/' && location.pathname.startsWith(item.path))
+        );
         
         const content = (
           <>

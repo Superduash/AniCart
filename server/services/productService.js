@@ -220,6 +220,14 @@ async function createProduct(body) {
     } catch (err) {}
   }
 
+  // Clear products cache
+  if (redis) {
+    try {
+      const keys = await redis.keys('products:*');
+      if (keys.length > 0) await redis.del(...keys);
+    } catch (err) {}
+  }
+
   return product;
 }
 
@@ -269,6 +277,14 @@ async function updateProduct(id, body) {
     } catch (err) {}
   }
 
+  // Clear products cache
+  if (redis) {
+    try {
+      const keys = await redis.keys('products:*');
+      if (keys.length > 0) await redis.del(...keys);
+    } catch (err) {}
+  }
+
   return product;
 }
 
@@ -286,6 +302,14 @@ async function deleteProduct(id) {
         id: product._id.toString(),
         status: 'removed',
       }]);
+    } catch (err) {}
+  }
+
+  // Clear products cache
+  if (redis) {
+    try {
+      const keys = await redis.keys('products:*');
+      if (keys.length > 0) await redis.del(...keys);
     } catch (err) {}
   }
 }
@@ -306,6 +330,15 @@ async function restoreProduct(id) {
       }]);
     } catch (err) {}
   }
+
+  // Clear products cache
+  if (redis) {
+    try {
+      const keys = await redis.keys('products:*');
+      if (keys.length > 0) await redis.del(...keys);
+    } catch (err) {}
+  }
+
   return product;
 }
 

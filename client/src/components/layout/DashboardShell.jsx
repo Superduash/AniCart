@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUI } from '../../contexts/UIContext';
 import { useNavigate } from 'react-router-dom';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
+import { Library, Package, Heart, Settings, Paintbrush, LogOut } from 'lucide-react';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -11,10 +12,10 @@ function getInitials(name) {
 }
 
 const NAV_ITEMS = [
-  { path: '/dashboard/library',  label: 'Library',  icon: '📚' },
-  { path: '/dashboard/orders',   label: 'Orders',   icon: '📦' },
-  { path: '/dashboard/wishlist', label: 'Wishlist', icon: '♡' },
-  { path: '/dashboard/settings', label: 'Settings', icon: '⚙' },
+  { path: '/dashboard/library',  label: 'Library',  icon: <Library size={18} /> },
+  { path: '/dashboard/orders',   label: 'Orders',   icon: <Package size={18} /> },
+  { path: '/dashboard/wishlist', label: 'Wishlist', icon: <Heart size={18} /> },
+  { path: '/dashboard/settings', label: 'Settings', icon: <Settings size={18} /> },
 ];
 
 export default function DashboardShell() {
@@ -77,7 +78,7 @@ export default function DashboardShell() {
                   to="/creator"
                   style={({ isActive }) => linkStyle(isActive)}
                 >
-                  <span className="sidebar-link-icon">🎨</span>
+                  <span className="sidebar-link-icon"><Paintbrush size={18} /></span>
                   Creator Studio
                 </NavLink>
               </>
@@ -88,26 +89,44 @@ export default function DashboardShell() {
           <div className="sidebar-footer">
             <button
               onClick={handleLogout}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8, width: '100%',
-                padding: '9px 12px', borderRadius: 'var(--radius-md)',
-                fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '0.88rem',
-                color: 'var(--color-text-3)', background: 'none', border: 'none',
-                cursor: 'pointer', transition: 'color 0.15s, background 0.15s',
-                textAlign: 'left',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.color = 'var(--color-error)'; e.currentTarget.style.background = 'rgba(239,68,68,0.08)'; }}
-              onMouseLeave={e => { e.currentTarget.style.color = 'var(--color-text-3)'; e.currentTarget.style.background = 'transparent'; }}
+              className="nav-dropdown-logout"
             >
-              🚪 Sign Out
+              <LogOut size={16} /> Sign Out
             </button>
           </div>
         </aside>
       )}
 
-      {/* Content */}
-      <div className="dashboard-content">
-        <Outlet />
+      {/* Content Area */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        {/* Mobile Navigation */}
+        {isMobile && (
+          <nav className="dashboard-mobile-nav">
+            {NAV_ITEMS.map(item => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={({ isActive }) => `dashboard-mobile-link${isActive ? ' active' : ''}`}
+              >
+                {item.icon}
+                {item.label}
+              </NavLink>
+            ))}
+            {(user?.role === 'creator' || user?.role === 'admin') && (
+              <NavLink
+                to="/creator"
+                className={({ isActive }) => `dashboard-mobile-link${isActive ? ' active' : ''}`}
+              >
+                <Paintbrush size={18} />
+                Creator Studio
+              </NavLink>
+            )}
+          </nav>
+        )}
+
+        <div className="dashboard-content" style={{ padding: isMobile ? '24px 16px' : '32px 40px' }}>
+          <Outlet />
+        </div>
       </div>
 
     </div>

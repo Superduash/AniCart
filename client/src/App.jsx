@@ -24,9 +24,12 @@ import LandingPage         from './pages/LandingPage';
 import MarketplacePage     from './pages/MarketplacePage';
 import ProductDetailPage   from './pages/ProductDetailPage';
 import CartPage            from './pages/CartPage';
+import NotFoundPage        from './pages/NotFoundPage';
+import PlaceholderPage     from './pages/PlaceholderPage';
 
 // Lazy Loaded Pages (for code-splitting heavy routes)
 const CheckoutPage        = React.lazy(() => import('./pages/CheckoutPage'));
+const CheckoutSuccessPage = React.lazy(() => import('./pages/CheckoutSuccessPage'));
 
 import LoginPage           from './pages/auth/LoginPage';
 import SignupPage          from './pages/auth/SignupPage';
@@ -85,9 +88,9 @@ class ErrorBoundary extends React.Component {
 
 // Page transition variants
 const pageVariants = {
-  initial: { opacity: 0, y: 16 },
-  animate: { opacity: 1, y: 0, transition: { duration: 0.25, ease: [0.4, 0, 0.2, 1] } },
-  exit:    { opacity: 0, y: -8, transition: { duration: 0.15, ease: [0.4, 0, 0.2, 1] } },
+  initial: { opacity: 0, y: 12 },
+  animate: { opacity: 1, y: 0, transition: { duration: 0.15, ease: 'easeOut' } },
+  exit:    { opacity: 0, y: -8, transition: { duration: 0.1, ease: 'easeIn' } },
 };
 
 function PageWrapper({ children }) {
@@ -160,6 +163,11 @@ function AnimatedRoutes() {
             <PageWrapper><CheckoutPage /></PageWrapper>
           </ProtectedRoute>
         } />
+        <Route path="/checkout/success" element={
+          <ProtectedRoute>
+            <PageWrapper><CheckoutSuccessPage /></PageWrapper>
+          </ProtectedRoute>
+        } />
 
         {/* Protected: Dashboard */}
         <Route path="/dashboard" element={<Navigate to="/dashboard/library" replace />} />
@@ -206,8 +214,12 @@ function AnimatedRoutes() {
           <Route index element={<Navigate to="products" replace />} />
         </Route>
 
+        {/* Public static pages */}
+        <Route path="/privacy" element={<PageWrapper><PlaceholderPage /></PageWrapper>} />
+        <Route path="/terms"   element={<PageWrapper><PlaceholderPage /></PageWrapper>} />
+
         {/* 404 */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<PageWrapper><NotFoundPage /></PageWrapper>} />
       </Routes>
     </AnimatePresence>
   );

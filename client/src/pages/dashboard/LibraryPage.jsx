@@ -91,6 +91,7 @@ export default function LibraryPage() {
   const { addToast } = useUI();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     apiClient.get('/users/library')
@@ -122,15 +123,40 @@ export default function LibraryPage() {
   // Normalize library items (they may be wrapped in {product: {...}} or just products)
   const products = items.map(item => item.product || item).filter(Boolean);
 
+  const filteredItems = items.filter(item => {
+    const product = item.product || item;
+    if (!product) return false;
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.toLowerCase();
+    return product.name?.toLowerCase().includes(q) || product.series?.toLowerCase().includes(q);
+  });
+
   return (
     <div>
-      <div style={{ marginBottom: 36 }}>
-        <h1 style={{ fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: 'clamp(1.4rem, 3vw, 1.9rem)', color: 'var(--color-text)', marginBottom: 6 }}>
-          Your Library
-        </h1>
-        <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-sm)', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)' }}>
-          {loading ? '...' : `${products.length} wallpaper${products.length !== 1 ? 's' : ''}`}
+      <div style={{ marginBottom: 36, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+        <div>
+          <h1 style={{ fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: 'clamp(1.4rem, 3vw, 1.9rem)', color: 'var(--color-text)', marginBottom: 6 }}>
+            Your Library
+          </h1>
+          <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-sm)', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)' }}>
+            {loading ? <span className="skeleton" style={{ display: 'inline-block', width: 100, height: 16, borderRadius: 4 }} /> : `${products.length} wallpaper${products.length !== 1 ? 's' : ''}`}
+          </div>
         </div>
+        
+        {(!loading && products.length > 0) && (
+          <div style={{ flex: 1, minWidth: 200, maxWidth: 300 }}>
+            <div className="form-input-wrapper">
+              <span className="form-input-icon">🔍</span>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Search library..."
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -140,14 +166,15 @@ export default function LibraryPage() {
       ) : products.length === 0 ? (
         <EmptyState
           icon="💎"
-          title="Your library is empty"
-          body="Purchase wallpapers from the marketplace and they'll appear here for instant download."
-          ctaLabel="Browse Wallpapers"
-          ctaTo="/marketplace"
+          title={searchQuery ? "No matches found" : "Your library is empty"}
+          body={searchQuery ? "Try adjusting your search query." : "Purchase wallpapers from the marketplace and they'll appear here for instant download."}
+          ctaLabel={searchQuery ? "Clear Search" : "Browse Wallpapers"}
+          ctaTo={searchQuery ? null : "/marketplace"}
+          onCta={searchQuery ? () => setSearchQuery('') : undefined}
         />
       ) : (
         <div className="products-grid" role="list">
-          {items.map((item, i) => (
+          {filteredItems.map((item, i) => (
             <LibraryCard key={(item.product?._id || item._id || item.id || i)} item={item} onDownload={handleDownload} />
           ))}
         </div>

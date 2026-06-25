@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTitle } from '../../hooks/useTitle';
 import { useUI } from '../../contexts/UIContext';
 import apiClient from '../../api/client';
@@ -54,8 +55,31 @@ function OrderCard({ order, onView }) {
   );
 }
 
-function OrderDetailModal({ order, isOpen, onClose }) {
+function OrderDetailModal({ order, isOpen, onClose, onCancel }) {
+  const { addToast } = useUI();
+  const [canceling, setCanceling] = useState(false);
+
   if (!order) return null;
+
+  const handleDownload = async (prod) => {
+    try {
+      const res = await apiClient.get(`/products/${prod._id || prod.id}/download`, {
+        params: { resolution: '4k' } // default to 4k
+      });
+      const url = res.data?.data?.downloadUrl || res.data?.downloadUrl;
+      if (url) window.open(url, '_blank', 'noopener');
+      else addToast('Download URL not available.', 'error');
+    } catch { addToast('Download failed.', 'error'); }
+  };
+
+  const handleCancel = async () => {
+    setCanceling(true);
+    try {
+      await onCancel(order._id || order.id);
+      onClose();
+    } finally { setCanceling(false); }
+  };
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Order #${(order._id || order.id)?.slice(-8).toUpperCase()}`} size="md">
       <div style={{ color: 'var(--color-text-3)', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', marginBottom: 20 }}>
@@ -73,8 +97,15 @@ function OrderDetailModal({ order, isOpen, onClose }) {
                 <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>{prod.name}</div>
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{prod.series}</div>
               </div>
-              <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-accent)', flexShrink: 0 }}>
-                ${(item.price || prod.price || 0).toFixed(2)}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}>
+                  ${(item.price || prod.price || 0).toFixed(2)}
+                </div>
+                {order.status === 'completed' && (
+                  <button onClick={() => handleDownload(prod)} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: 'var(--text-xs)', cursor: 'pointer', letterSpacing: 1, textTransform: 'uppercase', padding: 0 }}>
+                    Download ↓
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -87,9 +118,15 @@ function OrderDetailModal({ order, isOpen, onClose }) {
           ${(order.totalAmount || order.total || 0).toFixed(2)}
         </span>
       </div>
-      <div style={{ marginTop: 8, fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
-        Downloads available in your{' '}
-        <a href="/dashboard/library" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>Library</a>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>
+          Downloads available in your <Link to="/dashboard/library" style={{ color: 'var(--color-accent)', textDecoration: 'none' }}>Library</Link>
+        </div>
+        {order.status === 'pending' && (
+          <button onClick={handleCancel} disabled={canceling} className="btn btn-secondary btn-sm" style={{ borderColor: 'var(--color-error)', color: 'var(--color-error)' }}>
+            {canceling ? 'Canceling...' : 'Cancel Order'}
+          </button>
+        )}
       </div>
     </Modal>
   );
@@ -97,6 +134,7 @@ function OrderDetailModal({ order, isOpen, onClose }) {
 
 export default function OrdersPage() {
   useTitle('My Orders');
+  const { addToast } = useUI();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
@@ -110,6 +148,16 @@ export default function OrdersPage() {
       .catch(() => setOrders([]))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleCancelOrder = async (orderId) => {
+    try {
+      await apiClient.post(`/orders/${orderId}/cancel`);
+      setOrders(prev => prev.map(o => (o._id || o.id) === orderId ? { ...o, status: 'cancelled' } : o));
+      addToast('Order cancelled.', 'success');
+    } catch {
+      addToast('Failed to cancel order.', 'error');
+    }
+  };
 
   return (
     <div>
@@ -131,7 +179,7 @@ export default function OrdersPage() {
         </div>
       )}
 
-      <OrderDetailModal order={selectedOrder} isOpen={!!selectedOrder} onClose={() => setSelectedOrder(null)} />
+      <OrderDetailModal order={selectedOrder} isOpen={!!selectedOrder} onClose={() => setSelectedOrder(null)} onCancel={handleCancelOrder} />
     </div>
   );
 }

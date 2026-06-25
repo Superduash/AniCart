@@ -1,5 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useWindowWidth } from '../hooks/useWindowWidth';
 import { useTitle } from '../hooks/useTitle';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -54,6 +56,8 @@ export default function CartPage() {
   const { cart, cartTotal, cartLoading, removeFromCart, clearCart } = useCart();
   const { addToast } = useUI();
   const [recommended, setRecommended] = React.useState([]);
+  const width = useWindowWidth();
+  const isMobile = width < 900;
 
   React.useEffect(() => {
     if (cart.length > 0) {
@@ -69,7 +73,7 @@ export default function CartPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 80 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--navbar-height) + 10px)' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 40px 80px' }}>
         <Breadcrumbs items={[{ label: 'Home', path: '/' }, { label: 'Your Cart' }]} />
         <h1 style={{ fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: 'clamp(1.5rem, 3vw, 2rem)', color: 'var(--color-text)', marginBottom: 8 }}>
@@ -94,23 +98,36 @@ export default function CartPage() {
             ctaTo="/marketplace"
           />
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 32, alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: 32, alignItems: 'start' }}>
             {/* Items */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)' }}>
                   Items
                 </div>
-                <button onClick={clearCart} style={{ background: 'none', border: 'none', color: 'var(--color-text-3)', cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', letterSpacing: 1, textTransform: 'uppercase', transition: 'color 0.15s' }}
+                <button onClick={() => { if (window.confirm('Are you sure you want to clear your cart?')) clearCart(); }} style={{ background: 'none', border: 'none', color: 'var(--color-text-3)', cursor: 'pointer', fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', letterSpacing: 1, textTransform: 'uppercase', transition: 'color 0.15s' }}
                   onMouseEnter={e => e.target.style.color = 'var(--color-error)'}
                   onMouseLeave={e => e.target.style.color = 'var(--color-text-3)'}
                 >
                   Clear All
                 </button>
               </div>
-              {cart.map(item => (
-                <CartItem key={item._id || item.id} item={item} onRemove={removeFromCart} />
-              ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <AnimatePresence initial={false}>
+                  {cart.map(item => (
+                    <motion.div
+                      key={item._id || item.id}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <CartItem item={item} onRemove={removeFromCart} />
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
+              </div>
               <div style={{ marginTop: 20 }}>
                 <Link to="/marketplace" className="btn btn-secondary">
                   ← Continue Shopping

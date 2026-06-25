@@ -9,31 +9,43 @@ export default function AdminProductsPage() {
   const { addToast } = useUI();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [processingId, setProcessingId] = useState(null);
+  const [rejectReason, setRejectReason] = useState({});
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/products/admin/pending');
-      const data = res.data?.data || [];
+      const res = await apiClient.get('/products/admin/pending', { params: { limit: 12, page } });
+      const data = res.data?.data?.products || res.data?.data || [];
       setProducts(Array.isArray(data) ? data : []);
-    } catch { setProducts([]); }
+      setTotal(res.data?.data?.total || data.length || 0);
+    } catch { 
+      setProducts([]); 
+      setTotal(0);
+    }
     finally { setLoading(false); }
   };
 
-  useEffect(() => { loadProducts(); }, []);
+  useEffect(() => { loadProducts(); }, [page]);
 
   const handleAction = async (id, action) => {
+    setProcessingId(id);
     try {
       if (action === 'approve') {
         await apiClient.put(`/products/${id}/approve`);
         addToast('Product approved and live!', 'success');
       } else {
-        await apiClient.put(`/products/${id}/reject`);
+        const reason = rejectReason[id] || 'Does not meet marketplace guidelines.';
+        await apiClient.put(`/products/${id}/reject`, { rejectionReason: reason });
         addToast('Product rejected.', 'info');
       }
       setProducts(p => p.filter(x => x._id !== id));
     } catch {
       addToast(`Failed to ${action} product.`, 'error');
+    } finally {
+      setProcessingId(null);
     }
   };
 
@@ -43,7 +55,7 @@ export default function AdminProductsPage() {
         Moderation Queue
       </h1>
       <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-sm)', letterSpacing: 2, textTransform: 'uppercase', color: 'var(--color-text-3)', marginBottom: 32 }}>
-        {products.length} pending review
+        {total} pending review
       </div>
 
       {loading ? (
@@ -72,13 +84,40 @@ export default function AdminProductsPage() {
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', marginBottom: 20, padding: 12, background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)' }}>
                   By: {p.creator?.name || p.creatorId || 'Unknown'}
                 </div>
+                
+                <textarea
+                  placeholder="Rejection reason (optional)"
+                  value={rejectReason[p._id] || ''}
+                  onChange={(e) => setRejectReason({ ...rejectReason, [p._id]: e.target.value })}
+                  style={{ width: '100%', minHeight: 60, padding: '8px 12px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-text)', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', marginBottom: 12, resize: 'vertical' }}
+                  disabled={processingId === p._id}
+                />
+
                 <div style={{ display: 'flex', gap: 12 }}>
-                  <button onClick={() => handleAction(p._id, 'reject')} className="btn btn-muted" style={{ flex: 1, color: 'var(--color-error)' }}>Reject</button>
-                  <button onClick={() => handleAction(p._id, 'approve')} className="btn btn-primary" style={{ flex: 1, background: 'var(--color-pink)', color: '#fff' }}>Approve</button>
+                  <button onClick={() => handleAction(p._id, 'reject')} disabled={processingId === p._id} className="btn btn-muted" style={{ flex: 1, color: 'var(--color-error)' }}>
+                    {processingId === p._id ? 'Processing...' : 'Reject'}
+                  </button>
+                  <button onClick={() => handleAction(p._id, 'approve')} disabled={processingId === p._id} className="btn btn-primary" style={{ flex: 1, background: 'var(--color-pink)', color: '#fff' }}>
+                    {processingId === p._id ? 'Processing...' : 'Approve'}
+                  </button>
                 </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {!loading && total > 12 && (
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12, marginTop: 40 }}>
+          <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1} className="btn btn-muted">
+            ← Prev
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', padding: '0 16px', fontFamily: 'JetBrains Mono, monospace', color: 'var(--color-text-2)' }}>
+            Page {page} of {Math.ceil(total / 12)}
+          </div>
+          <button onClick={() => setPage(p => p + 1)} disabled={page >= Math.ceil(total / 12)} className="btn btn-muted">
+            Next →
+          </button>
         </div>
       )}
     </div>

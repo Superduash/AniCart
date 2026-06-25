@@ -46,11 +46,14 @@ export function AuthProvider({ children }) {
             if (saved) setUser(JSON.parse(saved));
           }
         }
-      } catch {
-        // Refresh failed — user is not authenticated
-        setAccessToken(null);
-        setUser(null);
-        localStorage.removeItem('anicart_user');
+      } catch (error) {
+        // Refresh failed — check if it's an explicit auth error (401/403)
+        // If it's a network error (server still starting), keep the user in UI
+        if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+          setAccessToken(null);
+          setUser(null);
+          localStorage.removeItem('anicart_user');
+        }
       } finally {
         setIsLoading(false);
       }

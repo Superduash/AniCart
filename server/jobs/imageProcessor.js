@@ -183,9 +183,9 @@ async function processImageJob(job) {
   // Step 3: Check file size (> 50MB = flagged)
   if (originalBuffer.length > MAX_FILE_SIZE_BYTES) {
     console.log(`[Worker] File too large (${originalBuffer.length} bytes), flagging product`);
-    product.assets.status = 'flagged';
+    product.assets.status = 'failed';
     await product.save();
-    return { status: 'flagged', reason: 'File too large' };
+    return { status: 'failed', reason: 'File too large' };
   }
 
   // Step 4: Update progress to 30%
@@ -303,15 +303,27 @@ async function processImageJob(job) {
       contentType: PUBLIC_VARIANT_CONFIG.thumbnail.mimeType,
       size: thumbnailBuffer.length,
     },
-    status: failedVariants.length > 0 ? 'flagged' : 'ready',
+    status: failedVariants.length > 0 ? 'failed' : 'ready',
   };
   product.img = thumbnailUpload.url;
   if (successfulResolutions.length > 0) {
     product.resolution = RESOLUTION_DISPLAY_MAP[successfulResolutions[0]] || product.resolution;
   }
-  product.status = failedVariants.length > 0 ? 'review' : 'active';
+  product.status = failedVariants.length > 0 ? 'pending' : 'active';
 
   await product.save();
+
+  // Clear products cache to show new active products on the marketplace immediately
+  if (product.status === 'active' && redisConnection) {
+    try {
+      const keys = await redisConnection.keys('products:*');
+      if (keys.length > 0) {
+        await redisConnection.del(...keys);
+      }
+    } catch (err) {
+      console.error(`[Worker] Failed to clear Redis cache:`, err.message);
+    }
+  }
 
   // Step 8: Update progress to 100%
   await job.updateProgress(100);
@@ -350,8 +362,8 @@ async function handleJobFailure(job, error) {
   try {
     const product = await Product.findById(productId);
     if (product) {
-      product.assets.status = 'flagged';
-      product.status = 'review';
+      product.assets.status = 'failed';
+      product.status = 'pending';
       await product.save();
       console.log(`[Worker] Product ${productId} flagged due to processing error`);
 
@@ -360,7 +372,7 @@ async function handleJobFailure(job, error) {
         const { getIo } = require('../socket');
         getIo().to(`user_${job.data.creatorId}`).emit('product_status_updated', {
           productId,
-          status: 'flagged',
+          status: 'failed',
           error: error.message,
         });
       } catch (err) {}

@@ -5,6 +5,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUI } from '../../contexts/UIContext';
 import { motion } from 'framer-motion';
 import apiClient from '../../api/client';
+import { Heart } from 'lucide-react';
 
 function StarRating({ rating, count }) {
   if (!rating || rating === 0) return null;
@@ -35,6 +36,7 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
   const { addToast } = useUI();
   const [wishlisted, setWishlisted] = useState(product.isWishlisted || false);
   const [wishlistLoading, setWishlistLoading] = useState(false);
+  const [animatingHeart, setAnimatingHeart] = useState(false);
 
   const id = product._id || product.id;
   const inCart = cart.some(i => (i._id || i.id) === id);
@@ -71,6 +73,11 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
     }
     const newState = !wishlisted;
     setWishlisted(newState);
+    if (newState) {
+      setAnimatingHeart(true);
+      setTimeout(() => setAnimatingHeart(false), 600);
+    }
+    
     try {
       if (newState) {
         await apiClient.post(`/users/wishlist/${id}`);
@@ -134,7 +141,12 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
             onClick={handleWishlist}
             aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           >
-            {wishlisted ? '♥' : '♡'}
+            <Heart 
+              size={16} 
+              className={`wishlist-heart-icon ${animatingHeart ? 'animating' : ''}`}
+              fill={wishlisted ? 'currentColor' : 'none'}
+              strokeWidth={wishlisted ? 0 : 2}
+            />
           </button>
         )}
 
@@ -174,7 +186,9 @@ export default function ProductCard({ product, inLibrary = false, onDownload }) 
             </button>
           ) : (
             <>
-              <div className="product-price">${(product.price || 0).toFixed(2)}</div>
+              <div className="product-price">
+                {(!product.price || product.price === 0) ? 'Free' : `$${product.price % 1 === 0 ? product.price : product.price.toFixed(2)}`}
+              </div>
               <button
                 className="btn btn-sm btn-primary"
                 onClick={handleCartAction}

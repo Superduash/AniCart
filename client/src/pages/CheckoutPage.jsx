@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useTitle } from '../hooks/useTitle';
+import { useWindowWidth } from '../hooks/useWindowWidth';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
@@ -47,8 +48,7 @@ function CheckoutForm({ clientSecret, total }) {
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         // Success
         clearCart();
-        addToast('Payment successful! Wallpapers added to your library.', 'success');
-        navigate('/dashboard/orders');
+        navigate('/checkout/success');
       } else {
         setError('Payment failed or requires further action.');
       }
@@ -93,6 +93,8 @@ export default function CheckoutPage() {
   const [clientSecret, setClientSecret] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const width = useWindowWidth();
+  const isMobile = width < 900;
 
   useEffect(() => {
     if (cart.length === 0) {
@@ -143,7 +145,7 @@ export default function CheckoutPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 80 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--navbar-height) + 10px)' }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 40px 80px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
           <button onClick={() => navigate('/cart')} style={{ background: 'none', border: 'none', color: 'var(--color-text-3)', cursor: 'pointer', fontSize: '1.2rem', padding: 0 }}>←</button>
@@ -152,9 +154,9 @@ export default function CheckoutPage() {
           </h1>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 40, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 380px', gap: 40, alignItems: 'start', flexDirection: isMobile ? 'column-reverse' : 'row' }}>
           {/* Payment Column */}
-          <div>
+          <div style={{ order: isMobile ? 2 : 1 }}>
             {loading ? (
               <div style={{ padding: 40, textAlign: 'center', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)' }}>
                 <div className="loading-spinner light" style={{ width: 36, height: 36, margin: '0 auto 16px' }} />
@@ -177,7 +179,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Order Summary Sidebar */}
-          <div style={{ position: 'sticky', top: 100 }}>
+          <div style={{ position: 'sticky', top: 100, order: isMobile ? 1 : 2 }}>
             <div style={{ background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: 28 }}>
               <h3 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', marginBottom: 20, letterSpacing: 1, textTransform: 'uppercase' }}>
                 Order Summary

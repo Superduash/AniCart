@@ -15,7 +15,12 @@ export default function CreatorStatsPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{ color: 'var(--color-text-3)' }}>Loading stats...</div>;
+  if (loading) return (
+    <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--color-text-3)', fontFamily: 'Inter, sans-serif' }}>
+      <div className="loading-spinner light" style={{ width: 32, height: 32, margin: '0 auto 16px' }} />
+      <div style={{ fontSize: 'var(--text-sm)' }}>Loading stats...</div>
+    </div>
+  );
   if (!stats) return <div style={{ color: 'var(--color-error)' }}>Failed to load stats.</div>;
 
   return (

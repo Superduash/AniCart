@@ -4,6 +4,8 @@ import { useUI } from '../../contexts/UIContext';
 import apiClient from '../../api/client';
 import Modal from '../../components/ui/Modal';
 import { useSocket } from '../../contexts/SocketContext';
+import { ProductCardSkeleton } from '../../components/ui/Skeleton';
+import { Link } from 'react-router-dom';
 
 function FileUploadBox({ label, accept, onFile, file, subtext }) {
   const [drag, setDrag] = useState(false);
@@ -56,6 +58,7 @@ export default function CreatorUploadsPage() {
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [form, setForm] = useState({ name: '', description: '', price: 5, series: '', resolution: '4K', format: 'WebP' });
   const [sourceFile, setSourceFile] = useState(null);
   const { socket } = useSocket();
@@ -135,13 +138,13 @@ export default function CreatorUploadsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this product?')) return;
     try {
       // C5 Fix: correct URL is /creator/products/:id (was /creators/products/:id)
       await apiClient.delete(`/creator/products/${id}`);
       setProducts(p => p.filter(x => x._id !== id));
       addToast('Product deleted.', 'info');
     } catch { addToast('Failed to delete.', 'error'); }
+    setDeletingId(null);
   };
 
   return (
@@ -161,7 +164,9 @@ export default function CreatorUploadsPage() {
       </div>
 
       {loading ? (
-        <div style={{ color: 'var(--color-text-3)', fontFamily: 'Inter, sans-serif' }}>Loading...</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
+          {Array(6).fill(0).map((_, i) => <ProductCardSkeleton key={i} />)}
+        </div>
       ) : products.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '80px 20px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
           <div style={{ fontSize: '3rem', marginBottom: 16, opacity: 0.5 }}>📤</div>
@@ -189,7 +194,19 @@ export default function CreatorUploadsPage() {
                   <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}>${p.price.toFixed(2)}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => handleDelete(p._id)} className="btn btn-muted btn-sm" style={{ flex: 1, color: 'var(--color-error)' }}>Delete</button>
+                  {p.status === 'active' && (
+                    <Link to={`/products/${p._id}`} className="btn btn-secondary btn-sm" style={{ flex: 1, textAlign: 'center' }}>
+                      View
+                    </Link>
+                  )}
+                  {deletingId === p._id ? (
+                    <div style={{ display: 'flex', gap: 4, flex: 1 }}>
+                      <button onClick={() => handleDelete(p._id)} className="btn btn-muted btn-sm" style={{ flex: 1, background: 'var(--color-error)', color: '#fff' }}>Sure?</button>
+                      <button onClick={() => setDeletingId(null)} className="btn btn-muted btn-sm" style={{ flex: 1 }}>No</button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setDeletingId(p._id)} className="btn btn-muted btn-sm" style={{ flex: 1, color: 'var(--color-error)' }}>Delete</button>
+                  )}
                 </div>
               </div>
             </div>

@@ -7,12 +7,24 @@ const CartContext = createContext(null);
 export function CartProvider({ children }) {
   const { user } = useAuth();
   const [cart, setCart] = useState([]);
-  const [cartLoading, setCartLoading] = useState(false);
+  const [cartLoading, setCartLoading] = useState(true);
   const [loadedGuest, setLoadedGuest] = useState(false);
 
   // Load cart from API when user logs in, from localStorage for guests
   useEffect(() => {
     if (user) {
+      const saved = localStorage.getItem('anicart_cart');
+      if (saved) {
+        try {
+          const guestCart = JSON.parse(saved);
+          if (guestCart.length > 0) {
+            syncCart(guestCart).then(() => {
+              localStorage.removeItem('anicart_cart');
+            });
+            return;
+          }
+        } catch {}
+      }
       fetchCart();
     } else {
       // Guest: load from localStorage
@@ -21,8 +33,9 @@ export function CartProvider({ children }) {
         if (saved) setCart(JSON.parse(saved));
       } catch { setCart([]); }
       setLoadedGuest(true);
+      setCartLoading(false);
     }
-  }, [user]);
+  }, [user, fetchCart, syncCart]);
 
   // Persist guest cart to localStorage
   useEffect(() => {
@@ -92,14 +105,18 @@ export function CartProvider({ children }) {
 
   // Sync guest cart to server on login
   const syncCart = useCallback(async (localCart) => {
-    if (!localCart?.length) return;
+    if (!localCart?.length) {
+      fetchCart();
+      return;
+    }
+    setCartLoading(true);
     try {
       await apiClient.post('/cart/sync', {
         items: localCart.map(i => ({ productId: i._id || i.id }))
       });
       fetchCart();
     } catch { fetchCart(); }
-  }, []);
+  }, [fetchCart]);
 
   const cartTotal = cart.reduce((sum, i) => sum + (i.price || 0), 0);
   const cartCount = cart.length;

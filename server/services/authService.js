@@ -178,7 +178,8 @@ async function refreshToken(refreshTokenString) {
     if (!user) {
       throw new Error('User not found');
     }
-    return generateTokens(user);
+    const tokens = generateTokens(user);
+    return { user, ...tokens };
   } catch {
     throw ApiError.unauthorized('Invalid refresh token');
   }

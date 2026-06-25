@@ -16,21 +16,15 @@ export default function Footer() {
           <li><Link to="/marketplace">Browse</Link></li>
           <li><Link to="/auth/login">Login</Link></li>
           <li><Link to="/auth/signup">Sign Up</Link></li>
-          <li><Link to="/creator">Creator Program</Link></li>
+          <li><Link to="/creator/apply">Creator Program</Link></li>
         </ul>
 
         {/* Right */}
         <div style={{ textAlign: 'right' }}>
-          <div className="footer-copy">© 2025 AniCart. All rights reserved.</div>
+          <div className="footer-copy">© {new Date().getFullYear()} AniCart. All rights reserved.</div>
           <div style={{ display: 'flex', gap: 16, justifyContent: 'flex-end', marginTop: 8 }}>
-            <a href="#" style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.8rem', color: 'var(--color-text-3)', transition: 'color 0.15s' }}
-              onMouseEnter={e => e.target.style.color = 'var(--color-accent)'}
-              onMouseLeave={e => e.target.style.color = 'var(--color-text-3)'}
-            >Privacy</a>
-            <a href="#" style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.8rem', color: 'var(--color-text-3)', transition: 'color 0.15s' }}
-              onMouseEnter={e => e.target.style.color = 'var(--color-accent)'}
-              onMouseLeave={e => e.target.style.color = 'var(--color-text-3)'}
-            >Terms</a>
+            <Link to="/privacy" className="footer-link-small">Privacy</Link>
+            <Link to="/terms" className="footer-link-small">Terms</Link>
           </div>
         </div>
       </div>
