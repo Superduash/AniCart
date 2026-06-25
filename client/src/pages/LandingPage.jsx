@@ -94,33 +94,26 @@ function HeroSlider({ products, loading, user }) {
     return null;
   }
 
-  // Animation variants for ultra-smooth transitions
+  // Animation variants - fast and smooth
   const slideVariants = {
     enter: (direction) => ({
-      x: direction > 0 ? 80 : -80,
-      opacity: 0,
-      scale: 0.97
+      x: direction > 0 ? 60 : -60,
+      opacity: 0
     }),
     center: {
       x: 0,
       opacity: 1,
-      scale: 1,
       transition: {
-        duration: 0.6,
-        ease: [0.25, 0.1, 0.25, 1],
-        x: { type: 'spring', stiffness: 300, damping: 30 },
-        opacity: { duration: 0.5 },
-        scale: { duration: 0.5 }
+        duration: 0.35,
+        ease: [0.25, 0.1, 0.25, 1]
       }
     },
     exit: (direction) => ({
-      x: direction < 0 ? 80 : -80,
+      x: direction < 0 ? 60 : -60,
       opacity: 0,
-      scale: 0.97,
       transition: {
-        duration: 0.5,
-        ease: [0.25, 0.1, 0.25, 1],
-        x: { type: 'spring', stiffness: 300, damping: 30 }
+        duration: 0.35,
+        ease: [0.25, 0.1, 0.25, 1]
       }
     })
   };
