@@ -163,18 +163,6 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
         )}
 
         {/* Overlay - always visible on mobile, hover on desktop */}
-        {!inLibrary && (
-          <div className={`product-overlay${isMobile ? ' visible' : ''}`}>
-            <button
-              className="product-quick-add"
-              onClick={handleCartAction}
-              aria-label={inCart ? 'View cart' : `Add ${product.name} to cart`}
-              style={{ minWidth: isMobile ? 'auto' : 'initial', height: isMobile ? 44 : 'initial' }}
-            >
-              {inCart ? '✓ In Cart' : '+ Add to Cart'}
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Info */}
@@ -188,30 +176,6 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
         <StarRating rating={product.rating || product.averageRating} count={product.reviewCount || product.reviews} />
 
         <div className="product-footer">
-          {inLibrary || product.price === 0 ? (
-            <button
-              className="btn btn-sm"
-              onClick={handleDownload}
-              aria-label={`Download ${product.name}`}
-              style={{ background: 'var(--color-accent)', color: 'var(--color-void)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-xs)', letterSpacing: 1, padding: '6px 14px', borderRadius: 'var(--radius-sm)', border: 'none', cursor: 'pointer', width: '100%', transition: 'box-shadow 0.15s' }}
-            >
-              ↓ {inLibrary ? 'Download' : 'Free Download'}
-            </button>
-          ) : (
-            <>
-              <div className="product-price">
-                {(!product.price || product.price === 0) ? 'Free' : `$${product.price % 1 === 0 ? product.price : product.price.toFixed(2)}`}
-              </div>
-              <button
-                className="btn btn-sm btn-primary"
-                onClick={handleCartAction}
-                aria-label={inCart ? 'View cart' : `Add ${product.name} to cart`}
-                style={{ fontSize: 'var(--text-xs)', padding: '0 12px', height: isMobile ? 44 : 32 }}
-              >
-                {inCart ? '✓ In Cart' : '+'}
-              </button>
-            </>
-          )}
         </div>
       </div>
     </motion.article>
