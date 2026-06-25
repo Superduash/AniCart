@@ -198,26 +198,30 @@ const updateProductForAdmin = catchAsync(async (req, res) => {
   }
   
   // Auto-detect resolution if explicitly cleared or set to auto-detect (empty string / null)
-  let targetDisplayResolution = displayResolution;
-  if (displayResolution === '' || displayResolution === null) {
-    const meta = resolutionService.computeResolutionMetadata(product);
-    targetDisplayResolution = meta.displayResolutionLabel || undefined;
+  if (displayResolution !== undefined) {
+    let targetDisplayResolution = displayResolution;
+    if (displayResolution === '' || displayResolution === null) {
+      const meta = resolutionService.computeResolutionMetadata(product);
+      targetDisplayResolution = meta.displayResolutionLabel || '';
+    }
+    const currentDisplayResolution = product.displayResolution || '';
+    if (targetDisplayResolution !== currentDisplayResolution) {
+      changes.displayResolution = { old: product.displayResolution, new: targetDisplayResolution || undefined };
+      product.displayResolution = targetDisplayResolution || undefined;
+    }
   }
 
-  let targetDefaultDownload = defaultDownload;
-  if (defaultDownload === '' || defaultDownload === null) {
-    const meta = resolutionService.computeResolutionMetadata(product);
-    targetDefaultDownload = meta.defaultDownload || undefined;
-  }
-
-  if (targetDisplayResolution !== undefined && targetDisplayResolution !== product.displayResolution) {
-    changes.displayResolution = { old: product.displayResolution, new: targetDisplayResolution };
-    product.displayResolution = targetDisplayResolution;
-  }
-  
-  if (targetDefaultDownload !== undefined && targetDefaultDownload !== product.defaultDownload) {
-    changes.defaultDownload = { old: product.defaultDownload, new: targetDefaultDownload };
-    product.defaultDownload = targetDefaultDownload;
+  if (defaultDownload !== undefined) {
+    let targetDefaultDownload = defaultDownload;
+    if (defaultDownload === '' || defaultDownload === null) {
+      const meta = resolutionService.computeResolutionMetadata(product);
+      targetDefaultDownload = meta.defaultDownload || '';
+    }
+    const currentDefaultDownload = product.defaultDownload || '';
+    if (targetDefaultDownload !== currentDefaultDownload) {
+      changes.defaultDownload = { old: product.defaultDownload, new: targetDefaultDownload || undefined };
+      product.defaultDownload = targetDefaultDownload || undefined;
+    }
   }
   
   if (availableResolutions !== undefined && JSON.stringify(availableResolutions) !== JSON.stringify(product.availableResolutions)) {

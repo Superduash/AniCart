@@ -43,10 +43,7 @@ export default function AdminShell() {
         </div>
       </aside>
       <div className="dashboard-content">
-        <Routes>
-          <Route path="/products/:id/edit" element={<Outlet />} />
-          <Route path="*" element={<Outlet />} />
-        </Routes>
+        <Outlet />
       </div>
     </div>
   );
