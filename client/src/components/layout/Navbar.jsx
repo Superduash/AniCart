@@ -145,6 +145,11 @@ export default function Navbar() {
       {!isMobile && (
         <ul className="nav-links" style={{ flex: 1, justifyContent: 'center', gap: '32px' }}>
           <li>
+            <Link to="/" className={`nav-link${location.pathname === '/' ? ' active' : ''}`} style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
+              Home
+            </Link>
+          </li>
+          <li>
             <Link to="/marketplace" className={`nav-link${location.pathname.startsWith('/marketplace') ? ' active' : ''}`} style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: '1.05rem', letterSpacing: 1 }}>
               Browse
             </Link>
@@ -345,7 +350,8 @@ export default function Navbar() {
               </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <Link to="/marketplace" className={`nav-link${location.pathname.startsWith('/marketplace') ? ' active' : ''}`} style={{ padding: '12px 8px' }}>Browse</Link>
+              <Link to="/" onClick={() => setMobileOpen(false)} className={`nav-link${location.pathname === '/' ? ' active' : ''}`} style={{ padding: '12px 8px' }}>Home</Link>
+              <Link to="/marketplace" onClick={() => setMobileOpen(false)} className={`nav-link${location.pathname.startsWith('/marketplace') ? ' active' : ''}`} style={{ padding: '12px 8px' }}>Browse</Link>
               <Link to={user ? (user.role === 'creator' || user.role === 'admin' ? '/creator' : '/creator/apply') : '/auth/signup'} className={`nav-link${location.pathname.startsWith('/creator') ? ' active' : ''}`} style={{ padding: '12px 8px' }}>Creators</Link>
               {user ? (
                 <>
