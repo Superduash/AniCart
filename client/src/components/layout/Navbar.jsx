@@ -135,6 +135,7 @@ export default function Navbar() {
       className={`navbar${scrolled ? ' scrolled' : ''}`}
       role="navigation"
       aria-label="Main navigation"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
     >
       {/* Logo */}
       <Link to="/" className="nav-logo" aria-label="AniCart — Premium Anime Wallpapers">
@@ -170,7 +171,7 @@ export default function Navbar() {
       )}
 
       {/* Right side */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 4 : 12, flexShrink: 0 }}>
         {/* Search */}
         {!isMobile ? (
           <div
@@ -195,20 +196,21 @@ export default function Navbar() {
             className="nav-link"
             onClick={() => setSearchOpen(true)}
             aria-label="Open search (Ctrl+K)"
-            style={{ fontSize: '1rem', padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            style={{ fontSize: '1rem', padding: '12px', minWidth: 44, minHeight: 44, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <Search size={20} />
+            <Search size={22} />
           </button>
         )}
 
-        {!isMobile && user && (
+        {/* Wishlist - visible on both desktop and mobile */}
+        {user && (
           <Link
             to="/dashboard/wishlist"
             className={`nav-link${location.pathname === '/dashboard/wishlist' ? ' active' : ''}`}
             aria-label="Wishlist"
-            style={{ fontSize: '1rem', padding: '8px 10px', display: 'flex', alignItems: 'center' }}
+            style={{ fontSize: '1rem', padding: isMobile ? '12px' : '8px 10px', minWidth: isMobile ? 44 : 'auto', minHeight: isMobile ? 44 : 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            <Heart size={20} />
+            <Heart size={22} />
           </Link>
         )}
 
@@ -217,7 +219,7 @@ export default function Navbar() {
           to="/cart"
           className={`nav-link${location.pathname === '/cart' ? ' active' : ''}`}
           aria-label={`${cartCount} items in cart`}
-          style={{ position: 'relative', padding: '8px 10px', fontSize: '1rem', display: 'flex', alignItems: 'center' }}
+          style={{ position: 'relative', padding: isMobile ? '12px' : '8px 10px', minWidth: isMobile ? 44 : 'auto', minHeight: isMobile ? 44 : 'auto', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           <ShoppingCart size={20} />
           <AnimatePresence>
@@ -257,16 +259,16 @@ export default function Navbar() {
               aria-label="User menu"
               aria-expanded={avatarOpen}
               style={{
-                width: 36, height: 36,
+                width: isMobile ? 40 : 36, height: isMobile ? 40 : 36,
                 borderRadius: '50%',
                 background: 'var(--gradient-brand)',
                 border: avatarOpen ? '2px solid var(--color-accent)' : '2px solid transparent',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '0.75rem',
+                fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: isMobile ? '0.8rem' : '0.75rem',
                 color: 'var(--color-void)',
                 cursor: 'pointer',
                 transition: 'border-color 0.15s',
-                marginLeft: 4,
+                marginLeft: isMobile ? 0 : 4,
               }}
             >
               {getInitials(user.name)}
@@ -286,7 +288,7 @@ export default function Navbar() {
               className="nav-link"
               onClick={() => setMobileOpen(p => !p)}
               aria-label="Open menu"
-              style={{ padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--color-text)' }}
+              style={{ padding: '12px', minWidth: 44, minHeight: 44, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text)' }}
             >
               {mobileOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -298,7 +300,7 @@ export default function Navbar() {
             className="nav-link"
             onClick={() => setMobileOpen(p => !p)}
             aria-label="Open menu"
-            style={{ padding: '8px 10px', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', color: 'var(--color-text)' }}
+            style={{ padding: '12px', minWidth: 44, minHeight: 44, background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text)' }}
           >
             {mobileOpen ? <X size={24} /> : <Menu size={24} />}
           </button>

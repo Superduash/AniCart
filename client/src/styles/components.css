@@ -123,7 +123,8 @@
   top: 0; left: 0; right: 0;
   z-index: 100;
   padding: 0 40px;
-  height: 70px;
+  padding-top: var(--safe-area-top);
+  height: calc(70px + var(--safe-area-top));
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -587,6 +588,10 @@
   transition: opacity var(--transition-base);
 }
 .product-card:hover .product-overlay { opacity: 1; }
+.product-overlay.visible {
+  opacity: 1;
+  background: linear-gradient(to top, rgba(2,6,23,0.9) 0%, transparent 40%);
+}
 @media (hover: none) {
   .product-overlay {
     opacity: 1;

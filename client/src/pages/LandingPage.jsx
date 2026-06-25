@@ -378,6 +378,8 @@ export default function LandingPage() {
   useTitle('Premium Anime Wallpapers');
   const navigate = useNavigate();
   const { user } = useAuth();
+  const width = useWindowWidth();
+  const isMobile = width < 768;
   const [products, setProducts] = useState([]);
   const [heroProducts, setHeroProducts] = useState([]);
   const [series, setSeries] = useState([]);
@@ -480,7 +482,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section style={{ padding: '80px 40px', background: 'linear-gradient(180deg, transparent 0%, rgba(0,243,255,0.02) 50%, transparent 100%)' }}>
+      <section style={{ padding: isMobile ? '60px 16px' : '80px 40px', background: 'linear-gradient(180deg, transparent 0%, rgba(0,243,255,0.02) 50%, transparent 100%)' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div className="section-header">
             <div className="section-tag">◈ THE PROCESS</div>
@@ -509,8 +511,8 @@ export default function LandingPage() {
       </section>
 
       {/* ─── CREATOR CTA ─── */}
-      <section className="section" style={{ paddingBottom: 80 }}>
-        <div className="glass-card" style={{ padding: '64px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+      <section className="section" style={{ paddingBottom: isMobile ? 60 : 80 }}>
+        <div className="glass-card" style={{ padding: isMobile ? '40px 20px' : '64px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse at center, rgba(124,58,237,0.06) 0%, transparent 70%)', pointerEvents: 'none' }} />
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, var(--color-purple), transparent)' }} />
           <div style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: '0.8rem', letterSpacing: 4, textTransform: 'uppercase', color: 'var(--color-purple-light)', marginBottom: 16 }}>Are you an artist?</div>

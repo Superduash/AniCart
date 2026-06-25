@@ -124,7 +124,7 @@ export default function DashboardShell() {
           </nav>
         )}
 
-        <div className="dashboard-content" style={{ padding: isMobile ? '24px 16px' : '32px 40px' }}>
+        <div className="dashboard-content" style={{ padding: isMobile ? '24px 16px 100px' : '32px 40px' }}>
           <Outlet />
         </div>
       </div>

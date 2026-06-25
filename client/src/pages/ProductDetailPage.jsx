@@ -5,6 +5,7 @@ import { useSEO } from '../hooks/useSEO';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useUI } from '../contexts/UIContext';
+import { useWindowWidth } from '../hooks/useWindowWidth';
 import apiClient from '../api/client';
 import { ProductCardSkeleton } from '../components/ui/Skeleton';
 import ProductCard from '../components/product/ProductCard';
@@ -47,6 +48,8 @@ export default function ProductDetailPage() {
   const { user, updateUser } = useAuth();
   const { cart, addToCart } = useCart();
   const { addToast } = useUI();
+  const width = useWindowWidth();
+  const isMobile = width < 768;
   const [productName, setProductName] = useState('');
   const [product, setProduct] = useState(null);
   const [downloadResolution, setDownloadResolution] = useState('4k');
@@ -222,8 +225,8 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '120px 40px 80px', maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '55% 45%', gap: 48 }}>
+      <div style={{ padding: isMobile ? '100px 16px 60px' : '120px 40px 80px', maxWidth: 1200, margin: '0 auto' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '55% 45%', gap: isMobile ? 24 : 48 }}>
           <div className="skeleton" style={{ aspectRatio: '16/10', borderRadius: 'var(--radius-xl)' }} />
           <div>
             <div className="skeleton" style={{ height: 14, width: '40%', marginBottom: 16, borderRadius: 8 }} />
@@ -258,7 +261,7 @@ export default function ProductDetailPage() {
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--navbar-height) + 10px)' }}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 40px 80px' }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '20px 16px 100px' : '40px 40px 80px' }}>
         {/* Breadcrumb */}
         <Breadcrumbs items={[
           { label: 'Home', path: '/' },
@@ -266,8 +269,8 @@ export default function ProductDetailPage() {
           { label: product.name }
         ]} />
 
-        {/* Main 2-col */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,55%) minmax(0,45%)', gap: 48, alignItems: 'start' }}>
+        {/* Main layout - stacked on mobile, 2-col on desktop */}
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,55%) minmax(0,45%)', gap: isMobile ? 24 : 48, alignItems: 'start' }}>
           {/* LEFT: image */}
           <div>
             <div style={{ position: 'relative', borderRadius: 'var(--radius-xl)', overflow: 'hidden', aspectRatio: '16/10', boxShadow: 'var(--shadow-xl)' }}>
@@ -287,7 +290,7 @@ export default function ProductDetailPage() {
           </div>
 
           {/* RIGHT: info */}
-          <div style={{ position: 'sticky', top: 100 }}>
+          <div style={{ position: isMobile ? 'static' : 'sticky', top: isMobile ? 'auto' : 100 }}>
             {/* Meta */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
               {product.series && (
@@ -331,7 +334,7 @@ export default function ProductDetailPage() {
 
             {/* Price */}
             {!inLibrary && (
-              <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-4xl)', fontWeight: 600, color: 'var(--color-accent)', textShadow: 'var(--neon-text-glow)', marginBottom: 24 }}>
+              <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: isMobile ? 'var(--text-3xl)' : 'var(--text-4xl)', fontWeight: 600, color: 'var(--color-accent)', textShadow: 'var(--neon-text-glow)', marginBottom: isMobile ? 16 : 24 }}>
                 {(!product.price || product.price === 0) ? 'Free' : `$${product.price.toFixed(2)}`}
               </div>
             )}
@@ -386,7 +389,7 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Reviews */}
-        <div style={{ marginTop: 64 }}>
+        <div style={{ marginTop: isMobile ? 40 : 64 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
             <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-2xl)', color: 'var(--color-text)' }}>
               Reviews {reviewCount > 0 && `(${reviewCount})`}
@@ -395,7 +398,7 @@ export default function ProductDetailPage() {
 
           {/* Write review form */}
           {user && inLibrary && !hasReviewed && (
-            <form onSubmit={submitReview} style={{ padding: 24, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', marginBottom: 32 }}>
+            <form onSubmit={submitReview} style={{ padding: isMobile ? 16 : 24, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', marginBottom: isMobile ? 24 : 32 }}>
               <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--color-text)', marginBottom: 16 }}>Write a Review</div>
               <div style={{ marginBottom: 14 }}>
                 <StarPicker value={reviewForm.rating} onChange={(r) => setReviewForm(prev => ({ ...prev, rating: r }))} />
@@ -465,12 +468,12 @@ export default function ProductDetailPage() {
 
         {/* Related */}
         {related.length > 0 && (
-          <div style={{ marginTop: 64 }}>
-            <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-2xl)', color: 'var(--color-text)', marginBottom: 28 }}>
+          <div style={{ marginTop: isMobile ? 40 : 64 }}>
+            <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-2xl)', color: 'var(--color-text)', marginBottom: isMobile ? 16 : 28 }}>
               More from {product.series}
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
-              {related.slice(0, 4).map(p => <ProductCard key={p._id || p.id} product={p} />)}
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(240px, 1fr))', gap: isMobile ? 12 : 20 }}>
+              {related.slice(0, isMobile ? 4 : 4).map(p => <ProductCard key={p._id || p.id} product={p} />)}
             </div>
           </div>
         )}

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../contexts/CartContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUI } from '../../contexts/UIContext';
+import { useWindowWidth } from '../../hooks/useWindowWidth';
 import { motion } from 'framer-motion';
 import apiClient from '../../api/client';
 import { Heart } from 'lucide-react';
@@ -34,6 +35,8 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
   const { cart, addToCart, removeFromCart } = useCart();
   const { user, updateUser } = useAuth();
   const { addToast } = useUI();
+  const width = useWindowWidth();
+  const isMobile = width < 768;
   
   const id = product._id || product.id;
   const isWishlisted = user?.wishlist?.some(w => (w._id || w) === id) || product.isWishlisted || false;
@@ -118,7 +121,7 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
       className="product-card"
       onClick={() => navigate(`/products/${id}`)}
       role="listitem"
-      whileHover={{ y: -6 }}
+      whileHover={isMobile ? {} : { y: -6 }}
       transition={{ duration: 0.2 }}
       style={{ cursor: 'pointer' }}
     >
@@ -148,9 +151,10 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
             className={`product-wishlist-btn${wishlisted ? ' active' : ''}`}
             onClick={handleWishlist}
             aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
+            style={{ minWidth: 44, minHeight: 44, padding: 12 }}
           >
             <Heart 
-              size={16} 
+              size={20} 
               className={`wishlist-heart-icon ${animatingHeart ? 'animating' : ''}`}
               fill={wishlisted ? 'currentColor' : 'none'}
               strokeWidth={wishlisted ? 0 : 2}
@@ -158,13 +162,14 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
           </button>
         )}
 
-        {/* Hover overlay */}
+        {/* Overlay - always visible on mobile, hover on desktop */}
         {!inLibrary && (
-          <div className="product-overlay">
+          <div className={`product-overlay${isMobile ? ' visible' : ''}`}>
             <button
               className="product-quick-add"
               onClick={handleCartAction}
               aria-label={inCart ? 'View cart' : `Add ${product.name} to cart`}
+              style={{ minWidth: isMobile ? 'auto' : 'initial', height: isMobile ? 44 : 'initial' }}
             >
               {inCart ? '✓ In Cart' : '+ Add to Cart'}
             </button>
@@ -201,7 +206,7 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
                 className="btn btn-sm btn-primary"
                 onClick={handleCartAction}
                 aria-label={inCart ? 'View cart' : `Add ${product.name} to cart`}
-                style={{ fontSize: 'var(--text-xs)', padding: '0 12px', height: 32 }}
+                style={{ fontSize: 'var(--text-xs)', padding: '0 12px', height: isMobile ? 44 : 32 }}
               >
                 {inCart ? '✓ In Cart' : '+'}
               </button>
