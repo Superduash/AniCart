@@ -23,7 +23,7 @@ const ALLOWED_UPLOAD_MIME_TYPES = new Set(['image/png', 'image/jpeg', 'image/web
 const PAID_VARIANT_CONFIG = {
   '4k': { width: 3840, quality: 88, effort: 4, mimeType: 'image/webp' },
   '2k': { width: 2560, quality: 85, effort: 4, mimeType: 'image/webp' },
-  '1080p': { width: 1080, quality: 82, effort: 4, mimeType: 'image/webp' },
+  '1080p': { width: 1920, quality: 82, effort: 4, mimeType: 'image/webp' },
 };
 
 const PUBLIC_VARIANT_CONFIG = {
@@ -32,9 +32,12 @@ const PUBLIC_VARIANT_CONFIG = {
 };
 
 const RESOLUTION_DISPLAY_MAP = {
-  '4k': '4K Ultra HD',
-  '2k': '2K QHD',
-  '1080p': '1080p Full HD',
+  '4k': '4K UHD',
+  '2k': '2K (QHD)',
+  '1080p': 'FHD',
+  '720p': 'HD',
+  'mobile-portrait': 'Mobile',
+  'mobile-landscape': 'Mobile',
 };
 
 let fileTypeFromBuffer;

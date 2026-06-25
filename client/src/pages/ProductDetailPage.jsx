@@ -34,12 +34,21 @@ function StarPicker({ value, onChange }) {
 const AVAILABLE_RESOLUTIONS = ['4k', '2k', '1080p', '720p', 'mobile-portrait', 'mobile-landscape'];
 
 const RESOLUTION_LABELS = {
-  '4k': '4K Ultra HD (3840×2160)',
-  '2k': '2K QHD (2560×1440)',
-  '1080p': 'Full HD (1920×1080)',
-  '720p': 'HD (1280×720)',
-  'mobile-portrait': 'Mobile Portrait (1080×1920)',
-  'mobile-landscape': 'Mobile Landscape (1920×1080)',
+  '4k': '4K UHD',
+  '2k': '2K (QHD)',
+  '1080p': 'FHD',
+  '720p': 'HD',
+  'mobile-portrait': 'Mobile Portrait',
+  'mobile-landscape': 'Mobile Landscape',
+};
+
+const getResolutionLabel = (product, r) => {
+  const baseLabel = RESOLUTION_LABELS[r] || r.toUpperCase();
+  const asset = product?.assets?.[r];
+  if (asset && asset.width && asset.height) {
+    return `${baseLabel} (${asset.width}×${asset.height})`;
+  }
+  return baseLabel;
 };
 
 export default function ProductDetailPage() {
@@ -351,7 +360,7 @@ export default function ProductDetailPage() {
                   style={{ flex: 1, padding: '8px 12px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-accent)', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-xs)', cursor: 'pointer' }}
                 >
                   {(availableRes.length > 0 ? availableRes : AVAILABLE_RESOLUTIONS).map(r => (
-                    <option key={r} value={r}>{RESOLUTION_LABELS[r] || r.toUpperCase()}</option>
+                    <option key={r} value={r}>{getResolutionLabel(product, r)}</option>
                   ))}
                 </select>
               </div>
@@ -429,7 +438,7 @@ export default function ProductDetailPage() {
               {reviews.map(review => (
                 <div key={review._id} style={{ padding: 20, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-void)', flexShrink: 0 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '0.7rem', color: 'var(--color-void)', flexShrink: 0, overflow: 'hidden' }}>
                       {(review.user?.name || review.userName || '?')[0].toUpperCase()}
                     </div>
                     <div>

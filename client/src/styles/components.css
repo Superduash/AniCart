@@ -978,6 +978,7 @@
   color: var(--color-void);
   margin-bottom: 10px;
   background: var(--gradient-brand);
+  overflow: hidden;
 }
 .sidebar-name { font-family: 'Rajdhani', sans-serif; font-size: var(--text-base); font-weight: 700; color: var(--color-text); }
 .sidebar-email { font-family: 'Inter', sans-serif; font-size: var(--text-xs); color: var(--color-text-3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

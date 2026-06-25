@@ -87,6 +87,8 @@ const productSchema = new mongoose.Schema(
           type: Number,
           min: 0,
         },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
       },
       '4k': {
         key: {
@@ -101,6 +103,8 @@ const productSchema = new mongoose.Schema(
           type: Number,
           min: 0,
         },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
       },
       '2k': {
         key: {
@@ -115,6 +119,8 @@ const productSchema = new mongoose.Schema(
           type: Number,
           min: 0,
         },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
       },
       '1080p': {
         key: {
@@ -129,6 +135,8 @@ const productSchema = new mongoose.Schema(
           type: Number,
           min: 0,
         },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
       },
       '720p': {
         key: {
@@ -143,6 +151,8 @@ const productSchema = new mongoose.Schema(
           type: Number,
           min: 0,
         },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
       },
       'mobile-portrait': {
         key: {
@@ -157,6 +167,8 @@ const productSchema = new mongoose.Schema(
           type: Number,
           min: 0,
         },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
       },
       'mobile-landscape': {
         key: {
@@ -171,6 +183,8 @@ const productSchema = new mongoose.Schema(
           type: Number,
           min: 0,
         },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
       },
       preview: {
         key: {
@@ -189,6 +203,8 @@ const productSchema = new mongoose.Schema(
           type: Number,
           min: 0,
         },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
       },
       thumbnail: {
         key: {
@@ -207,6 +223,8 @@ const productSchema = new mongoose.Schema(
           type: Number,
           min: 0,
         },
+        width: { type: Number, min: 0 },
+        height: { type: Number, min: 0 },
       },
       status: {
         type: String,

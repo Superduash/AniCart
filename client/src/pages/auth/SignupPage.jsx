@@ -177,7 +177,7 @@ export default function SignupPage() {
                 <form className="auth-form" onSubmit={handleSubmit} noValidate>
                   {/* Summary */}
                   <div style={{ padding: '10px 14px', background: 'var(--color-accent-dim)', border: '1px solid var(--color-border-glow)', borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '0.85rem', color: 'var(--color-void)', flexShrink: 0 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--gradient-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '0.85rem', color: 'var(--color-void)', flexShrink: 0, overflow: 'hidden' }}>
                       {form.name[0]?.toUpperCase() || '?'}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>

@@ -1,8 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useWindowWidth } from '../../hooks/useWindowWidth';
 
 export default function Modal({ isOpen, onClose, title, size = 'md', children }) {
   const dialogRef = useRef(null);
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   // Focus trap
   useEffect(() => {
@@ -56,7 +59,7 @@ export default function Modal({ isOpen, onClose, title, size = 'md', children })
             style={{
               position: 'fixed', inset: 0, zIndex: 301,
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              padding: 20, pointerEvents: 'none',
+              padding: isMobile ? 12 : 20, pointerEvents: 'none',
             }}
           >
             <div style={{
@@ -69,14 +72,17 @@ export default function Modal({ isOpen, onClose, title, size = 'md', children })
               position: 'relative',
               overflow: 'hidden',
               pointerEvents: 'all',
+              maxHeight: isMobile ? 'calc(100vh - 24px)' : 'calc(100vh - 40px)',
+              display: 'flex',
+              flexDirection: 'column',
             }}>
               {/* Top accent line */}
               <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 2, background: 'linear-gradient(90deg, transparent, var(--color-accent), transparent)' }} />
 
               {/* Header */}
               {title && (
-                <div style={{ padding: '24px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <h2 id="modal-title" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-xl)', color: 'var(--color-text)', margin: 0 }}>
+                <div style={{ padding: isMobile ? '20px 16px 0' : '24px 28px 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                  <h2 id="modal-title" style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: isMobile ? 'var(--text-lg)' : 'var(--text-xl)', color: 'var(--color-text)', margin: 0 }}>
                     {title}
                   </h2>
                   <button
@@ -92,7 +98,7 @@ export default function Modal({ isOpen, onClose, title, size = 'md', children })
               )}
 
               {/* Content */}
-              <div style={{ padding: title ? '20px 28px 28px' : '28px' }}>
+              <div style={{ padding: isMobile ? (title ? '16px 16px 16px' : '16px') : (title ? '20px 28px 28px' : '28px'), overflowY: 'auto', flex: 1 }}>
                 {!title && (
                   <button
                     onClick={onClose}

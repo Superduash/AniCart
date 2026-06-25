@@ -262,13 +262,16 @@ export default function Navbar() {
                 width: isMobile ? 40 : 36, height: isMobile ? 40 : 36,
                 borderRadius: '50%',
                 background: 'var(--gradient-brand)',
-                border: avatarOpen ? '2px solid var(--color-accent)' : '2px solid transparent',
+                border: 'none',
+                padding: 0,
+                boxShadow: avatarOpen ? '0 0 0 2px var(--color-accent)' : 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: isMobile ? '0.8rem' : '0.75rem',
                 color: 'var(--color-void)',
                 cursor: 'pointer',
-                transition: 'border-color 0.15s',
+                transition: 'box-shadow 0.15s',
                 marginLeft: isMobile ? 0 : 4,
+                overflow: 'hidden',
               }}
             >
               {getInitials(user.name)}
@@ -342,6 +345,7 @@ export default function Navbar() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: '0.85rem',
                   color: 'var(--color-void)',
+                  overflow: 'hidden',
                 }}>
                   {getInitials(user.name)}
                 </div>

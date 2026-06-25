@@ -46,12 +46,12 @@ const PUBLIC_VARIANT_CONFIG = {
 };
 
 const RESOLUTION_DISPLAY_MAP = {
-  '4k': '4K Ultra HD',
-  '2k': '2K QHD',
-  '1080p': '1080p Full HD',
-  '720p': '720p HD',
-  'mobile-portrait': 'Mobile Portrait',
-  'mobile-landscape': 'Mobile Landscape',
+  '4k': '4K UHD',
+  '2k': '2K (QHD)',
+  '1080p': 'FHD',
+  '720p': 'HD',
+  'mobile-portrait': 'Mobile',
+  'mobile-landscape': 'Mobile',
 };
 
 let watermarkOverlayBufferPromise = null;
@@ -229,7 +229,7 @@ async function processImageJob(job) {
   console.log(`[Worker] Generating variants for resolutions: ${availableResolutions.join(', ')}`);
 
 const privateAssets = {
-    original: { key: r2OriginalKey },
+    original: { key: r2OriginalKey, width: metadata.width, height: metadata.height },
     '4k': null,
     '2k': null,
     '1080p': null,
@@ -266,11 +266,15 @@ const privateAssets = {
         variantKey,
         config.mimeType
       );
+      
+      const variantMetadata = await sharp(variantBuffer).metadata();
 
       privateAssets[resolution] = {
         key: uploadedVariant.key,
         contentType: config.mimeType,
         size: variantBuffer.length,
+        width: variantMetadata.width,
+        height: variantMetadata.height,
       };
     } catch (error) {
       console.error(`[Worker] Failed to generate ${resolution} variant:`, error.message);
@@ -305,6 +309,7 @@ const privateAssets = {
     previewKey,
     previewVariantConfig.mimeType
   );
+  const previewMetadata = await sharp(previewBuffer).metadata();
 
   const thumbnailBuffer = await buildWebpVariant(
     originalBuffer,
@@ -318,6 +323,7 @@ const privateAssets = {
     thumbnailKey,
     PUBLIC_VARIANT_CONFIG.thumbnail.mimeType
   );
+  const thumbnailMetadata = await sharp(thumbnailBuffer).metadata();
 
   // Step 7: Update Product document
   const successfulResolutions = availableResolutions.filter(
@@ -338,12 +344,16 @@ const privateAssets = {
       url: previewUpload.url,
       contentType: previewVariantConfig.mimeType,
       size: previewBuffer.length,
+      width: previewMetadata.width,
+      height: previewMetadata.height,
     },
     thumbnail: {
       key: thumbnailUpload.key,
       url: thumbnailUpload.url,
       contentType: PUBLIC_VARIANT_CONFIG.thumbnail.mimeType,
       size: thumbnailBuffer.length,
+      width: thumbnailMetadata.width,
+      height: thumbnailMetadata.height,
     },
     status: failedVariants.length > 0 ? 'failed' : 'ready',
   };

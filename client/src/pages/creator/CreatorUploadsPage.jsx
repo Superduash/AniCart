@@ -7,6 +7,7 @@ import Modal from '../../components/ui/Modal';
 import { useSocket } from '../../contexts/SocketContext';
 import { ProductCardSkeleton } from '../../components/ui/Skeleton';
 import { Link } from 'react-router-dom';
+import { useWindowWidth } from '../../hooks/useWindowWidth';
 
 function FileUploadBox({ label, accept, onFile, file, subtext }) {
   const [drag, setDrag] = useState(false);
@@ -57,6 +58,8 @@ export default function CreatorUploadsPage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const isAdmin = user?.role === 'admin';
+  const width = useWindowWidth();
+  const isMobile = width < 768;
 
   // Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -185,7 +188,7 @@ export default function CreatorUploadsPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', justifyContent: 'space-between', gap: isMobile ? 16 : 24, marginBottom: 32 }}>
         <div>
           <h1 style={{ fontFamily: 'Orbitron, monospace', fontWeight: 800, fontSize: 'clamp(1.4rem, 3vw, 1.9rem)', color: 'var(--color-text)', marginBottom: 6 }}>
             My Uploads
@@ -194,7 +197,7 @@ export default function CreatorUploadsPage() {
             {products.length} product{products.length !== 1 ? 's' : ''}
           </div>
         </div>
-        <button onClick={() => setIsModalOpen(true)} className="btn btn-primary">
+        <button onClick={() => setIsModalOpen(true)} className={`btn btn-primary${isMobile ? ' btn-full' : ''}`}>
           + New Upload
         </button>
       </div>
@@ -261,7 +264,7 @@ export default function CreatorUploadsPage() {
       {/* Upload Modal */}
       <Modal isOpen={isModalOpen} onClose={() => !uploading && setIsModalOpen(false)} title="Upload New Artwork" size="lg">
         <form onSubmit={handleUpload}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 16 : 24, marginBottom: 24 }}>
             <div>
               <FileUploadBox label="Source File (High-Res)" accept="image/png,image/jpeg,image/webp" file={sourceFile} onFile={handleFileSelect} subtext="Full resolution, unwatermarked (Max 20MB)" />
             </div>
@@ -274,7 +277,7 @@ export default function CreatorUploadsPage() {
                 <label className="form-label">Anime Series</label>
                 <input type="text" className="form-input form-input-no-icon" required value={form.series} onChange={e => setForm(p => ({ ...p, series: e.target.value }))} disabled={uploading} />
               </div>
-              <div style={{ display: 'flex', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 12 : 16 }}>
                 <div className="form-group" style={{ flex: 1 }}>
                   <label className="form-label">Price ($)</label>
                   <input type="number" min="0" step="0.5" className="form-input form-input-no-icon" required value={form.price} onChange={e => setForm(p => ({ ...p, price: Number(e.target.value) }))} disabled={uploading} />
@@ -294,9 +297,9 @@ export default function CreatorUploadsPage() {
               </div>
             </div>
           </div>
-          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-            <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-ghost" disabled={uploading}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={uploading}>
+          <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 20, display: 'flex', flexDirection: isMobile ? 'column-reverse' : 'row', justifyContent: 'flex-end', gap: 12 }}>
+            <button type="button" onClick={() => setIsModalOpen(false)} className={`btn btn-ghost${isMobile ? ' btn-full' : ''}`} disabled={uploading}>Cancel</button>
+            <button type="submit" className={`btn btn-primary${isMobile ? ' btn-full' : ''}`} disabled={uploading}>
               {uploading ? 'Uploading...' : 'Upload & Submit for Review'}
             </button>
           </div>
