@@ -202,13 +202,13 @@ export default function Navbar() {
           </button>
         )}
 
-        {/* Wishlist - visible on both desktop and mobile */}
-        {user && (
+        {/* Wishlist - visible only on desktop */}
+        {user && !isMobile && (
           <Link
             to="/dashboard/wishlist"
             className={`nav-link${location.pathname === '/dashboard/wishlist' ? ' active' : ''}`}
             aria-label="Wishlist"
-            style={{ fontSize: '1rem', padding: isMobile ? '12px' : '8px 10px', minWidth: isMobile ? 44 : 'auto', minHeight: isMobile ? 44 : 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ fontSize: '1rem', padding: '8px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <Heart size={22} />
           </Link>
