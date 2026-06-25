@@ -26,6 +26,7 @@ import ProductDetailPage   from './pages/ProductDetailPage';
 import CartPage            from './pages/CartPage';
 import NotFoundPage        from './pages/NotFoundPage';
 import PlaceholderPage     from './pages/PlaceholderPage';
+import { PageShellSkeleton } from './components/ui/Skeleton';
 
 // Lazy Loaded Pages (for code-splitting heavy routes)
 const CheckoutPage        = React.lazy(() => import('./pages/CheckoutPage'));
@@ -120,7 +121,7 @@ function ProtectedRoute({ children, role }) {
   const { user, isLoading } = useAuth();
   const location = useLocation();
 
-  if (isLoading) return <PageLoader />;
+  if (isLoading) return <PageShellSkeleton />;
 
   if (!user) {
     return <Navigate to={`/auth/login?next=${encodeURIComponent(location.pathname)}`} replace />;
@@ -235,7 +236,18 @@ function AppShell() {
   const width = useWindowWidth();
   const isMobile = width < 768;
 
-  if (isLoading) return <PageLoader />; // M10 Fix
+  if (isLoading) {
+    return (
+      <>
+        <BackgroundEffects />
+        <Navbar />
+        <main className="page-wrapper" style={{ paddingBottom: isMobile ? 80 : 0 }}>
+          <PageShellSkeleton />
+        </main>
+        {isMobile && <BottomNav />}
+      </>
+    );
+  }
 
   return (
     <>
@@ -245,7 +257,7 @@ function AppShell() {
       <main id="main" className="page-wrapper" style={{ paddingBottom: isMobile ? 80 : 0 }}>
         {/* H7 Fix: wrap routes in ErrorBoundary to catch render-time crashes */}
         <ErrorBoundary>
-          <React.Suspense fallback={<PageLoader />}>
+          <React.Suspense fallback={<PageShellSkeleton />}>
             <AnimatedRoutes />
           </React.Suspense>
         </ErrorBoundary>

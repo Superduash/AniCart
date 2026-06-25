@@ -685,14 +685,25 @@
 
 /* ════ SKELETON ════ */
 .skeleton {
-  background: linear-gradient(90deg,
-    rgba(255,255,255,0.03) 25%,
-    rgba(255,255,255,0.07) 50%,
-    rgba(255,255,255,0.03) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
+  position: relative;
+  overflow: hidden;
+  background: rgba(255,255,255,0.03);
   border-radius: var(--radius-md);
+}
+.skeleton::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255,255,255,0.05) 50%,
+    transparent 100%
+  );
+  animation: shimmer-gpu 1.5s infinite;
+  will-change: transform;
 }
 .skeleton-card {
   background: var(--color-surface);
@@ -716,6 +727,7 @@
   animation: spin 0.7s linear infinite;
   display: inline-block;
   flex-shrink: 0;
+  will-change: transform;
 }
 .loading-spinner.light {
   border-color: rgba(0,243,255,0.2);

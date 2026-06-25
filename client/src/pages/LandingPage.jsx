@@ -5,7 +5,7 @@ import { useTitle } from '../hooks/useTitle';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../api/client';
 import ProductCard from '../components/product/ProductCard';
-import { ProductCardSkeleton } from '../components/ui/Skeleton';
+import { ProductCardSkeleton, HeroSkeleton } from '../components/ui/Skeleton';
 import Footer from '../components/layout/Footer';
 
 function SeriesMarquee({ series }) {
@@ -43,12 +43,7 @@ function HeroSlider({ products, loading, user }) {
   }, [products]);
 
   if (loading) {
-    return (
-      <div style={{ height: 500, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--color-text-3)' }}>
-        <div className="loading-spinner light" style={{ width: 32, height: 32, marginBottom: 16 }} />
-        <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)' }}>Loading...</div>
-      </div>
-    );
+    return <HeroSkeleton />;
   }
 
   if (!products || products.length === 0) {
@@ -57,27 +52,28 @@ function HeroSlider({ products, loading, user }) {
 
   return (
     <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', padding: 0 }}>
-      {/* Inject preload for the first image */}
-      {products.length > 0 && (
-        <link rel="preload" as="image" href={products[0].assets?.preview?.url || products[0].img || products[0].imageUrl} />
-      )}
+      {/* Prefetch first 3 images to ensure smooth transitions */}
+      {products.slice(0, 3).map((p, idx) => {
+        const url = p.assets?.preview?.url || p.img || p.imageUrl;
+        return <link key={`preload-${idx}`} rel="preload" as="image" href={url} fetchpriority={idx === 0 ? "high" : "auto"} />;
+      })}
       <AnimatePresence>
         {products.map((p, index) => {
           if (index !== currentIndex) return null;
           const previewUrl = p.assets?.preview?.url || p.img || p.imageUrl;
           return (
             <motion.div
-              key={p._id || p.id}
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -50 }}
-              transition={{ duration: 0.6, ease: "easeInOut" }}
-              style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <div style={{ position: 'absolute', inset: 0, zIndex: -1 }}>
-                <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1 }} />
-                <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(15px)', transform: 'scale(1.1)' }} alt="" />
-              </div>
+                key={p._id || p.id}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.4, ease: "easeInOut" }}
+                style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <div style={{ position: 'absolute', inset: 0, zIndex: -1 }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1 }} />
+                  <img src={previewUrl} style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(15px)', transform: 'scale(1.1)' }} loading={index < 3 ? "eager" : "lazy"} fetchpriority={index === 0 ? "high" : "auto"} alt="" />
+                </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, maxWidth: 1200, width: '100%', padding: '0 40px', zIndex: 2, alignItems: 'center' }}>
                 <div className="hero-content" style={{ margin: 0, padding: 0, textAlign: 'left' }}>
@@ -100,7 +96,7 @@ function HeroSlider({ products, loading, user }) {
 
                 <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.5)', aspectRatio: '16/10' }}>
                   <div style={{ position: 'absolute', inset: 0, zIndex: 10 }} onContextMenu={e => e.preventDefault()} />
-                  <img src={previewUrl} draggable="false" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', userSelect: 'none' }} alt={p.name} />
+                  <img src={previewUrl} draggable="false" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', userSelect: 'none' }} loading={index < 3 ? "eager" : "lazy"} fetchpriority={index === 0 ? "high" : "auto"} alt={p.name} />
                 </div>
               </div>
             </motion.div>

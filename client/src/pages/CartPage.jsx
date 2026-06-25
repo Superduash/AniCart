@@ -6,7 +6,7 @@ import { useTitle } from '../hooks/useTitle';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
-import { EmptyState } from '../components/ui/Skeleton';
+import { EmptyState, SkeletonLine } from '../components/ui/Skeleton';
 import Breadcrumbs from '../components/ui/Breadcrumbs';
 import ProductCard from '../components/product/ProductCard';
 import apiClient from '../api/client';
@@ -87,9 +87,31 @@ export default function CartPage() {
 
         {/* M2 Fix: show loading state while cart is syncing with server */}
         {cartLoading ? (
-          <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--color-text-3)', fontFamily: 'Inter, sans-serif' }}>
-            <div className="loading-spinner light" style={{ width: 32, height: 32, margin: '0 auto 16px' }} />
-            <div style={{ fontSize: 'var(--text-sm)' }}>Syncing cart...</div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 360px', gap: 32, alignItems: 'start' }} aria-busy="true" aria-label="Loading cart">
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)' }}>Items</div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {[1, 2].map(i => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '16px 20px', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)' }}>
+                    <div className="skeleton" style={{ width: 80, height: 56, borderRadius: 'var(--radius-md)', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <SkeletonLine width="60%" height={16} style={{ marginBottom: 6 }} />
+                      <SkeletonLine width="40%" height={12} />
+                    </div>
+                    <SkeletonLine width={60} height={20} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-xl)', padding: 28 }}>
+              <SkeletonLine width="50%" height={20} style={{ marginBottom: 20 }} />
+              <SkeletonLine width="100%" height={16} style={{ marginBottom: 10 }} />
+              <SkeletonLine width="100%" height={16} style={{ marginBottom: 24 }} />
+              <SkeletonLine width="100%" height={40} style={{ marginBottom: 24 }} />
+              <SkeletonLine width="100%" height={52} style={{ borderRadius: 8 }} />
+            </div>
           </div>
         ) : cart.length === 0 ? (
           <EmptyState

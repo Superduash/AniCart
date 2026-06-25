@@ -44,6 +44,42 @@ export function OrderRowSkeleton() {
   );
 }
 
+// Hero skeleton
+export function HeroSkeleton() {
+  return (
+    <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', padding: 0 }} aria-busy="true" aria-label="Loading hero">
+      <div className="skeleton" style={{ position: 'absolute', inset: 0, zIndex: -1 }} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 40, maxWidth: 1200, width: '100%', padding: '0 40px', zIndex: 2, alignItems: 'center' }}>
+        <div style={{ margin: 0, padding: 0, textAlign: 'left' }}>
+          <SkeletonLine width={180} height={24} style={{ borderRadius: 20, marginBottom: 28 }} />
+          <SkeletonLine width="90%" height={56} style={{ marginBottom: 12 }} />
+          <SkeletonLine width="60%" height={56} style={{ marginBottom: 20 }} />
+          <SkeletonLine width="70%" height={20} style={{ marginBottom: 30 }} />
+          <SkeletonLine width={200} height={52} style={{ borderRadius: 8 }} />
+        </div>
+        <div className="skeleton" style={{ borderRadius: 16, aspectRatio: '16/10', width: '100%' }} />
+      </div>
+    </section>
+  );
+}
+
+// Page shell skeleton
+export function PageShellSkeleton() {
+  return (
+    <div style={{ padding: '80px 40px', maxWidth: 1280, margin: '0 auto', width: '100%' }} aria-busy="true" aria-label="Loading page">
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+        <div style={{ flex: 1 }}>
+          <SkeletonLine width={240} height={32} style={{ marginBottom: 12 }} />
+          <SkeletonLine width={340} height={16} />
+        </div>
+      </div>
+      <div className="products-grid-4">
+        {Array(8).fill(0).map((_, i) => <ProductCardSkeleton key={i} />)}
+      </div>
+    </div>
+  );
+}
+
 // Empty state component
 export function EmptyState({ icon, title, body, ctaLabel, ctaTo, onCta }) {
   return (
@@ -70,4 +106,4 @@ export function EmptyState({ icon, title, body, ctaLabel, ctaTo, onCta }) {
   );
 }
 
-export default { ProductCardSkeleton, OrderRowSkeleton, EmptyState, SkeletonLine };
+export default { ProductCardSkeleton, OrderRowSkeleton, HeroSkeleton, PageShellSkeleton, EmptyState, SkeletonLine };
