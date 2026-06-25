@@ -70,7 +70,7 @@ const productSchema = new mongoose.Schema(
     availableResolutions: [
       {
         type: String,
-        enum: ['4k', '2k', '1080p'],
+        enum: ['4k', '2k', '1080p', '720p', 'mobile-portrait', 'mobile-landscape'],
       },
     ],
     assets: {
@@ -117,6 +117,48 @@ const productSchema = new mongoose.Schema(
         },
       },
       '1080p': {
+        key: {
+          type: String,
+          trim: true,
+        },
+        contentType: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: Number,
+          min: 0,
+        },
+      },
+      '720p': {
+        key: {
+          type: String,
+          trim: true,
+        },
+        contentType: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: Number,
+          min: 0,
+        },
+      },
+      'mobile-portrait': {
+        key: {
+          type: String,
+          trim: true,
+        },
+        contentType: {
+          type: String,
+          trim: true,
+        },
+        size: {
+          type: Number,
+          min: 0,
+        },
+      },
+      'mobile-landscape': {
         key: {
           type: String,
           trim: true,

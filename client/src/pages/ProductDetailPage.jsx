@@ -30,6 +30,17 @@ function StarPicker({ value, onChange }) {
   );
 }
 
+const AVAILABLE_RESOLUTIONS = ['4k', '2k', '1080p', '720p', 'mobile-portrait', 'mobile-landscape'];
+
+const RESOLUTION_LABELS = {
+  '4k': '4K Ultra HD (3840×2160)',
+  '2k': '2K QHD (2560×1440)',
+  '1080p': 'Full HD (1920×1080)',
+  '720p': 'HD (1280×720)',
+  'mobile-portrait': 'Mobile Portrait (1080×1920)',
+  'mobile-landscape': 'Mobile Landscape (1920×1080)',
+};
+
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -38,6 +49,7 @@ export default function ProductDetailPage() {
   const { addToast } = useUI();
   const [productName, setProductName] = useState('');
   const [product, setProduct] = useState(null);
+  const [downloadResolution, setDownloadResolution] = useState('4k');
 
   useSEO({
     title: product ? product.name : productName || 'Product',
@@ -163,12 +175,23 @@ export default function ProductDetailPage() {
 
   const handleDownload = async () => {
     try {
-      const res = await apiClient.get(`/products/${id}/download`);
+      const res = await apiClient.get(`/products/${id}/download`, {
+        params: { resolution: downloadResolution }
+      });
       // H1 Fix: backend returns 'downloadUrl' not 'url'
       const url = res.data?.data?.downloadUrl || res.data?.downloadUrl;
       if (url) window.open(url, '_blank', 'noopener');
-    } catch { addToast('Download failed. Please try again.', 'error'); }
+      else addToast('Download URL not available.', 'error');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Download failed. Please try again.';
+      addToast(msg, 'error');
+    }
   };
+
+  // Build list of resolutions the product actually has available
+  const availableRes = product?.assets
+    ? AVAILABLE_RESOLUTIONS.filter(r => product.assets[r]?.key)
+    : AVAILABLE_RESOLUTIONS;
 
   const submitReview = async (e) => {
     e.preventDefault();
@@ -314,6 +337,23 @@ export default function ProductDetailPage() {
             )}
 
             {/* Primary action */}
+            {(inLibrary || product.price === 0) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <label style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', fontWeight: 600, letterSpacing: 1, textTransform: 'uppercase', color: 'var(--color-text-3)', flexShrink: 0 }}>
+                  Resolution:
+                </label>
+                <select
+                  value={downloadResolution}
+                  onChange={e => setDownloadResolution(e.target.value)}
+                  style={{ flex: 1, padding: '8px 12px', background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-accent)', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-xs)', cursor: 'pointer' }}
+                >
+                  {(availableRes.length > 0 ? availableRes : AVAILABLE_RESOLUTIONS).map(r => (
+                    <option key={r} value={r}>{RESOLUTION_LABELS[r] || r.toUpperCase()}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            
             {inLibrary || product.price === 0 ? (
               <button onClick={handleDownload} className="btn btn-success btn-full btn-lg" style={{ marginBottom: 12 }}>
                 ↓ {inLibrary ? 'Download' : 'Download for Free'}

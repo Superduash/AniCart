@@ -358,7 +358,7 @@ async function deleteProduct(id, user) {
 
     if (s3Client && product.assets) {
       const assetKeys = [];
-      ['preview', 'thumbnail', 'original', '4k', '2k', '1080p'].forEach(res => {
+      ['preview', 'thumbnail', 'original', '4k', '2k', '1080p', '720p', 'mobile-portrait', 'mobile-landscape'].forEach(res => {
         if (product.assets[res] && product.assets[res].key) {
           assetKeys.push(product.assets[res].key);
         }
@@ -471,7 +471,11 @@ async function downloadProduct(userId, productId, resolution = '4k') {
   let assetKey = product.assets && product.assets[resolution] && product.assets[resolution].key;
   
   if (!assetKey) {
-    const fallbacks = ['4k', '2k', '1080p', 'original'];
+    // Fallback order based on requested resolution type
+    const mobileFallbacks = ['mobile-portrait', 'mobile-landscape', '720p', '1080p', '2k', '4k', 'original'];
+    const desktopFallbacks = ['4k', '2k', '1080p', '720p', 'original'];
+    const fallbacks = (resolution && resolution.startsWith('mobile')) ? mobileFallbacks : desktopFallbacks;
+    
     for (const res of fallbacks) {
       if (product.assets && product.assets[res] && product.assets[res].key) {
         assetKey = product.assets[res].key;
