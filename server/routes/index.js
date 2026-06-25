@@ -4,6 +4,7 @@
 
 const express = require('express');
 const router = express.Router();
+const { authLimiter, checkoutLimiter, apiLimiter } = require('../middlewares/rateLimiter');
 
 const authRoutes = require('../routers/authRoutes');
 const userRoutes = require('../routers/userRoutes');
@@ -18,11 +19,13 @@ const webhookRoutes = require('../routers/webhookRoutes');
 const reviewRoutes = require('../routers/reviewRoutes');
 const adminRoutes = require('../routers/adminRoutes');
 
-router.use('/auth', authRoutes);
+router.use(apiLimiter);
+
+router.use('/auth', authLimiter, authRoutes);
 router.use('/users', userRoutes);
 router.use('/products', productRoutes);
 router.use('/cart', cartRoutes);
-router.use('/orders', orderRoutes);
+router.use('/orders', checkoutLimiter, orderRoutes);
 router.use('/', creatorRoutes);
 if (process.env.NODE_ENV !== 'production') {
   router.use('/test', testRoutes);

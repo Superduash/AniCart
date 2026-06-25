@@ -61,11 +61,13 @@ export default function CartPage() {
 
   React.useEffect(() => {
     if (cart.length > 0) {
-      apiClient.get('/products', { params: { limit: 4, sort: 'popular', status: 'active' } })
+      const series = cart.map(item => item.series).filter(Boolean);
+      // Fetch popular products from the same series
+      apiClient.get('/products', { params: { limit: 4, sort: 'popular', status: 'active', series: series.join(',') } })
         .then(res => setRecommended(res.data?.data?.products || res.data?.data || []))
         .catch(() => {});
     }
-  }, [cart.length]);
+  }, [cart]);
 
   const handleCheckout = () => {
     if (!user) { navigate('/auth/login?next=/checkout'); return; }
@@ -185,7 +187,7 @@ export default function CartPage() {
         {cart.length > 0 && recommended.length > 0 && (
           <div style={{ marginTop: 80, borderTop: '1px solid var(--color-border)', paddingTop: 60 }}>
             <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-2xl)', color: 'var(--color-text)', marginBottom: 28 }}>
-              Recommended for You
+              Frequently Bought Together
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 20 }}>
               {recommended.map(p => <ProductCard key={p._id || p.id} product={p} />)}

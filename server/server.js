@@ -26,6 +26,7 @@ require('dotenv').config();
 const config = require('./config');
 const connectDB = require('./db/database');
 const { startCreatorMonthlyResetJob } = require('./jobs/creatorMonthlyResetJob');
+require('./jobs/abandonedCartWorker');
 const logger = require('./utils/logger');
 
 let Sentry;

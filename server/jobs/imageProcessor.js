@@ -355,30 +355,35 @@ async function processImageJob(job) {
  * Handle job failure
  */
 async function handleJobFailure(job, error) {
-  console.error(`[Worker] Job ${job.id} failed:`, error.message);
+  console.error(`[Worker] Job ${job.id} failed (Attempt ${job.attemptsMade + 1}/${job.opts.attempts}):`, error.message);
 
   const { productId } = job.data;
+  
+  // Only flag product if this is the final attempt
+  if (job.attemptsMade + 1 >= job.opts.attempts) {
+    try {
+      const product = await Product.findById(productId);
+      if (product) {
+        product.assets.status = 'failed';
+        product.status = 'pending';
+        // Add to DLQ (by marking in DB, could also be a separate collection)
+        product.rejectionReason = `Processing failed: ${error.message}`;
+        await product.save();
+        console.log(`[Worker] Product ${productId} moved to DLQ (failed) due to processing error`);
 
-  try {
-    const product = await Product.findById(productId);
-    if (product) {
-      product.assets.status = 'failed';
-      product.status = 'pending';
-      await product.save();
-      console.log(`[Worker] Product ${productId} flagged due to processing error`);
-
-      // Emit socket event on failure
-      try {
-        const { getIo } = require('../socket');
-        getIo().to(`user_${job.data.creatorId}`).emit('product_status_updated', {
-          productId,
-          status: 'failed',
-          error: error.message,
-        });
-      } catch (err) {}
+        // Emit socket event on final failure
+        try {
+          const { getIo } = require('../socket');
+          getIo().to(`user_${job.data.creatorId}`).emit('product_status_updated', {
+            productId,
+            status: 'failed',
+            error: error.message,
+          });
+        } catch (err) {}
+      }
+    } catch (saveError) {
+      console.error(`[Worker] Failed to update product status:`, saveError.message);
     }
-  } catch (saveError) {
-    console.error(`[Worker] Failed to update product status:`, saveError.message);
   }
 }
 

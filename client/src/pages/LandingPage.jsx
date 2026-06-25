@@ -57,6 +57,10 @@ function HeroSlider({ products, loading, user }) {
 
   return (
     <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', height: '70vh', minHeight: 500, display: 'flex', alignItems: 'center', padding: 0 }}>
+      {/* Inject preload for the first image */}
+      {products.length > 0 && (
+        <link rel="preload" as="image" href={products[0].assets?.preview?.url || products[0].img || products[0].imageUrl} />
+      )}
       <AnimatePresence>
         {products.map((p, index) => {
           if (index !== currentIndex) return null;

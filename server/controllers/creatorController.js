@@ -268,6 +268,32 @@ const createCreatorProduct = catchAsync(async (req, res) => {
   );
 });
 
+const connectStripe = catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user || (user.role !== CONSTANTS.ROLES.CREATOR && user.role !== CONSTANTS.ROLES.ADMIN)) {
+    throw ApiError.forbidden('Only creators can connect Stripe');
+  }
+
+  // Portfolio Mock: Instead of actually creating a Stripe Connect Account and Link,
+  // we just simulate it by immediately setting a dummy stripe account ID on the user's creator stats.
+  if (!user.creatorStats) {
+    user.creatorStats = {};
+  }
+  user.creatorStats.stripeAccountId = `acct_mock_${Date.now()}`;
+  user.creatorStats.payoutsEnabled = true;
+  await user.save();
+
+  res.status(200).json(
+    successResponse({
+      message: 'Stripe account connected successfully (Mock Mode)',
+      data: {
+        stripeAccountId: user.creatorStats.stripeAccountId,
+        url: '/creator/stats', // Redirect them right back to their dashboard
+      },
+    })
+  );
+});
+
 module.exports = {
   applyCreator,
   getPendingCreatorRequests,
@@ -276,4 +302,5 @@ module.exports = {
   getCreatorProducts,
   getCreatorStats,
   createCreatorProduct,
+  connectStripe,
 };

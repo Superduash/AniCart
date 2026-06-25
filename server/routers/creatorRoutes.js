@@ -12,6 +12,7 @@ const {
   getCreatorProducts,
   getCreatorStats,
   createCreatorProduct,
+  connectStripe,
 } = require('../controllers/creatorController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const {
@@ -30,6 +31,9 @@ router.post('/creator/apply', protect, creatorApplyValidation, applyCreator);
 router.post('/creator/products', protect, createCreatorProduct);
 router.get('/creator/products', protect, getCreatorProducts);
 router.get('/creator/stats', protect, getCreatorStats);
+
+// Stripe Connect Mock Endpoints (Portfolio Mode)
+router.post('/creator/connect', protect, connectStripe);
 
 // C5 Fix: add missing DELETE route for creator product deletion
 router.delete('/creator/products/:id', protect, async (req, res, next) => {

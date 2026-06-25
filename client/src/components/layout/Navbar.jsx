@@ -233,7 +233,12 @@ export default function Navbar() {
                   pointerEvents: 'none',
                 }}
               >
-                {cartCount > 9 ? '9+' : cartCount}
+                <span aria-live="polite" className="sr-only" style={{ display: 'none' }}>
+                  {cartCount} items in cart
+                </span>
+                <span aria-hidden="true">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
               </motion.span>
             )}
           </AnimatePresence>

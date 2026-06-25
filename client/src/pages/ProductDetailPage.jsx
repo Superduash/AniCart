@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useTitle } from '../hooks/useTitle';
+import { useSEO } from '../hooks/useSEO';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useUI } from '../contexts/UIContext';
@@ -37,10 +37,38 @@ export default function ProductDetailPage() {
   const { cart, addToCart } = useCart();
   const { addToast } = useUI();
   const [productName, setProductName] = useState('');
-  // M3 Fix: use productName state so hook correctly updates when product loads
-  useTitle(productName || 'Product');
-
   const [product, setProduct] = useState(null);
+
+  useSEO({
+    title: product ? product.name : productName || 'Product',
+    description: product ? `Download ${product.name} from the ${product.series} collection. Buy now or view free sample.` : 'Premium Anime Wallpapers',
+    image: product ? (product.assets?.preview?.url || product.img || product.imageUrl) : null,
+    type: 'product',
+    jsonLd: product ? {
+      "@context": "https://schema.org/",
+      "@type": "Product",
+      "name": product.name,
+      "image": [
+        product.assets?.preview?.url || product.img || product.imageUrl
+      ],
+      "description": `Premium 4K anime wallpaper: ${product.name} from ${product.series}`,
+      "sku": product._id || product.id,
+      "offers": {
+        "@type": "Offer",
+        "url": window.location.href,
+        "priceCurrency": "USD",
+        "price": product.price || 0,
+        "availability": "https://schema.org/InStock",
+        "itemCondition": "https://schema.org/NewCondition"
+      },
+      "aggregateRating": product.rating > 0 ? {
+        "@type": "AggregateRating",
+        "ratingValue": product.rating,
+        "reviewCount": product.reviews || 1
+      } : undefined
+    } : null
+  });
+
   const [loading, setLoading] = useState(true);
   const [related, setRelated] = useState([]);
   const [inLibrary, setInLibrary] = useState(false);
