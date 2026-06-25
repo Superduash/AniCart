@@ -59,7 +59,7 @@ export default function CreatorUploadsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const [form, setForm] = useState({ name: '', description: '', price: 5, series: '', resolution: '4K', format: 'WebP' });
+  const [form, setForm] = useState({ name: '', description: '', price: 0, series: '', resolution: '4K', format: 'WebP' });
   const [sourceFile, setSourceFile] = useState(null);
   
   // Auto-detect resolution
@@ -158,7 +158,7 @@ export default function CreatorUploadsPage() {
   };
 
   const resetForm = () => {
-    setForm({ name: '', description: '', price: 5, series: '', resolution: '4K', format: 'WebP' });
+    setForm({ name: '', description: '', price: 0, series: '', resolution: '4K', format: 'WebP' });
     setSourceFile(null);
   };
 
@@ -206,7 +206,9 @@ export default function CreatorUploadsPage() {
             return (
             <div key={productId} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
               <div style={{ aspectRatio: '16/10', position: 'relative', background: 'var(--color-surface-2)' }}>
-                {p.assets?.preview?.url && <img src={p.assets.preview.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                {(p.assets?.preview?.url || p.assets?.source?.url || p.imageUrl || p.img) && (
+                  <img src={p.assets?.preview?.url || p.assets?.source?.url || p.imageUrl || p.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                )}
                 <div style={{ position: 'absolute', top: 12, right: 12, padding: '4px 10px', borderRadius: 'var(--radius-full)', fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase',
                   background: p.status === 'active' ? 'var(--color-success)' : p.status === 'pending' ? 'var(--color-warning)' : 'var(--color-error)',
                   color: p.status === 'pending' ? '#000' : '#fff'
@@ -218,7 +220,9 @@ export default function CreatorUploadsPage() {
                 <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', marginBottom: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                   <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{p.series}</div>
-                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}>${p.price.toFixed(2)}</div>
+                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}>
+                    {p.price === 0 ? 'Free' : `$${p.price.toFixed(2)}`}
+                  </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
                   {p.status === 'active' && (

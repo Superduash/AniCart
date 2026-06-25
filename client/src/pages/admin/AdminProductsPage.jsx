@@ -13,6 +13,7 @@ export default function AdminProductsPage() {
   const [rejectReason, setRejectReason] = useState({});
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [zoomedImage, setZoomedImage] = useState(null);
 
   const loadProducts = async () => {
     setLoading(true);
@@ -58,6 +59,15 @@ export default function AdminProductsPage() {
         {total} pending review
       </div>
 
+      {zoomedImage && (
+        <div 
+          onClick={() => setZoomedImage(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.9)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'zoom-out' }}
+        >
+          <img src={zoomedImage} alt="Zoomed" style={{ maxWidth: '95vw', maxHeight: '95vh', objectFit: 'contain' }} />
+        </div>
+      )}
+
       {loading ? (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
           {Array(6).fill(0).map((_, i) => <ProductCardSkeleton key={i} />)}
@@ -74,11 +84,18 @@ export default function AdminProductsPage() {
             const productId = p._id || p.id;
             return (
             <div key={productId} style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
-              <img src={p.assets?.preview?.url || p.img} alt="" style={{ width: '100%', aspectRatio: '16/10', objectFit: 'cover', background: 'var(--color-surface-2)' }} />
+              <div 
+                style={{ cursor: 'zoom-in', width: '100%', aspectRatio: '16/10', position: 'relative', overflow: 'hidden' }}
+                onClick={() => setZoomedImage(p.assets?.source?.url || p.assets?.preview?.url || p.imageUrl || p.img)}
+              >
+                <img src={p.assets?.preview?.url || p.assets?.source?.url || p.imageUrl || p.img} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', background: 'var(--color-surface-2)', transition: 'transform 0.2s' }} onMouseEnter={e => e.currentTarget.style.transform='scale(1.05)'} onMouseLeave={e => e.currentTarget.style.transform='scale(1)'} />
+              </div>
               <div style={{ padding: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                   <div style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-lg)', color: 'var(--color-text)' }}>{p.name}</div>
-                  <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-pink)' }}>${p.price.toFixed(2)}</div>
+                   <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-pink)' }}>
+                    {p.price === 0 ? 'Free' : `$${p.price.toFixed(2)}`}
+                  </div>
                 </div>
                 <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', color: 'var(--color-text-2)', marginBottom: 16 }}>
                   {p.series} · {p.resolution}

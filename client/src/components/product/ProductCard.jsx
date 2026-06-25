@@ -92,9 +92,10 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
         updateUser({ wishlist: res.data?.data?.wishlist || user.wishlist });
         addToast('Removed from wishlist.', 'info');
       }
+      setOptimisticWishlist(null);
       if (onWishlistChange) onWishlistChange(id, newState);
     } catch {
-      setOptimisticWishlist(!newState); // revert
+      setOptimisticWishlist(null);
       addToast('Failed to update wishlist.', 'error');
     }
   };

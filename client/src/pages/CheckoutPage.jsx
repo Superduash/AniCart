@@ -73,7 +73,7 @@ function CheckoutForm({ clientSecret, total }) {
       )}
 
       <button type="submit" disabled={!stripe || loading} className="btn btn-primary btn-full btn-lg" style={{ marginTop: 32 }}>
-        {loading ? <><span className="loading-spinner" /> Processing...</> : `Pay $${total.toFixed(2)}`}
+        {loading ? <><span className="loading-spinner" /> Processing...</> : (total === 0 ? 'Get for Free' : `Pay $${total.toFixed(2)}`)}
       </button>
 
       <div style={{ marginTop: 16, textAlign: 'center', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
@@ -194,7 +194,7 @@ export default function CheckoutPage() {
                       <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', color: 'var(--color-text-3)' }}>{item.series}</div>
                     </div>
                     <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-accent)', flexShrink: 0 }}>
-                      ${(item.price || 0).toFixed(2)}
+                      {(item.price || 0) === 0 ? 'Free' : `$${item.price.toFixed(2)}`}
                     </div>
                   </div>
                 ))}
@@ -203,12 +203,12 @@ export default function CheckoutPage() {
               <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                   <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', color: 'var(--color-text-2)' }}>Subtotal</span>
-                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>${cartTotal.toFixed(2)}</span>
+                   <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>{cartTotal === 0 ? 'Free' : `$${cartTotal.toFixed(2)}`}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
                   <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', letterSpacing: 1, textTransform: 'uppercase' }}>Total</span>
-                  <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--color-accent)' }}>
-                    ${cartTotal.toFixed(2)}
+                   <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--color-accent)' }}>
+                    {cartTotal === 0 ? 'Free' : `$${cartTotal.toFixed(2)}`}
                   </span>
                 </div>
               </div>

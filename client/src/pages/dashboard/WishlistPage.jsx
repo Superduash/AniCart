@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTitle } from '../../hooks/useTitle';
 import { useUI } from '../../contexts/UIContext';
+import { useAuth } from '../../contexts/AuthContext';
 import apiClient from '../../api/client';
 import ProductCard from '../../components/product/ProductCard';
 import { ProductCardSkeleton, EmptyState } from '../../components/ui/Skeleton';
@@ -8,6 +9,7 @@ import { ProductCardSkeleton, EmptyState } from '../../components/ui/Skeleton';
 export default function WishlistPage() {
   useTitle('Wishlist');
   const { addToast } = useUI();
+  const { user, updateUser } = useAuth();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,7 +26,8 @@ export default function WishlistPage() {
   const handleRemove = async (productId) => {
     setItems(prev => prev.filter(i => (i._id || i.id) !== productId));
     try {
-      await apiClient.delete(`/users/wishlist/${productId}`);
+      const res = await apiClient.delete(`/users/wishlist/${productId}`);
+      updateUser({ wishlist: res.data?.data?.wishlist || user.wishlist });
     } catch { addToast('Failed to remove from wishlist.', 'error'); }
   };
 

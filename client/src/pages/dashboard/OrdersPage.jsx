@@ -41,7 +41,7 @@ function OrderCard({ order, onView }) {
       {/* Total + status */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
         <div style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, fontSize: 'var(--text-base)', color: 'var(--color-accent)' }}>
-          ${(order.totalAmount || order.total || 0).toFixed(2)}
+          {(order.totalAmount || order.total || 0) === 0 ? 'Free' : `$${(order.totalAmount || order.total || 0).toFixed(2)}`}
         </div>
         <span style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xs)', fontWeight: 700, letterSpacing: 1, textTransform: 'uppercase', color: statusColor }}>
           {order.status || 'Completed'}
@@ -99,7 +99,7 @@ function OrderDetailModal({ order, isOpen, onClose, onCancel }) {
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
                 <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-accent)' }}>
-                  ${(item.price || prod.price || 0).toFixed(2)}
+                  {(item.price || prod.price || 0) === 0 ? 'Free' : `$${(item.price || prod.price || 0).toFixed(2)}`}
                 </div>
                 {order.status === 'completed' && (
                   <button onClick={() => handleDownload(prod)} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, fontSize: 'var(--text-xs)', cursor: 'pointer', letterSpacing: 1, textTransform: 'uppercase', padding: 0 }}>
@@ -115,7 +115,7 @@ function OrderDetailModal({ order, isOpen, onClose, onCancel }) {
       <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, color: 'var(--color-text)', letterSpacing: 1, textTransform: 'uppercase' }}>Total</span>
         <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--color-accent)' }}>
-          ${(order.totalAmount || order.total || 0).toFixed(2)}
+          {(order.totalAmount || order.total || 0) === 0 ? 'Free' : `$${(order.totalAmount || order.total || 0).toFixed(2)}`}
         </span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>

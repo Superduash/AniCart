@@ -34,7 +34,7 @@ function CartItem({ item, onRemove }) {
         </div>
       </div>
       <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--color-accent)', flexShrink: 0 }}>
-        ${(item.price || 0).toFixed(2)}
+        {(item.price || 0) === 0 ? 'Free' : `$${item.price.toFixed(2)}`}
       </div>
       <button
         onClick={() => onRemove(id)}
@@ -173,7 +173,7 @@ export default function CartPage() {
                       Subtotal ({cart.length} item{cart.length !== 1 ? 's' : ''})
                     </span>
                     <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>
-                      ${cartTotal.toFixed(2)}
+                      {cartTotal === 0 ? 'Free' : `$${cartTotal.toFixed(2)}`}
                     </span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -186,7 +186,7 @@ export default function CartPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', letterSpacing: 1, textTransform: 'uppercase' }}>Total</span>
                     <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-2xl)', fontWeight: 600, color: 'var(--color-accent)', textShadow: 'var(--neon-text-glow)' }}>
-                      ${cartTotal.toFixed(2)}
+                      {cartTotal === 0 ? 'Free' : `$${cartTotal.toFixed(2)}`}
                     </span>
                   </div>
                 </div>

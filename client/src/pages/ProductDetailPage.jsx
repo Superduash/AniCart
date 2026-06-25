@@ -33,7 +33,7 @@ function StarPicker({ value, onChange }) {
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { cart, addToCart } = useCart();
   const { addToast } = useUI();
   const [productName, setProductName] = useState('');
@@ -72,7 +72,10 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [related, setRelated] = useState([]);
   const [inLibrary, setInLibrary] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
+
+  const isWishlistedInUser = user?.wishlist?.some(w => (w._id || w) === id) || false;
+  const [optimisticWishlist, setOptimisticWishlist] = useState(null);
+  const wishlisted = optimisticWishlist !== null ? optimisticWishlist : (isWishlistedInUser || (product?.isWishlisted) || false);
 
   // Review state
   const [reviews, setReviews] = useState([]);
@@ -94,7 +97,6 @@ export default function ProductDetailPage() {
         if (prodRes.status === 'fulfilled') {
           const prod = prodRes.value.data?.data?.product || prodRes.value.data?.data || prodRes.value.data;
           setProduct(prod);
-          setWishlisted(prod.isWishlisted || false);
           // M3 Fix: set productName state so useTitle hook gets the correct value
           setProductName(prod.name);
           // Fetch related
@@ -125,7 +127,7 @@ export default function ProductDetailPage() {
       } finally { setLoading(false); }
     };
     load();
-  }, [id, user]);
+  }, [id, user?.id]);
 
   const handleCartAction = async () => {
     if (!user) { addToast('Sign in to purchase.', 'warning'); navigate('/auth/login?next=/products/' + id); return; }
@@ -141,17 +143,20 @@ export default function ProductDetailPage() {
   const handleWishlist = async () => {
     if (!user) { addToast('Sign in to save wishlist.', 'warning'); return; }
     const newState = !wishlisted;
-    setWishlisted(newState);
+    setOptimisticWishlist(newState);
     try {
       if (newState) {
-        await apiClient.post(`/users/wishlist/${id}`);
+        const res = await apiClient.post(`/users/wishlist/${id}`);
+        updateUser({ wishlist: res.data?.data?.wishlist || user.wishlist });
         addToast('Saved to wishlist!', 'success');
       } else {
-        await apiClient.delete(`/users/wishlist/${id}`);
+        const res = await apiClient.delete(`/users/wishlist/${id}`);
+        updateUser({ wishlist: res.data?.data?.wishlist || user.wishlist });
         addToast('Removed from wishlist.', 'info');
       }
+      setOptimisticWishlist(null);
     } catch {
-      setWishlisted(!newState);
+      setOptimisticWishlist(null);
       addToast('Failed to update wishlist.', 'error');
     }
   };
@@ -304,7 +309,7 @@ export default function ProductDetailPage() {
             {/* Price */}
             {!inLibrary && (
               <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-4xl)', fontWeight: 600, color: 'var(--color-accent)', textShadow: 'var(--neon-text-glow)', marginBottom: 24 }}>
-                ${(product.price || 0).toFixed(2)}
+                {(!product.price || product.price === 0) ? 'Free' : `$${product.price.toFixed(2)}`}
               </div>
             )}
 
