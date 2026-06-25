@@ -3,6 +3,44 @@ import { useTitle } from '../../hooks/useTitle';
 import { useUI } from '../../contexts/UIContext';
 import apiClient from '../../api/client';
 
+function ProductRow({ p, type, updateProductFlag }) {
+  const isHero = type === 'hero';
+  const currentOrder = isHero ? p.heroOrder : p.featuredOrder;
+  const [orderVal, setOrderVal] = useState(currentOrder || 0);
+
+  useEffect(() => {
+    setOrderVal(currentOrder || 0);
+  }, [currentOrder]);
+
+  const handleSaveOrder = () => {
+    const payload = isHero ? { heroOrder: Number(orderVal) } : { featuredOrder: Number(orderVal) };
+    updateProductFlag(p.id || p._id, payload);
+  };
+
+  const handleRemove = () => {
+    const payload = isHero ? { isHero: false, heroOrder: 0 } : { isFeatured: false, featuredOrder: 0 };
+    updateProductFlag(p.id || p._id, payload);
+  };
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', background: 'var(--color-surface-2)', padding: 12, borderRadius: 'var(--radius-md)', marginBottom: 8, border: '1px solid var(--color-border)' }}>
+      <img src={p.assets?.preview?.url || p.img} alt="" style={{ width: 60, height: 40, objectFit: 'cover', borderRadius: 4, marginRight: 16 }} />
+      <div style={{ flex: 1, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, color: 'var(--color-text)' }}>{p.name}</div>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+        <label style={{ fontSize: 12, color: 'var(--color-text-2)' }}>Order:</label>
+        <input 
+          type="number" 
+          value={orderVal} 
+          onChange={e => setOrderVal(e.target.value)}
+          style={{ width: 60, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)', padding: '4px 8px', borderRadius: 4 }}
+        />
+        <button onClick={handleSaveOrder} className="btn btn-primary" style={{ padding: '4px 12px', fontSize: 12 }}>Save</button>
+        <button onClick={handleRemove} className="btn btn-muted" style={{ padding: '4px 12px', fontSize: 12, color: 'var(--color-error)' }}>Remove</button>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminHomepagePage() {
   useTitle('Homepage Manager | Admin');
   const { addToast } = useUI();
@@ -61,39 +99,7 @@ export default function AdminHomepagePage() {
     }
   };
 
-  const renderProductRow = (p, type) => {
-    const isHero = type === 'hero';
-    const currentOrder = isHero ? p.heroOrder : p.featuredOrder;
-    const [orderVal, setOrderVal] = useState(currentOrder || 0);
 
-    const handleSaveOrder = () => {
-      const payload = isHero ? { heroOrder: Number(orderVal) } : { featuredOrder: Number(orderVal) };
-      updateProductFlag(p.id || p._id, payload);
-    };
-
-    const handleRemove = () => {
-      const payload = isHero ? { isHero: false, heroOrder: 0 } : { isFeatured: false, featuredOrder: 0 };
-      updateProductFlag(p.id || p._id, payload);
-    };
-
-    return (
-      <div key={p.id || p._id} style={{ display: 'flex', alignItems: 'center', background: 'var(--color-surface-2)', padding: 12, borderRadius: 'var(--radius-md)', marginBottom: 8, border: '1px solid var(--color-border)' }}>
-        <img src={p.assets?.preview?.url || p.img} alt="" style={{ width: 60, height: 40, objectFit: 'cover', borderRadius: 4, marginRight: 16 }} />
-        <div style={{ flex: 1, fontFamily: 'Rajdhani, sans-serif', fontWeight: 600, color: 'var(--color-text)' }}>{p.name}</div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <label style={{ fontSize: 12, color: 'var(--color-text-2)' }}>Order:</label>
-          <input 
-            type="number" 
-            value={orderVal} 
-            onChange={e => setOrderVal(e.target.value)}
-            style={{ width: 60, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text)', padding: '4px 8px', borderRadius: 4 }}
-          />
-          <button onClick={handleSaveOrder} className="btn btn-primary" style={{ padding: '4px 12px', fontSize: 12 }}>Save</button>
-          <button onClick={handleRemove} className="btn btn-muted" style={{ padding: '4px 12px', fontSize: 12, color: 'var(--color-error)' }}>Remove</button>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div>
@@ -106,12 +112,12 @@ export default function AdminHomepagePage() {
         <div>
           <div style={{ background: 'var(--color-surface)', padding: 24, borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', marginBottom: 24 }}>
             <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xl)', color: 'var(--color-text)', marginBottom: 16 }}>Hero Slider</h2>
-            {loading ? <p>Loading...</p> : heroProducts.length === 0 ? <p style={{ color: 'var(--color-text-3)' }}>No hero products.</p> : heroProducts.map(p => renderProductRow(p, 'hero'))}
+            {loading ? <p>Loading...</p> : heroProducts.length === 0 ? <p style={{ color: 'var(--color-text-3)' }}>No hero products.</p> : heroProducts.map(p => <ProductRow key={p.id || p._id} p={p} type="hero" updateProductFlag={updateProductFlag} />)}
           </div>
 
           <div style={{ background: 'var(--color-surface)', padding: 24, borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
             <h2 style={{ fontFamily: 'Rajdhani, sans-serif', fontSize: 'var(--text-xl)', color: 'var(--color-text)', marginBottom: 16 }}>Featured Section</h2>
-            {loading ? <p>Loading...</p> : featuredProducts.length === 0 ? <p style={{ color: 'var(--color-text-3)' }}>No featured products.</p> : featuredProducts.map(p => renderProductRow(p, 'featured'))}
+            {loading ? <p>Loading...</p> : featuredProducts.length === 0 ? <p style={{ color: 'var(--color-text-3)' }}>No featured products.</p> : featuredProducts.map(p => <ProductRow key={p.id || p._id} p={p} type="featured" updateProductFlag={updateProductFlag} />)}
           </div>
         </div>
 
