@@ -32,13 +32,16 @@ function ResolutionBadge({ resolution }) {
 export default function ProductCard({ product, inLibrary = false, onDownload, onWishlistChange }) {
   const navigate = useNavigate();
   const { cart, addToCart, removeFromCart } = useCart();
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { addToast } = useUI();
-  const [wishlisted, setWishlisted] = useState(product.isWishlisted || false);
-  const [wishlistLoading, setWishlistLoading] = useState(false);
+  
+  const id = product._id || product.id;
+  const isWishlisted = user?.wishlist?.some(w => (w._id || w) === id) || product.isWishlisted || false;
+  
+  const [optimisticWishlist, setOptimisticWishlist] = useState(null);
+  const wishlisted = optimisticWishlist !== null ? optimisticWishlist : isWishlisted;
   const [animatingHeart, setAnimatingHeart] = useState(false);
 
-  const id = product._id || product.id;
   const inCart = cart.some(i => (i._id || i.id) === id);
   const previewUrl = product.assets?.preview?.url || product.img || product.imageUrl;
   const badge = product.badge || product.label;
@@ -72,7 +75,8 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
       return;
     }
     const newState = !wishlisted;
-    setWishlisted(newState);
+    setOptimisticWishlist(newState);
+    
     if (newState) {
       setAnimatingHeart(true);
       setTimeout(() => setAnimatingHeart(false), 600);
@@ -80,15 +84,17 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
     
     try {
       if (newState) {
-        await apiClient.post(`/users/wishlist/${id}`);
+        const res = await apiClient.post(`/users/wishlist/${id}`);
+        updateUser({ wishlist: res.data?.data?.wishlist || user.wishlist });
         addToast('Saved to wishlist!', 'success');
       } else {
-        await apiClient.delete(`/users/wishlist/${id}`);
+        const res = await apiClient.delete(`/users/wishlist/${id}`);
+        updateUser({ wishlist: res.data?.data?.wishlist || user.wishlist });
         addToast('Removed from wishlist.', 'info');
       }
       if (onWishlistChange) onWishlistChange(id, newState);
     } catch {
-      setWishlisted(!newState); // revert
+      setOptimisticWishlist(!newState); // revert
       addToast('Failed to update wishlist.', 'error');
     }
   };

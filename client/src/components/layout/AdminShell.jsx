@@ -4,6 +4,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 const NAV = [
   { path: '/admin/products', label: 'Product Queue', icon: '⚡' },
   { path: '/admin/creators', label: 'Creator Apps',  icon: '👤' },
+  { path: '/admin/homepage', label: 'Homepage Layout', icon: '🏠' },
 ];
 
 export default function AdminShell() {

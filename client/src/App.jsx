@@ -53,6 +53,7 @@ const CreatorStatsPage    = React.lazy(() => import('./pages/creator/CreatorStat
 import AdminShell         from './components/layout/AdminShell';
 const AdminProductsPage   = React.lazy(() => import('./pages/admin/AdminProductsPage'));
 const AdminCreatorsPage   = React.lazy(() => import('./pages/admin/AdminCreatorsPage'));
+const AdminHomepagePage   = React.lazy(() => import('./pages/admin/AdminHomepagePage'));
 
 // H6 Fix: creator apply page accessible to any logged-in user
 const CreatorApplyPage    = React.lazy(() => import('./pages/creator/CreatorApplyPage'));
@@ -214,6 +215,7 @@ function AnimatedRoutes() {
         }>
           <Route path="products" element={<PageWrapper><AdminProductsPage /></PageWrapper>} />
           <Route path="creators" element={<PageWrapper><AdminCreatorsPage /></PageWrapper>} />
+          <Route path="homepage" element={<PageWrapper><AdminHomepagePage /></PageWrapper>} />
           <Route index element={<Navigate to="products" replace />} />
         </Route>
 

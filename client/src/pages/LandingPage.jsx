@@ -130,7 +130,7 @@ export default function LandingPage() {
   const [seriesLoading, setSeriesLoading] = useState(true);
 
   useEffect(() => {
-    apiClient.get('/products', { params: { limit: 5, sort: 'rating', status: 'active' } })
+    apiClient.get('/products', { params: { isHero: true, sort: 'heroOrder', limit: 10, status: 'active' } })
       .then(res => {
         const data = res.data?.data;
         setHeroProducts(Array.isArray(data) ? data : data?.products || []);
@@ -143,7 +143,7 @@ export default function LandingPage() {
       .catch(() => setSeries([]))
       .finally(() => setSeriesLoading(false));
 
-    apiClient.get('/products', { params: { limit: 8, sort: 'newest', status: 'active' } })
+    apiClient.get('/products', { params: { isFeatured: true, sort: 'featuredOrder', limit: 12, status: 'active' } })
       .then(res => {
         const data = res.data?.data;
         setProducts(Array.isArray(data) ? data : data?.products || []);

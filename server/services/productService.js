@@ -52,17 +52,35 @@ async function getProducts(query) {
     }
   }
 
-  const { series, page = 1, limit = CONSTANTS.DEFAULTS.PAGE_LIMIT, search, status = 'active' } = query;
+  const { series, resolution, minPrice, maxPrice, page = 1, limit = CONSTANTS.DEFAULTS.PAGE_LIMIT, search, status = 'active' } = query;
 
   const filter = { status };
 
   if (series) {
-    filter.series = series;
+    filter.series = { $in: series.split(',') };
+  }
+
+  if (resolution) {
+    filter.resolution = { $in: resolution.split(',') };
+  }
+
+  if (minPrice || maxPrice) {
+    filter.price = {};
+    if (minPrice) filter.price.$gte = Number(minPrice);
+    if (maxPrice) filter.price.$lte = Number(maxPrice);
   }
 
   if (search) {
     const escapeRegex = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     filter.name = { $regex: escapeRegex(search), $options: 'i' };
+  }
+
+  if (query.isHero !== undefined) {
+    filter.isHero = query.isHero === 'true';
+  }
+
+  if (query.isFeatured !== undefined) {
+    filter.isFeatured = query.isFeatured === 'true';
   }
 
   if (query.creatorId) {
@@ -130,11 +148,24 @@ async function getProducts(query) {
     }
   }
 
+  let sortOption = { createdAt: -1 };
+  if (query.sort === 'heroOrder') {
+    sortOption = { heroOrder: 1, createdAt: -1 };
+  } else if (query.sort === 'featuredOrder') {
+    sortOption = { featuredOrder: 1, createdAt: -1 };
+  } else if (query.sort === 'rating' || query.sort === 'top_rated') {
+    sortOption = { rating: -1, reviews: -1 };
+  } else if (query.sort === 'price_asc') {
+    sortOption = { price: 1, createdAt: -1 };
+  } else if (query.sort === 'price_desc') {
+    sortOption = { price: -1, createdAt: -1 };
+  }
+
   // Fallback / Standard MongoDB Query
   const [mongoProducts, mongoTotal, distinctSeries] = await Promise.all([
     Product.find(filter)
       .select(PUBLIC_PRODUCT_SELECT)
-      .sort({ createdAt: -1 })
+      .sort(sortOption)
       .skip(skip)
       .limit(limitNum),
     Product.countDocuments(filter),
@@ -246,6 +277,10 @@ async function updateProduct(id, body) {
     resolution,
     tags,
     status,
+    isHero,
+    heroOrder,
+    isFeatured,
+    featuredOrder,
   } = body;
 
   const product = await Product.findById(id);
@@ -264,6 +299,10 @@ async function updateProduct(id, body) {
   if (resolution !== undefined) product.resolution = resolution;
   if (tags !== undefined) product.tags = tags;
   if (status !== undefined) product.status = status;
+  if (isHero !== undefined) product.isHero = isHero;
+  if (heroOrder !== undefined) product.heroOrder = heroOrder;
+  if (isFeatured !== undefined) product.isFeatured = isFeatured;
+  if (featuredOrder !== undefined) product.featuredOrder = featuredOrder;
 
   await product.save();
 

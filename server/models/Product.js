@@ -181,8 +181,24 @@ const productSchema = new mongoose.Schema(
     status: {
       type: String,
       trim: true,
-      enum: ['pending', 'active', 'rejected', 'removed'],
+      enum: ['pending', 'active', 'rejected', 'removed', 'archived'],
       default: 'active',
+    },
+    isHero: {
+      type: Boolean,
+      default: false,
+    },
+    heroOrder: {
+      type: Number,
+      default: 0,
+    },
+    isFeatured: {
+      type: Boolean,
+      default: false,
+    },
+    featuredOrder: {
+      type: Number,
+      default: 0,
     },
     rightsConfirmed: {
       type: Boolean,
@@ -249,6 +265,8 @@ productSchema.index({ price: 1 });
 productSchema.index({ createdAt: -1 });
 productSchema.index({ creatorId: 1, status: 1, createdAt: -1 });
 productSchema.index({ status: 1, series: 1, price: 1 });
+productSchema.index({ isHero: -1, heroOrder: 1 });
+productSchema.index({ isFeatured: -1, featuredOrder: 1 });
 
 /**
  * Static method to get distinct series for filtering

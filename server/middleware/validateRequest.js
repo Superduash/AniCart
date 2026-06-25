@@ -308,6 +308,26 @@ const updateProductValidation = [
     .optional()
     .isInt({ min: 0 })
     .withMessage('Reviews count must be a positive integer'),
+  body('isHero')
+    .optional()
+    .isBoolean()
+    .toBoolean()
+    .withMessage('isHero must be a boolean'),
+  body('heroOrder')
+    .optional()
+    .isInt()
+    .toInt()
+    .withMessage('heroOrder must be an integer'),
+  body('isFeatured')
+    .optional()
+    .isBoolean()
+    .toBoolean()
+    .withMessage('isFeatured must be a boolean'),
+  body('featuredOrder')
+    .optional()
+    .isInt()
+    .toInt()
+    .withMessage('featuredOrder must be an integer'),
   validate,
 ];
 

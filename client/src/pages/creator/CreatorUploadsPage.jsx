@@ -61,6 +61,31 @@ export default function CreatorUploadsPage() {
   const [deletingId, setDeletingId] = useState(null);
   const [form, setForm] = useState({ name: '', description: '', price: 5, series: '', resolution: '4K', format: 'WebP' });
   const [sourceFile, setSourceFile] = useState(null);
+  
+  // Auto-detect resolution
+  const handleFileSelect = (f) => {
+    if (!f) return;
+    setSourceFile(f);
+    
+    // Auto-detect resolution logic
+    if (f.type.startsWith('image/')) {
+      const url = URL.createObjectURL(f);
+      const img = new Image();
+      img.onload = () => {
+        const { width, height } = img;
+        let detectedRes = '1080p';
+        if (width >= 3840 || height >= 2160) {
+          detectedRes = '4K';
+        } else if (width >= 2560 || height >= 1440) {
+          detectedRes = '2K';
+        }
+        setForm(prev => ({ ...prev, resolution: detectedRes }));
+        URL.revokeObjectURL(url);
+      };
+      img.src = url;
+    }
+  };
+  
   const { socket } = useSocket();
 
   useEffect(() => { loadProducts(); }, []);
@@ -221,7 +246,7 @@ export default function CreatorUploadsPage() {
         <form onSubmit={handleUpload}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 24 }}>
             <div>
-              <FileUploadBox label="Source File (High-Res)" accept="image/png,image/jpeg,image/webp" file={sourceFile} onFile={setSourceFile} subtext="Full resolution, unwatermarked (Max 20MB)" />
+              <FileUploadBox label="Source File (High-Res)" accept="image/png,image/jpeg,image/webp" file={sourceFile} onFile={handleFileSelect} subtext="Full resolution, unwatermarked (Max 20MB)" />
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="form-group">
