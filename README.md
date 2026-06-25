@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=venom&height=250&color=0:312e81,35:6d28d9,70:7c3aed,100:22d3ee&text=AniCart&fontSize=90&fontColor=ffffff&animation=fadeIn&fontAlignY=45&desc=Futuristic%20Anime%20Marketplace&descAlignY=68&descColor=e2e8f0&descSize=20"/>
+<img width="1492" height="365" alt="Banner" src="https://github.com/user-attachments/assets/1d9bfd7f-fe07-4023-aa7c-8fa0adda7713" />
 
 <br/>
 
@@ -23,15 +23,7 @@
 
 ---
 
-## 📸 Preview
-
-<div align="center">
-
-> *A complete showcase of our high-resolution anime wallpaper catalog.*
-
-<img src="YOUR_SCREENSHOT_HERE" width="85%" alt="AniCart Preview"/>
-
-</div>
+<img width="1549" height="1613" alt="image" src="https://github.com/user-attachments/assets/c5cc8b4b-4a17-4112-8723-9e7a6252adbd" />
 
 ---
 
@@ -48,7 +40,7 @@ The platform supports a dual-sided ecosystem: users can browse, purchase, and ma
 ## ✨ Features
 
 * **Advanced Authentication:** JWT-based flow utilizing short-lived access tokens, HTTP-only refresh tokens, email verification, and secure password resets.
-* **Creator Studio:** Dedicated dashboard for creators to upload high-resolution artwork, track sales metrics, and manage their portfolios.
+* **Creator Studio:** Dedicated dashboard for creators to upload artwork, manage products, and monitor platform activity.
 * **Automated Image Processing:** Background worker queues (BullMQ + Redis) process original uploads into 4K, 2K, 1080p, and mobile-optimized variants using Sharp.
 * **Real-Time Updates:** Socket.io integration streams live upload processing progress and status updates directly to connected creators.
 * **Cloudflare R2 Storage:** Scalable, secure object storage for original files and generated variants with private signed URLs for verified purchases.
