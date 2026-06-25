@@ -4,18 +4,18 @@
 
 <br/>
 
-[![React](https://img.shields.io/badge/React-18-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
 [![Node.js](https://img.shields.io/badge/Node.js-Express-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Database-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://mongodb.com)
-[![Framer Motion](https://img.shields.io/badge/Framer-Motion-0055FF?style=for-the-badge&logo=framer&logoColor=white)](https://framer.com/motion)
-[![Vercel](https://img.shields.io/badge/Vercel-Deployed-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
-[![License](https://img.shields.io/badge/License-MIT-00f3ff?style=for-the-badge)](LICENSE)
+[![Redis](https://img.shields.io/badge/Redis-Cache-DC382D?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
+[![Cloudflare R2](https://img.shields.io/badge/Cloudflare-R2-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://cloudflare.com)
+[![Stripe](https://img.shields.io/badge/Stripe-Payments-008CDD?style=for-the-badge&logo=stripe&logoColor=white)](https://stripe.com)
 
 <br/>
 
-*A full-stack anime merchandise platform with sci-fi glassmorphism UI, JWT authentication, cart state management, and cloud deployment.*
+*A production-ready anime merchandise platform featuring real-time image processing, secure payments, and a creator ecosystem.*
 
-[**🌐 Live Demo**](https://anicartwallpaper.vercel.app/) · [**📖 Architecture**](#-architecture) · [**🚀 Quick Start**](#-quick-start) · [**🎨 Design System**](#-design-system)
+[**🌐 Live Demo**](https://anicartweb.netlify.app/) · [**🚀 Quick Start**](#-quick-start) · [**🎨 Design System**](#-design-system) · [**🔑 API Reference**](#-api-reference)
 
 <br/>
 
@@ -27,7 +27,7 @@
 
 <div align="center">
 
-> *Add a screenshot or screen recording GIF here — paste an image into the GitHub README editor.*
+> *A complete showcase of our high-resolution anime wallpaper catalog.*
 
 <img src="YOUR_SCREENSHOT_HERE" width="85%" alt="AniCart Preview"/>
 
@@ -35,130 +35,68 @@
 
 ---
 
-## 🌌 What Is AniCart?
+## 🌌 Overview
 
-AniCart is a **full-stack eCommerce web application** built around anime merchandise — starting with digital wallpapers and designed to scale into a complete store with posters, apparel, figurines, and digital downloads.
+AniCart is a full-stack digital marketplace tailored for anime artwork and wallpapers. Built with a modern MERN stack alongside Redis and Cloudflare R2, it demonstrates advanced architectural patterns including background worker queues, real-time WebSocket communication, and secure payment handling.
 
-The project demonstrates a production-style MERN stack implementation: a React frontend with global state management and animated UI, a Node/Express REST API with JWT authentication, and a MongoDB database with Mongoose schemas — all deployed separately on Vercel and Render.
+The platform supports a dual-sided ecosystem: users can browse, purchase, and manage their library, while approved creators can upload assets, track analytics, and monetize their work. An integrated admin panel provides full moderation controls and dynamic homepage layout management.
 
-> Built to showcase real-world full-stack architecture, authentication flows, and UI/UX design systems in a portfolio context.
+> Built to showcase real-world full-stack architecture, background task processing, and modern UI/UX design systems in a portfolio context.
 
 ---
 
 ## ✨ Features
 
-<table>
-<tr>
-<td width="50%">
-
-**Implemented**
-- 🔐 JWT-based user authentication (signup, login, protected routes)
-- 🛒 Add to cart with persistent global state via Context API
-- 🖼️ Anime wallpaper catalog with product cards
-- 🌌 Glassmorphism UI with neon accent system
-- 📱 Fully responsive layout (mobile-first)
-- ⚡ Smooth page transitions via Framer Motion
-- ☁️ Deployed frontend (Vercel) + backend (Render)
-
-</td>
-<td width="50%">
-
-**Planned**
-- 💳 Stripe payment integration
-- ❤️ Wishlist with user persistence
-- ⭐ Product ratings and reviews
-- 🔎 Search, filters, and category pages
-- 👤 User profile with order history
-- 📦 Order tracking system
-- 🛍️ Full merchandise catalog expansion
-- 📱 React Native mobile app
-
-</td>
-</tr>
-</table>
+* **Advanced Authentication:** JWT-based flow utilizing short-lived access tokens, HTTP-only refresh tokens, email verification, and secure password resets.
+* **Creator Studio:** Dedicated dashboard for creators to upload high-resolution artwork, track sales metrics, and manage their portfolios.
+* **Automated Image Processing:** Background worker queues (BullMQ + Redis) process original uploads into 4K, 2K, 1080p, and mobile-optimized variants using Sharp.
+* **Real-Time Updates:** Socket.io integration streams live upload processing progress and status updates directly to connected creators.
+* **Cloudflare R2 Storage:** Scalable, secure object storage for original files and generated variants with private signed URLs for verified purchases.
+* **Secure Payments:** Full Stripe API integration with webhooks for robust transaction fulfillment and order status updates.
+* **Admin Moderation:** Internal tooling to review creator applications, moderate product uploads, and customize the active homepage layout.
+* **Automated Cron Jobs:** Scheduled tasks handle abandoned cart recovery emails, monthly creator quota resets, and orphaned file cleanup.
+* **Global Search:** Fast, debounced search overlay accessible via `Ctrl+K` keyboard shortcuts.
+* **Glassmorphism UI:** Neon accent system with fully responsive layout and smooth page transitions via Framer Motion.
 
 ---
-
-## Architecture
-
-```
-        Browser (React SPA)
-                │
-                │  REST API (JSON over HTTP)
-                ▼
-┌───────────────────────────────┐
-│   Express.js API Server       │
-│                               │
-│  POST /api/auth/register      │  Hashes password with bcrypt
-│  POST /api/auth/login         │  Issues signed JWT (7d expiry)
-│  GET  /api/products           │  Paginated product catalog
-│  GET  /api/products/:id       │  Single product detail
-│  POST /api/cart               │  Auth-protected, persists cart
-│  GET  /api/cart/:userId       │  Returns user's cart state
-└──────────────┬────────────────┘
-               │  Mongoose ODM
-               ▼
-┌───────────────────────────────┐
-│   MongoDB Atlas               │
-│                               │
-│   users       { email, passwordHash, createdAt }
-│   products    { title, price, image, category, tags }
-│   carts       { userId, items[], updatedAt }
-└───────────────────────────────┘
-```
 
 ## 🛠 Tech Stack
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| UI Framework | **React 18** | Component-based SPA with hooks |
-| State | **Context API** | Auth and cart global state, no Redux overhead |
-| Animations | **Framer Motion** | Page transitions and card entrance animations |
-| Styling | **CSS + Glassmorphism** | Custom design system, no UI library |
-| Backend | **Node.js + Express** | REST API, middleware, route handlers |
-| Auth | **JWT + bcrypt** | Stateless authentication, hashed credentials |
-| Database | **MongoDB + Mongoose** | Document store with typed schemas |
-| Frontend Deploy | **Vercel** | Automatic deploys from `main`, edge CDN |
-| Backend Deploy | **Render** | Managed Node service, zero-downtime redeploys |
+| **Frontend** | React 19, React Router v7, Framer Motion, Vite | Component-based SPA with animated UI |
+| **State & Data** | Context API, Axios | Global state, request caching, and interceptors |
+| **Backend** | Node.js, Express.js | REST API, middleware, and request validation |
+| **Database** | MongoDB Atlas, Mongoose ODM | Document store with typed schemas |
+| **Cache & Queues** | Redis (Upstash / IORedis), BullMQ | Real-time cache and robust background workers |
+| **Storage** | Cloudflare R2 (AWS SDK) | Scalable object storage for high-res assets |
+| **Payments** | Stripe Elements & Webhooks | Secure, PCI-compliant checkout and fulfillment |
+| **Real-Time** | Socket.io | WebSocket streaming for processing progress |
 
 ---
 
 ## 📂 Project Structure
 
-```
+```text
 AniCart/
-├── client/                        # React frontend (deployed to Vercel)
-│   └── src/
-│       ├── pages/
-│       │   ├── LandingPage.jsx    # Hero + product showcase
-│       │   ├── LoginPage.jsx      # JWT login form
-│       │   ├── SignupPage.jsx     # Registration form
-│       │   └── Dashboard.jsx      # Protected product catalog
-│       ├── components/
-│       │   ├── Navbar.jsx         # Auth-aware nav with cart count
-│       │   ├── ProductCard.jsx    # Glassmorphism product tile
-│       │   ├── Footer.jsx
-│       │   └── Toast.jsx          # Notification feedback
-│       ├── context/
-│       │   ├── AuthContext.js     # Token state, login/logout helpers
-│       │   └── CartContext.js     # Cart items, add/remove/sync
-│       ├── App.js                 # Route definitions + context wrappers
-│       └── App.css                # Design tokens + global styles
+├── client/
+│   ├── src/
+│   │   ├── api/          # Axios instance, interceptors, and caching
+│   │   ├── components/   # Reusable UI, layout, and search overlays
+│   │   ├── contexts/     # Auth, Cart, UI, and Socket global state
+│   │   ├── hooks/        # Custom hooks (useSEO, useDebounce, etc.)
+│   │   └── pages/        # Route components (Admin, Creator, Auth, Dashboard)
+│   └── package.json
 │
-├── server/                        # Express API (deployed to Render)
-│   ├── models/
-│   │   ├── User.js                # Mongoose user schema
-│   │   ├── Product.js             # Product schema with category tags
-│   │   └── Cart.js                # Cart schema linked to user
-│   ├── routes/
-│   │   ├── auth.js                # /register, /login endpoints
-│   │   ├── products.js            # Catalog CRUD endpoints
-│   │   └── cart.js                # Cart read/write endpoints
-│   ├── middleware/
-│   │   └── verifyToken.js         # JWT auth guard for protected routes
-│   └── server.js                  # Express setup, CORS, MongoDB connect
-│
-└── README.md
+└── server/
+    ├── config/           # Environment, Redis, and R2 configurations
+    ├── controllers/      # Route handlers and request validation
+    ├── jobs/             # BullMQ workers, image processing, cron tasks
+    ├── middleware/       # JWT guards, role checks, and error handling
+    ├── models/           # Mongoose schemas (User, Product, Order, etc.)
+    ├── routes/           # API endpoint definitions
+    ├── services/         # Core business logic and external integrations
+    └── app.js            # Express application setup
 ```
 
 ---
@@ -167,53 +105,65 @@ AniCart/
 
 ### Prerequisites
 
-- Node.js 18+
-- MongoDB Atlas account (free tier)
+* Node.js 18+
+* MongoDB instance
+* Redis instance
+* Cloudflare R2 account
+* Stripe account
 
-### 1. Clone
+### 1. Clone & Install
 
 ```bash
 git clone https://github.com/yourusername/anicart.git
 cd anicart
-```
 
-### 2. Backend
-
-```bash
+# Install backend dependencies
 cd server
+npm install
+
+# Install frontend dependencies
+cd ../client
 npm install
 ```
 
-Create `server/.env`:
+### 2. Environment Configuration
+
+Create a `.env` file in the `server` directory. Refer to `server/config/index.js` for required variables, including:
 
 ```env
-MONGO_URI=your_mongodb_atlas_connection_string
-JWT_SECRET=your_secret_key_here
 PORT=5000
+MONGODB_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+REDIS_URL=your_redis_url
+STRIPE_SECRET_KEY=your_stripe_secret
+STRIPE_WEBHOOK_SECRET=your_webhook_secret
+R2_ACCOUNT_ID=your_cloudflare_account_id
+R2_ACCESS_KEY_ID=your_access_key
+R2_SECRET_ACCESS_KEY=your_secret_key
+R2_BUCKET_NAME=your_bucket_name
 ```
+
+Create a `.env` file in the `client` directory:
+
+```env
+VITE_API_URL=http://localhost:5000/api/v1
+```
+
+### 3. Run Development Servers
+
+Start the backend (from `/server`):
 
 ```bash
 npm run dev
 ```
 
-### 3. Frontend
-
-```bash
-cd client
-npm install
-```
-
-Create `client/.env`:
-
-```env
-REACT_APP_API_URL=http://localhost:5000
-```
+Start the frontend (from `/client`):
 
 ```bash
 npm start
 ```
 
-Open `http://localhost:3000`
+Visit `http://localhost:3000` (or the port defined by Vite) to view the application.
 
 ---
 
@@ -269,14 +219,13 @@ Issues and pull requests are welcome. For major changes, open an issue first.
 
 ## 📜 License
 
-MIT — free to use, fork, and build on.
+MIT License. Free to use, modify, and distribute.
 
 ---
 
 <div align="center">
 
 **AniCart** · Built by [Superduash](https://github.com/Superduash)
-
 
 ⭐ Star this repo if it helped you or if you'd like to see it grow.
 
