@@ -18,6 +18,7 @@ const uploadRoutes = require('../routers/uploadRoutes');
 const webhookRoutes = require('../routers/webhookRoutes');
 const reviewRoutes = require('../routers/reviewRoutes');
 const adminRoutes = require('../routers/adminRoutes');
+const seoRoutes = require('../routers/seoRoutes');
 
 router.use(apiLimiter);
 
@@ -35,5 +36,6 @@ router.use('/upload', uploadRoutes);
 router.use('/webhooks', webhookRoutes);
 router.use('/reviews', reviewRoutes);
 router.use('/admin', adminRoutes);
+router.use('/', seoRoutes);
 
 module.exports = router;

@@ -152,6 +152,7 @@ function AnimatedRoutes() {
         <Route path="/" element={<PageWrapper><LandingPage /></PageWrapper>} />
         <Route path="/marketplace" element={<PageWrapper><MarketplacePage /></PageWrapper>} />
         <Route path="/products/:id" element={<PageWrapper><ProductDetailPage /></PageWrapper>} />
+        <Route path="/wallpaper/:id" element={<PageWrapper><ProductDetailPage /></PageWrapper>} />
         <Route path="/cart" element={<PageWrapper><CartPage /></PageWrapper>} />
 
         {/* Auth */}

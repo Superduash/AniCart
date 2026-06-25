@@ -135,6 +135,7 @@ export default function ProductCard({ product, inLibrary = false, onDownload, on
           src={previewUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="250"%3E%3Crect fill="%230a1628" width="400" height="250"/%3E%3C/svg%3E'}
           alt={`${product.name} from ${product.series}`}
           loading="lazy"
+          decoding="async"
           draggable="false"
           style={{ pointerEvents: 'none', userSelect: 'none' }}
           onError={e => { e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="250"%3E%3Crect fill="%230a1628" width="400" height="250"/%3E%3C/svg%3E'; }}

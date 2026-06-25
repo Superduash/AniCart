@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import SEO from '../components/SEO';
+import { generateCollectionPageSchema } from '../utils/seoUtils';
 import { useTitle } from '../hooks/useTitle';
 import { useDebounce } from '../hooks/useDebounce';
 import { useWindowWidth } from '../hooks/useWindowWidth';
@@ -183,6 +185,11 @@ export default function MarketplacePage() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 70 }}>
+      <SEO
+        title="Marketplace | Browse Premium Anime Wallpapers | AniCart"
+        description="Browse our extensive collection of premium anime wallpapers. Filter by series, resolution, and price to find the perfect background for your device."
+        schemas={[generateCollectionPageSchema('Marketplace - Premium Anime Wallpapers', `${window.location.origin}/marketplace`)]}
+      />
       {/* Mobile filter btn */}
       {isMobile && (
         <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', gap: 12 }}>

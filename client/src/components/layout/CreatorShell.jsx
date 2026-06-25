@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import SEO from '../SEO';
 import { useUI } from '../../contexts/UIContext';
 
 const NAV = [
@@ -26,6 +27,7 @@ export default function CreatorShell() {
 
   return (
     <div className="dashboard-layout">
+      <SEO title="Creator Studio" robots="noindex,nofollow" />
       <aside className="dashboard-sidebar">
         <div className="sidebar-user">
           <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.75rem', letterSpacing: 2, color: 'var(--color-accent)', marginBottom: 8, textTransform: 'uppercase' }}>

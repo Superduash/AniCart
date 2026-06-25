@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import SEO from '../SEO';
 import { useUI } from '../../contexts/UIContext';
-import { useNavigate } from 'react-router-dom';
 import { useWindowWidth } from '../../hooks/useWindowWidth';
 import { Library, Package, Heart, Settings, Paintbrush, LogOut } from 'lucide-react';
 
@@ -47,6 +47,7 @@ export default function DashboardShell() {
 
   return (
     <div className="dashboard-layout">
+      <SEO robots="noindex,nofollow" />
       {/* Desktop sidebar */}
       {!isMobile && (
         <aside className="dashboard-sidebar">

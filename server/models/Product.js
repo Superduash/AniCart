@@ -6,6 +6,7 @@
  */
 
 const mongoose = require('mongoose');
+const slugify = require('slugify');
 
 const productSchema = new mongoose.Schema(
   {
@@ -19,6 +20,12 @@ const productSchema = new mongoose.Schema(
       required: [true, 'Product name is required'],
       trim: true,
       maxlength: [100, 'Product name cannot exceed 100 characters'],
+    },
+    slug: {
+      type: String,
+      unique: true,
+      sparse: true,
+      index: true,
     },
     series: {
       type: String,
@@ -327,6 +334,27 @@ productSchema.index({ creatorId: 1, status: 1, createdAt: -1 });
 productSchema.index({ status: 1, series: 1, price: 1 });
 productSchema.index({ isHero: -1, heroOrder: 1 });
 productSchema.index({ isFeatured: -1, featuredOrder: 1 });
+
+// Generate slug before saving
+productSchema.pre('save', async function (next) {
+  if (this.isModified('name')) {
+    let baseSlug = slugify(this.name, { lower: true, strict: true, trim: true });
+    
+    // Check if slug exists
+    let slug = baseSlug;
+    let counter = 1;
+    let slugExists = await mongoose.models.Product.findOne({ slug, _id: { $ne: this._id } });
+    
+    while (slugExists) {
+      slug = `${baseSlug}-${counter}`;
+      counter++;
+      slugExists = await mongoose.models.Product.findOne({ slug, _id: { $ne: this._id } });
+    }
+    
+    this.slug = slug;
+  }
+  next();
+});
 
 /**
  * Static method to get distinct series for filtering

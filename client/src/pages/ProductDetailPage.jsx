@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { useSEO } from '../hooks/useSEO';
+import SEO from '../components/SEO';
+import { generateProductSchema, generateBreadcrumbsSchema } from '../utils/seoUtils';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useUI } from '../contexts/UIContext';
@@ -62,36 +63,6 @@ export default function ProductDetailPage() {
   const [productName, setProductName] = useState('');
   const [product, setProduct] = useState(null);
   const [downloadResolution, setDownloadResolution] = useState('4k');
-
-  useSEO({
-    title: product ? product.name : productName || 'Product',
-    description: product ? `Download ${product.name} from the ${product.series} collection. Buy now or view free sample.` : 'Premium Anime Wallpapers',
-    image: product ? (product.assets?.preview?.url || product.img || product.imageUrl) : null,
-    type: 'product',
-    jsonLd: product ? {
-      "@context": "https://schema.org/",
-      "@type": "Product",
-      "name": product.name,
-      "image": [
-        product.assets?.preview?.url || product.img || product.imageUrl
-      ],
-      "description": `Premium 4K anime wallpaper: ${product.name} from ${product.series}`,
-      "sku": product._id || product.id,
-      "offers": {
-        "@type": "Offer",
-        "url": window.location.href,
-        "priceCurrency": "USD",
-        "price": product.price || 0,
-        "availability": "https://schema.org/InStock",
-        "itemCondition": "https://schema.org/NewCondition"
-      },
-      "aggregateRating": product.rating > 0 ? {
-        "@type": "AggregateRating",
-        "ratingValue": product.rating,
-        "reviewCount": product.reviews || 1
-      } : undefined
-    } : null
-  });
 
   const [loading, setLoading] = useState(true);
   const [related, setRelated] = useState([]);
@@ -253,23 +224,30 @@ export default function ProductDetailPage() {
   const avgRating = product.averageRating || product.rating || 0;
   const reviewCount = reviews.length;
 
-  const jsonLd = {
-    "@context": "https://schema.org/",
-    "@type": "Product",
-    "name": product.name,
-    "image": previewUrl,
-    "description": product.description || `Buy ${product.name} anime wallpaper.`,
-    "offers": {
-      "@type": "Offer",
-      "priceCurrency": "USD",
-      "price": product.price || 0,
-      "availability": "https://schema.org/InStock"
-    }
-  };
+  const productSchema = generateProductSchema(product);
+  if (avgRating > 0) {
+    productSchema.aggregateRating = {
+      "@type": "AggregateRating",
+      "ratingValue": avgRating,
+      "reviewCount": reviewCount || 1
+    };
+  }
+
+  const breadcrumbsSchema = generateBreadcrumbsSchema([
+    { name: 'Home', url: '/' },
+    { name: 'Marketplace', url: '/marketplace' },
+    { name: product.name, url: `/wallpaper/${product.slug || product.id}` }
+  ]);
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--navbar-height) + 10px)' }}>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <SEO
+        title={product.name}
+        description={`Download ${product.name} wallpaper in ${product.resolution} resolution.`}
+        image={previewUrl}
+        type="product"
+        schemas={[productSchema, breadcrumbsSchema]}
+      />
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: isMobile ? '20px 16px 100px' : '40px 40px 80px' }}>
         {/* Breadcrumb */}
         <Breadcrumbs items={[

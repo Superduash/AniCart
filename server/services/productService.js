@@ -6,6 +6,7 @@ const Product = require('../models/Product');
 const License = require('../models/License');
 const Cart = require('../models/Cart');
 const User = require('../models/User');
+const mongoose = require('mongoose');
 const ApiError = require('../utils/apiError');
 const CONSTANTS = require('../utils/constants');
 const config = require('../config');
@@ -198,8 +199,12 @@ async function getProducts(query) {
   return result;
 }
 
-async function getProduct(id) {
-  const product = await Product.findOne({ _id: id, status: 'active' }).select(
+async function getProduct(idOrSlug) {
+  const query = mongoose.Types.ObjectId.isValid(idOrSlug)
+    ? { _id: idOrSlug }
+    : { slug: idOrSlug };
+
+  const product = await Product.findOne({ ...query, status: 'active' }).select(
     PUBLIC_PRODUCT_SELECT
   );
   if (!product) {

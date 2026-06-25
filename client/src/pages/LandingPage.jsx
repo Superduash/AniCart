@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import SEO from '../components/SEO';
+import { generateWebSiteSchema, generateOrganizationSchema } from '../utils/seoUtils';
 import { useTitle } from '../hooks/useTitle';
 import { useAuth } from '../contexts/AuthContext';
 import { useWindowWidth } from '../hooks/useWindowWidth';
@@ -216,6 +218,7 @@ function HeroSlider({ products, loading, user }) {
               style={{ width: '100%', height: '100%', objectFit: 'cover', filter: 'blur(15px)', transform: 'scale(1.1)' }} 
               loading="eager" 
               fetchpriority="high" 
+              decoding="async"
               alt=""
               initial={{ scale: 1.15, opacity: 0 }}
               animate={{ scale: 1.1, opacity: 1 }}
@@ -307,6 +310,7 @@ function HeroSlider({ products, loading, user }) {
                   style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none', userSelect: 'none' }} 
                   loading="eager" 
                   fetchpriority="high" 
+                  decoding="async"
                   alt={products[currentIndex].name} 
                 />
               </motion.div>
@@ -411,7 +415,13 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh' }}>
+    <div className="landing-page" style={{ minHeight: '100vh' }}>
+      <SEO
+        title="AniCart | Premium Anime Wallpapers in 4K & Ultra HD"
+        description="Download premium anime wallpapers in 4K and Ultra HD. Elevate your desktop and mobile screens with top-tier backgrounds from your favorite series."
+        schemas={[generateWebSiteSchema(), generateOrganizationSchema()]}
+      />
+
       {/* ─── HERO SLIDER ─── */}
       <HeroSlider products={heroProducts} loading={heroLoading} user={user} />
 

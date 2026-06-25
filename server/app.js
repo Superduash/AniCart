@@ -40,7 +40,26 @@ if (Sentry) {
 // Compress all responses
 app.use(compression());
 
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https:", "wss:"],
+      fontSrc: ["'self'", "https:", "data:"],
+      frameSrc: ["'self'", "https:"],
+    },
+  },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
+
+// Permissions-Policy header
+app.use((req, res, next) => {
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), browsing-topics=()');
+  next();
+});
 
 // API Versioning header
 app.use((req, res, next) => {

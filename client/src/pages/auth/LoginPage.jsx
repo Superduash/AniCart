@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUI } from '../../contexts/UIContext';
+import SEO from '../../components/SEO';
 import { useTitle } from '../../hooks/useTitle';
 import apiClient, { setAccessToken } from '../../api/client';
 import { useCart } from '../../contexts/CartContext';

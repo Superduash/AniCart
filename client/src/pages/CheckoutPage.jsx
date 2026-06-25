@@ -4,6 +4,7 @@ import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useTitle } from '../hooks/useTitle';
 import { useWindowWidth } from '../hooks/useWindowWidth';
+import SEO from '../components/SEO';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useUI } from '../contexts/UIContext';
@@ -146,6 +147,7 @@ export default function CheckoutPage() {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--navbar-height) + 10px)' }}>
+      <SEO robots="noindex,nofollow" />
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '40px 40px 80px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 32 }}>
           <button onClick={() => navigate('/cart')} style={{ background: 'none', border: 'none', color: 'var(--color-text-3)', cursor: 'pointer', fontSize: '1.2rem', padding: 0 }}>←</button>

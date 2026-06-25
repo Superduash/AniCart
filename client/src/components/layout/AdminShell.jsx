@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import SEO from '../SEO';
 
 const NAV = [
   { path: '/admin/products', label: 'Product Queue', icon: '⚡' },
@@ -23,6 +24,7 @@ export default function AdminShell() {
 
   return (
     <div className="dashboard-layout">
+      <SEO title="Admin Panel" robots="noindex,nofollow" />
       <aside className="dashboard-sidebar" style={{ background: 'var(--color-deep)', borderRight: '1px solid var(--color-border)' }}>
         <div className="sidebar-user" style={{ borderBottom: '1px solid var(--color-border)' }}>
           <div style={{ fontFamily: 'Orbitron, monospace', fontSize: '0.75rem', letterSpacing: 2, color: 'var(--color-pink)', marginBottom: 8 }}>ADMIN PANEL</div>
