@@ -53,6 +53,14 @@ const creatorStatsSchema = new mongoose.Schema(
       type: Number,
       default: 5,
     },
+    stripeAccountId: {
+      type: String,
+      trim: true,
+    },
+    payoutsEnabled: {
+      type: Boolean,
+      default: false,
+    },
   },
   { _id: false }
 );

@@ -35,6 +35,7 @@ const config = {
   // Stripe configuration
   STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
+  STRIPE_PUBLISHABLE_KEY: process.env.STRIPE_PUBLISHABLE_KEY || process.env.STRIPE_PUBLIC_KEY,
 
   // Upstash Redis configuration
   REDIS_URL: process.env.REDIS_URL,

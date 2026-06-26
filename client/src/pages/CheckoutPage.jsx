@@ -13,7 +13,7 @@ import Footer from '../components/layout/Footer';
 
 // We fetch the stripe configuration dynamically from the backend
 
-function CheckoutForm({ clientSecret, total }) {
+function CheckoutForm({ clientSecret, total, orderId }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -37,11 +37,15 @@ function CheckoutForm({ clientSecret, total }) {
         return;
       }
 
-      // Real payment
+      // GAP 2 FIX: Add return_url for 3D Secure / SCA redirects
+      const origin = window.location.origin;
       const { paymentIntent, error: confirmError } = await stripe.confirmPayment({
         elements,
         clientSecret,
-        redirect: 'if_required', // We handle success manually
+        redirect: 'if_required',
+        confirmParams: {
+          return_url: `${origin}/checkout/success?order=${orderId}`,
+        },
       });
 
       if (confirmError) {
@@ -49,7 +53,7 @@ function CheckoutForm({ clientSecret, total }) {
       } else if (paymentIntent && paymentIntent.status === 'succeeded') {
         // Success
         clearCart();
-        navigate('/checkout/success');
+        navigate(`/checkout/success?order=${orderId}`);
       } else {
         setError('Payment failed or requires further action.');
       }
@@ -92,6 +96,9 @@ export default function CheckoutPage() {
   
   const [stripePromise, setStripePromise] = useState(null);
   const [clientSecret, setClientSecret] = useState('');
+  const [orderId, setOrderId] = useState('');
+  // GAP 3 FIX: Use backend-computed total instead of client-side cartTotal
+  const [backendTotal, setBackendTotal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const width = useWindowWidth();
@@ -111,7 +118,13 @@ export default function CheckoutPage() {
         const res = await apiClient.post('/orders/create-payment-intent', {
           items: cart.map(i => ({ product: i._id || i.id, price: i.price }))
         });
-        setClientSecret(res.data?.data?.clientSecret || res.data?.clientSecret);
+        const data = res.data?.data || res.data;
+        setClientSecret(data.clientSecret);
+        setOrderId(data.orderId);
+        // Use backend total if available, fall back to client-side
+        if (data.total !== undefined) {
+          setBackendTotal(data.total);
+        }
       } catch (err) {
         let errMsg = err.response?.data?.message || 'Failed to initialize checkout.';
         if (errMsg.toLowerCase().includes('api key') || errMsg.includes('sk_test_') || errMsg.toLowerCase().includes('stripe')) {
@@ -124,6 +137,9 @@ export default function CheckoutPage() {
     };
     initCheckout();
   }, [cart, navigate]);
+
+  // Use backend-computed total if available, otherwise fall back to client-side
+  const displayTotal = backendTotal !== null ? backendTotal : cartTotal;
 
   const appearance = {
     theme: 'night',
@@ -175,7 +191,7 @@ export default function CheckoutPage() {
               </div>
             ) : clientSecret ? (
               <Elements stripe={stripePromise} options={{ clientSecret, appearance }}>
-                <CheckoutForm clientSecret={clientSecret} total={cartTotal} />
+                <CheckoutForm clientSecret={clientSecret} total={displayTotal} orderId={orderId} />
               </Elements>
             ) : null}
           </div>
@@ -205,12 +221,12 @@ export default function CheckoutPage() {
               <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 16 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                   <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-sm)', color: 'var(--color-text-2)' }}>Subtotal</span>
-                   <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>{cartTotal === 0 ? 'Free' : `$${cartTotal.toFixed(2)}`}</span>
+                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-sm)', color: 'var(--color-text)' }}>{displayTotal === 0 ? 'Free' : `$${displayTotal.toFixed(2)}`}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
                   <span style={{ fontFamily: 'Rajdhani, sans-serif', fontWeight: 700, fontSize: 'var(--text-base)', color: 'var(--color-text)', letterSpacing: 1, textTransform: 'uppercase' }}>Total</span>
                    <span style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--text-xl)', fontWeight: 600, color: 'var(--color-accent)' }}>
-                    {cartTotal === 0 ? 'Free' : `$${cartTotal.toFixed(2)}`}
+                    {displayTotal === 0 ? 'Free' : `$${displayTotal.toFixed(2)}`}
                   </span>
                 </div>
               </div>
@@ -228,6 +244,11 @@ export default function CheckoutPage() {
           </div>
         </div>
       </div>
+      {backendTotal !== null && backendTotal !== cartTotal && (
+        <div style={{ position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', borderRadius: 12, padding: '10px 20px', color: 'var(--color-warning)', fontFamily: 'Inter, sans-serif', fontSize: 'var(--text-xs)', zIndex: 1000, backdropFilter: 'blur(12px)' }}>
+          ℹ Total updated with tax
+        </div>
+      )}
       <Footer />
     </div>
   );

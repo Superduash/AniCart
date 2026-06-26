@@ -268,30 +268,97 @@ const createCreatorProduct = catchAsync(async (req, res) => {
   );
 });
 
+const stripe = require('stripe')(require('../config').STRIPE_SECRET_KEY);
+const config = require('../config');
+
 const connectStripe = catchAsync(async (req, res) => {
   const user = await User.findById(req.user.id);
   if (!user || (user.role !== CONSTANTS.ROLES.CREATOR && user.role !== CONSTANTS.ROLES.ADMIN)) {
     throw ApiError.forbidden('Only creators can connect Stripe');
   }
 
-  // Portfolio Mock: Instead of actually creating a Stripe Connect Account and Link,
-  // we just simulate it by immediately setting a dummy stripe account ID on the user's creator stats.
+  if (!config.STRIPE_SECRET_KEY) {
+    throw ApiError.internal('Stripe is not configured');
+  }
+
+  // If already connected, return existing account
+  if (user.creatorStats?.stripeAccountId) {
+    return res.status(200).json(
+      successResponse({
+        message: 'Stripe account already connected',
+        data: {
+          stripeAccountId: user.creatorStats.stripeAccountId,
+          payoutsEnabled: user.creatorStats.payoutsEnabled,
+        },
+      })
+    );
+  }
+
+  // Create a real Stripe Connect Express account
+  const account = await stripe.accounts.create({
+    type: 'express',
+    email: user.email,
+    capabilities: {
+      card_payments: { requested: true },
+      transfers: { requested: true },
+    },
+    metadata: {
+      userId: user._id.toString(),
+      name: user.name,
+    },
+  });
+
   if (!user.creatorStats) {
     user.creatorStats = {};
   }
-  user.creatorStats.stripeAccountId = `acct_mock_${Date.now()}`;
-  user.creatorStats.payoutsEnabled = true;
+  user.creatorStats.stripeAccountId = account.id;
+  user.creatorStats.payoutsEnabled = account.capabilities?.card_payments === 'active';
   await user.save();
 
   res.status(200).json(
     successResponse({
-      message: 'Stripe account connected successfully (Mock Mode)',
+      message: 'Stripe Connect account created',
       data: {
-        stripeAccountId: user.creatorStats.stripeAccountId,
-        url: '/creator/stats', // Redirect them right back to their dashboard
+        stripeAccountId: account.id,
+        payoutsEnabled: user.creatorStats.payoutsEnabled,
       },
     })
   );
+});
+
+const createStripeAccountLink = catchAsync(async (req, res) => {
+  const user = await User.findById(req.user.id);
+  if (!user || (user.role !== CONSTANTS.ROLES.CREATOR && user.role !== CONSTANTS.ROLES.ADMIN)) {
+    throw ApiError.forbidden('Only creators can create account links');
+  }
+
+  if (!config.STRIPE_SECRET_KEY) {
+    throw ApiError.internal('Stripe is not configured');
+  }
+
+  if (!user.creatorStats?.stripeAccountId) {
+    throw ApiError.badRequest('No Stripe Connect account found. Please connect Stripe first.');
+  }
+
+  const accountLink = await stripe.accountLinks.create({
+    account: user.creatorStats.stripeAccountId,
+    refresh_url: `${config.CLIENT_URL}/creator/stripe-connect`,
+    return_url: `${config.CLIENT_URL}/creator/stats`,
+    type: 'account_onboarding',
+  });
+
+  res.status(200).json(
+    successResponse({
+      message: 'Account link created',
+      data: { url: accountLink.url },
+    })
+  );
+});
+
+const stripeWebhookAccountUpdate = catchAsync(async (req, res) => {
+  // This is handled by the main Stripe webhook controller
+  // Kept here for reference — account.updated events go through webhookController
+  res.status(200).json(successResponse({ message: 'OK' }));
 });
 
 module.exports = {
@@ -303,4 +370,6 @@ module.exports = {
   getCreatorStats,
   createCreatorProduct,
   connectStripe,
+  createStripeAccountLink,
+  stripeWebhookAccountUpdate,
 };

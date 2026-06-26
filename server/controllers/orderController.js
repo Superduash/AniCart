@@ -14,7 +14,8 @@ const orderService = require('../services/orderService');
  * @access  Private
  */
 const createPaymentIntent = catchAsync(async (req, res) => {
-  const result = await orderService.createPaymentIntent(req.user.id);
+  const { countryCode } = req.body; // GAP 8: Accept country code for regional tax
+  const result = await orderService.createPaymentIntent(req.user.id, countryCode);
 
   res.status(200).json(
     successResponse({

@@ -19,6 +19,7 @@ const logger = require('./utils/logger');
 // Import BullMQ workers (they start automatically on import)
 const imageProcessorWorker = require('./jobs/imageProcessor');
 const { scheduleCleanupJob } = require('./jobs/cleanupOrphanedFiles');
+const { startCleanupPendingOrdersJob } = require('./jobs/cleanupPendingOrders');
 
 // Global crash handlers
 process.on('uncaughtException', (err) => {
@@ -38,6 +39,7 @@ const startWorker = async () => {
     
     // Start scheduling cleanup jobs
     scheduleCleanupJob();
+    startCleanupPendingOrdersJob();
   } catch (error) {
     logger.error(`✗ Worker Failed to Start: ${error.message}`);
     process.exit(1);

@@ -71,6 +71,22 @@ const orderSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    taxRate: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 1,
+    },
+    countryCode: {
+      type: String,
+      uppercase: true,
+      trim: true,
+      default: 'US',
+    },
+    _cartHash: {
+      type: String,
+      select: false, // Internal field, not returned in queries by default
+    },
   },
   {
     timestamps: true,

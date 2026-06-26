@@ -13,6 +13,7 @@ const {
   getCreatorStats,
   createCreatorProduct,
   connectStripe,
+  createStripeAccountLink,
 } = require('../controllers/creatorController');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 const {
@@ -32,8 +33,9 @@ router.post('/creator/products', protect, createCreatorProduct);
 router.get('/creator/products', protect, getCreatorProducts);
 router.get('/creator/stats', protect, getCreatorStats);
 
-// Stripe Connect Mock Endpoints (Portfolio Mode)
+// Stripe Connect Endpoints
 router.post('/creator/connect', protect, connectStripe);
+router.post('/creator/stripe/account-link', protect, createStripeAccountLink);
 
 // C5 Fix: add missing DELETE route for creator product deletion
 // Admins can delete any of their own products regardless of status
