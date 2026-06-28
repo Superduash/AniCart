@@ -6,9 +6,6 @@
  */
 
 const express = require('express');
-const { createBullBoard } = require('@bull-board/api');
-const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
-const { ExpressAdapter } = require('@bull-board/express');
 const { imageProcessingQueue } = require('../jobs/queues');
 const { redisConnection } = require('../config/redis');
 const mongoose = require('mongoose');
@@ -50,12 +47,20 @@ router.get('/health', async (req, res) => {
  * Bull Board Dashboard Setup
  * Mounted at /admin/queues
  */
-const serverAdapter = new ExpressAdapter();
-serverAdapter.setBasePath('/admin/queues');
+let serverAdapter = null;
 
-createBullBoard({
-  queues: [new BullMQAdapter(imageProcessingQueue)],
-  serverAdapter,
-});
+if (imageProcessingQueue) {
+  const { createBullBoard } = require('@bull-board/api');
+  const { BullMQAdapter } = require('@bull-board/api/bullMQAdapter');
+  const { ExpressAdapter } = require('@bull-board/express');
+
+  serverAdapter = new ExpressAdapter();
+  serverAdapter.setBasePath('/admin/queues');
+
+  createBullBoard({
+    queues: [new BullMQAdapter(imageProcessingQueue)],
+    serverAdapter,
+  });
+}
 
 module.exports = { router, serverAdapter };

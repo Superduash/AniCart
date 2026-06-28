@@ -170,7 +170,9 @@ app.use('/api/v1', routes);
 app.use('/api/v1/worker', workerRoutes);
 
 // Bull Board dashboard for BullMQ
-app.use('/admin/queues', protect, adminOnly, bullBoardAdapter.getRouter());
+if (bullBoardAdapter) {
+  app.use('/admin/queues', protect, adminOnly, bullBoardAdapter.getRouter());
+}
 
 app.use(notFound);
 
