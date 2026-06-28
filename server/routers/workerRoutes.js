@@ -21,13 +21,7 @@ const router = express.Router();
  */
 router.get('/health', async (req, res) => {
   // Check Redis connection
-  let redisStatus = 'disconnected';
-  try {
-    await redisConnection.ping();
-    redisStatus = 'connected';
-  } catch (err) {
-    redisStatus = 'error';
-  }
+  let redisStatus = redisConnection ? 'configured' : 'disabled';
 
   // Check MongoDB connection
   let mongoStatus = 'disconnected';
@@ -40,7 +34,7 @@ router.get('/health', async (req, res) => {
   }
 
   // Overall status
-  const status = redisStatus === 'connected' && mongoStatus === 'connected' ? 'ok' : 'degraded';
+  const status = (redisStatus === 'configured' || redisStatus === 'disabled') && mongoStatus === 'connected' ? 'ok' : 'degraded';
 
   res.status(200).json({
     status,

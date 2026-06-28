@@ -12,7 +12,9 @@ const config = require('./index');
 const logger = require('../utils/logger');
 
 let redisConnection = null;
-if (config.REDIS_URL) {
+if (process.env.DISABLE_BULLMQ === 'true') {
+  logger.info('BullMQ is disabled via DISABLE_BULLMQ. Skipping IORedis connection.');
+} else if (config.REDIS_URL) {
   const isTls = config.REDIS_URL.startsWith('rediss://');
   redisConnection = new IORedis(config.REDIS_URL, {
     maxRetriesPerRequest: null,

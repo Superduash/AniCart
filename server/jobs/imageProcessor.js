@@ -16,7 +16,7 @@
 const { Worker } = require('bullmq');
 const sharp = require('sharp');
 const { GetObjectCommand, ListObjectsV2Command, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
-const { redisConnection } = require('../config/redis');
+const { redisConnection, upstashRedis } = require('../config/redis');
 const { s3Client, bucketName, publicUrl } = require('../config/r2');
 const Product = require('../models/Product');
 const uploadService = require('../services/uploadService');
@@ -363,12 +363,9 @@ const privateAssets = {
   await product.save();
 
   // Clear products cache to show new active products on the marketplace immediately
-  if (product.status === 'active' && redisConnection) {
+  if (product.status === 'active' && upstashRedis) {
     try {
-      const keys = await redisConnection.keys('products:*');
-      if (keys.length > 0) {
-        await redisConnection.del(...keys);
-      }
+      await upstashRedis.del('products:cache:v1');
     } catch (err) {
       console.error(`[Worker] Failed to clear Redis cache:`, err.message);
     }

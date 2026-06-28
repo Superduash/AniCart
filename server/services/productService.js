@@ -12,7 +12,7 @@ const CONSTANTS = require('../utils/constants');
 const config = require('../config');
 const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { S3Client, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-const redis = require('../config/redis');
+const { upstashRedis: redis } = require('../config/redis');
 const resolutionService = require('../services/resolutionService');
 
 let s3Client;
@@ -44,7 +44,7 @@ const PUBLIC_PRODUCT_SELECT =
  * @param {{ series?: string, page?: string|number, limit?: string|number, search?: string }} query
  */
 async function getProducts(query) {
-  const cacheKey = `products:${JSON.stringify(query)}`;
+  const cacheKey = 'products:cache:v1';
   if (redis) {
     try {
       const cached = await redis.get(cacheKey);
@@ -178,7 +178,7 @@ async function getProducts(query) {
 
       if (redis) {
         try {
-          await redis.set(cacheKey, JSON.stringify(result), 'EX', 60);
+          await redis.set(cacheKey, JSON.stringify(result), 'EX', 300);
         } catch (err) {}
       }
 
@@ -230,7 +230,7 @@ async function getProducts(query) {
 
   if (redis) {
     try {
-      await redis.set(cacheKey, JSON.stringify(result), 'EX', 60);
+      await redis.set(cacheKey, JSON.stringify(result), 'EX', 300);
     } catch (err) {
       // ignore redis errors
     }
@@ -301,8 +301,7 @@ async function createProduct(body) {
   // Clear products cache
   if (redis) {
     try {
-      const keys = await redis.keys('products:*');
-      if (keys.length > 0) await redis.del(...keys);
+      await redis.del('products:cache:v1');
     } catch (err) {}
   }
 
@@ -377,8 +376,7 @@ async function updateProduct(id, body) {
   // Clear products cache
   if (redis) {
     try {
-      const keys = await redis.keys('products:*');
-      if (keys.length > 0) await redis.del(...keys);
+      await redis.del('products:cache:v1');
     } catch (err) {}
   }
 
@@ -443,8 +441,7 @@ async function deleteProduct(id, user) {
 
     if (redis) {
       try {
-        const keys = await redis.keys('products:*');
-        if (keys.length > 0) await redis.del(...keys);
+        await redis.del('products:cache:v1');
       } catch (err) {}
     }
 
@@ -465,8 +462,7 @@ async function deleteProduct(id, user) {
 
     if (redis) {
       try {
-        const keys = await redis.keys('products:*');
-        if (keys.length > 0) await redis.del(...keys);
+        await redis.del('products:cache:v1');
       } catch (err) {}
     }
 
@@ -494,8 +490,7 @@ async function restoreProduct(id) {
   // Clear products cache
   if (redis) {
     try {
-      const keys = await redis.keys('products:*');
-      if (keys.length > 0) await redis.del(...keys);
+      await redis.del('products:cache:v1');
     } catch (err) {}
   }
 

@@ -99,7 +99,7 @@ function startSelfPing(server, port) {
   }
 
   const baseUrl = getTargetUrl(server, port);
-  const url = `${baseUrl}/api/health`;
+  const url = `${baseUrl}/`;
 
   logger.info('✓ Self-ping scheduler started (10 min interval)');
 
