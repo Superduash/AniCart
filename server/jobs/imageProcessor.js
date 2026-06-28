@@ -505,5 +505,8 @@ if (redisConnection) {
   logger.warn('⚠ BullMQ Worker is disabled: Redis connection not available.');
 }
 
-module.exports = imageProcessorWorker;
+module.exports = imageProcessorWorker || {
+  close: async () => {},
+  on: () => {},
+};
 module.exports.processImageDirectly = processImageDirectly;
