@@ -6,6 +6,7 @@
 
 const { Queue, RateLimitError } = require('bullmq');
 const { redisConnection } = require('../config/redis');
+const logger = require('../utils/logger');
 
 /**
  * Image Processing Queue

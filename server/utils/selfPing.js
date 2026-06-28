@@ -101,15 +101,15 @@ function startSelfPing(server, port) {
   const baseUrl = getTargetUrl(server, port);
   const url = `${baseUrl}/`;
 
-  logger.info('✓ Self-ping scheduler started (10 min interval)');
+  logger.info('✓ Self-ping scheduler started (14 min interval)');
 
   // Run the first ping immediately at start (after the 60-second delay)
   pingServer(url).catch((err) => {
     logger.warn(`⚠ Self-ping failed: ${err.message}`);
   });
 
-  // Schedule subsequent pings every 10 minutes
-  const INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+  // Schedule subsequent pings every 14 minutes to prevent Render's 15-min idle spin-down
+  const INTERVAL_MS = 14 * 60 * 1000; // 14 minutes
   intervalId = setInterval(() => {
     pingServer(url).catch((err) => {
       logger.warn(`⚠ Self-ping failed: ${err.message}`);
